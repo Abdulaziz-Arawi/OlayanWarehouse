@@ -284,6 +284,7 @@
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:14px;">
+      <span class="pill" id="roleBadge" style="display:none;background:rgba(255,255,255,0.14);color:#E7EAF0;"></span>
       <div class="conn-badge"><span class="conn-dot" id="connDot"></span><span id="saveStatus">جارٍ الاتصال...</span></div>
       <button class="btn-logout btn-sm" id="logoutBtn">تسجيل خروج</button>
     </div>
@@ -291,12 +292,12 @@
 
   <div class="tabs" id="tabs">
     <div class="tab active" data-view="dashboard">لوحة التحكم</div>
-    <div class="tab" data-view="items">الأصناف</div>
-    <div class="tab" data-view="voucherIn">سند توريد (وارد)</div>
-    <div class="tab" data-view="voucherOut">سند صرف (صادر)</div>
+    <div class="tab" data-view="items" data-admin-only="1">الأصناف</div>
+    <div class="tab" data-view="voucherIn" data-admin-only="1">سند توريد (وارد)</div>
+    <div class="tab" data-view="voucherOut" data-admin-only="1">سند صرف (صادر)</div>
     <div class="tab" data-view="log">سجل السندات</div>
     <div class="tab" data-view="ledger">كشف حركة صنف</div>
-    <div class="tab" data-view="settings">الإعدادات</div>
+    <div class="tab" data-view="settings" data-admin-only="1">الإعدادات</div>
   </div>
 
   <!-- DASHBOARD -->
@@ -644,7 +645,43 @@ async function tryLogin(){
 async function enterApp(){
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appRoot').style.display = 'block';
+  await applyRole();
   await loadDB();
+}
+
+let currentRole = 'viewer';
+
+async function applyRole(){
+  currentRole = 'viewer';
+  try{
+    const { data: userData } = await sb.auth.getUser();
+    const uid = userData && userData.user ? userData.user.id : null;
+    if(uid){
+      const { data: profile } = await sb.from('profiles').select('role').eq('id', uid).single();
+      if(profile && profile.role === 'admin') currentRole = 'admin';
+    }
+  }catch(e){
+    console.error('تعذر تحديد صلاحية المستخدم، سيتم افتراض "مشاهد فقط" للأمان.', e);
+  }
+
+  const badge = document.getElementById('roleBadge');
+  const adminTabs = document.querySelectorAll('.tab[data-admin-only]');
+  if(currentRole === 'admin'){
+    badge.style.display = 'none';
+    adminTabs.forEach(t=> t.style.display = '');
+  } else {
+    badge.style.display = 'inline-block';
+    badge.textContent = 'مشاهدة فقط';
+    adminTabs.forEach(t=> t.style.display = 'none');
+    // لو كان مفتوح على تبويب مخصص للمدير قبل ما نطبّق الصلاحية، رجّعه للوحة التحكم
+    const activeTab = document.querySelector('.tab.active');
+    if(activeTab && activeTab.hasAttribute('data-admin-only')){
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      document.querySelector('.tab[data-view="dashboard"]').classList.add('active');
+      document.getElementById('view-dashboard').classList.add('active');
+    }
+  }
 }
 
 document.getElementById('loginBtn').addEventListener('click', tryLogin);
