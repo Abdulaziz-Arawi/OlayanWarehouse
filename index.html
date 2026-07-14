@@ -827,13 +827,12 @@ function renderItemsTable(){
     return;
   }
   tbody.innerHTML = list.map(i=>{
-    const isNeg = i.balance < 0;
-    const low = !isNeg && i.min>0 && i.balance<=i.min;
+    const low = i.min>0 && i.balance<=i.min;
     return `<tr>
       <td>${i.name}</td>
       <td><span class="pill pill-store-${i.store}">${STORE_LABELS[i.store]}</span></td>
       <td>${i.unit}</td>
-      <td class="mono ${isNeg?'neg-flag':(low?'low-flag':'')}">${fmtNum(i.balance)}${isNeg?' ⛔ سالب':(low?' ⚠':'')}</td>
+      <td class="mono ${low?'low-flag':''}">${fmtNum(i.balance)}${low?' ⚠':''}</td>
       <td class="mono">${fmtNum(i.min)}</td>
       <td><button class="btn-danger-outline btn-sm" data-del="${i.id}">حذف</button></td>
     </tr>`;
@@ -1008,7 +1007,6 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
     if(dupErr) throw dupErr;
     if(dupCheck && dupCheck.length>0){ alert('رقم السند "'+number+'" مستخدم مسبقًا لسند صرف آخر.'); busy=false; btn.disabled=false; return; }
 
-    const negativeResults = [];
     for(const l of rawLines){
       let it = findItemByStoreName(l.store, l.name);
       if(!it){
@@ -1020,7 +1018,6 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
       const newBalance = Math.round((it.balance - l.qty)*100)/100;
       const { error: uErr } = await sb.from('items').update({ balance:newBalance }).eq('id', it.id);
       if(uErr) throw uErr;
-      if(newBalance < 0) negativeResults.push(it.name);
       it.balance = newBalance;
       l._itemId = it.id;
       l._unit = it.unit;
@@ -1043,9 +1040,7 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
     document.getElementById('outNotes').value = '';
     await loadDB();
     const touchedStores = [...new Set(rawLines.map(l=>l.store))].map(s=>STORE_LABELS[s]).join('، ');
-    let sub = 'تم خصم الكميات من: ' + touchedStores + '.';
-    if(negativeResults.length) sub += ' ⚠ تنبيه: رصيد ' + negativeResults.join('، ') + ' صار سالبًا — راجعه من صفحة الأصناف.';
-    showStamp('out', number, 'تم حفظ سند الصرف', sub);
+    showStamp('out', number, 'تم حفظ سند الصرف', 'تم خصم الكميات من: ' + touchedStores + '.');
   }catch(e){
     showErr('تعذر حفظ سند الصرف. لو تحدّث جزء من الأرصدة، راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
     await loadDB();
@@ -1307,13 +1302,12 @@ function renderLedgerTable(){
 
   tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5"><div class="empty-state"><div class="icon">📄</div>لا توجد حركات على هذا الصنف بعد.</div></td></tr>';
 
-  const isNeg = it.balance < 0;
-  const low = !isNeg && it.min>0 && it.balance<=it.min;
+  const low = it.min>0 && it.balance<=it.min;
   summary.innerHTML = `
     <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;">
       <div><label>المخزن</label><span class="pill pill-store-${it.store}">${STORE_LABELS[it.store]}</span></div>
       <div><label>الوحدة</label><span>${it.unit}</span></div>
-      <div><label>الرصيد الحالي</label><span class="ledger-balance ${isNeg?'neg-flag':(low?'low-flag':'')}">${fmtNum(it.balance)} ${isNeg?'⛔ سالب':(low?'⚠ عند الحد الأدنى':'')}</span></div>
+      <div><label>الرصيد الحالي</label><span class="ledger-balance ${low?'low-flag':''}">${fmtNum(it.balance)} ${low?'⚠ عند الحد الأدنى':''}</span></div>
       <div><label>عدد الحركات</label><span class="mono">${moves.length}</span></div>
     </div>
   `;
