@@ -610,6 +610,7 @@
 const SUPABASE_URL = 'https://kaxwfvegfpezomvlkqjz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_WXPqJWDFhMOUwPhOsrS3VA_S_ey3IAh';
 
+
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const STORE_LABELS = { freezer:'فريزر المواد المجمدة', pantry:'مخزن المواد الغذائية', cleaning:'مخزن أدوات النظافة' };
@@ -1008,19 +1009,19 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
     if(dupCheck && dupCheck.length>0){ alert('رقم السند "'+number+'" مستخدم مسبقًا لسند صرف آخر.'); busy=false; btn.disabled=false; return; }
 
     for(const l of rawLines){
-      let it = findItemByStoreName(l.store, l.name);
-      if(!it){
-        const { data: created, error: cErr } = await sb.from('items').insert({ store:l.store, name:l.name, unit:l.unit||'وحدة', balance:0, min_qty:0 }).select().single();
-        if(cErr) throw cErr;
-        it = { id:created.id, store:created.store, name:created.name, unit:created.unit, balance:0, min:0 };
-        DB.items.push(it);
+      const it = findItemByStoreName(l.store, l.name);
+      if(it){
+        const newBalance = Math.round((it.balance - l.qty)*100)/100;
+        const { error: uErr } = await sb.from('items').update({ balance:newBalance }).eq('id', it.id);
+        if(uErr) throw uErr;
+        it.balance = newBalance;
+        l._itemId = it.id;
+        l._unit = it.unit;
+      } else {
+        // ما فيه صنف مسجّل بهذا المخزن أصلًا: يتسجل بالسند فقط، وما يُنشأ له صنف جديد ولا رصيد بالمخزون
+        l._itemId = null;
+        l._unit = l.unit || 'وحدة';
       }
-      const newBalance = Math.round((it.balance - l.qty)*100)/100;
-      const { error: uErr } = await sb.from('items').update({ balance:newBalance }).eq('id', it.id);
-      if(uErr) throw uErr;
-      it.balance = newBalance;
-      l._itemId = it.id;
-      l._unit = it.unit;
     }
 
     const { data: voucher, error: vErr } = await sb.from('vouchers')
