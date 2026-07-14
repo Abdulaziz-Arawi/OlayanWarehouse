@@ -230,6 +230,13 @@
   ::-webkit-scrollbar{width:9px;height:9px;}
   ::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:6px;}
 
+  #printArea{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{display:block;position:absolute;top:0;right:0;left:0;padding:26px;}
+  }
+
   /* login screen */
   .login-screen{
     min-height:100vh;display:flex;align-items:center;justify-content:center;
@@ -488,6 +495,9 @@
         <label>بحث برقم السند</label>
         <input id="logSearch" placeholder="مثال: توريد-0001">
       </div>
+      <div class="field" style="flex:0 0 auto;align-self:end;">
+        <button class="btn-ghost" id="exportExcelBtn">⬇ تصدير Excel</button>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -500,7 +510,10 @@
     <div class="stamp-overlay" id="voucherDetailOverlay">
       <div class="stamp-card" style="max-width:480px;text-align:right;">
         <div id="voucherDetailBody"></div>
-        <button class="btn-ghost stamp-close" id="closeVoucherDetail" style="margin-top:16px;">إغلاق</button>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn-ghost" id="printVoucherBtn" style="flex:1;">🖨 طباعة / PDF</button>
+          <button class="btn-ghost stamp-close" id="closeVoucherDetail" style="flex:1;">إغلاق</button>
+        </div>
       </div>
     </div>
   </div>
@@ -573,6 +586,8 @@
 
 </div>
 
+<div id="printArea"></div>
+
 <div class="stamp-overlay" id="stampOverlay">
   <div class="stamp-card">
     <div class="stamp-ring" id="stampRing">
@@ -586,6 +601,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 /* ============================================================
    إعداد الاتصال بـ Supabase — عدّل السطرين التاليين فقط
@@ -811,12 +827,13 @@ function renderItemsTable(){
     return;
   }
   tbody.innerHTML = list.map(i=>{
-    const low = i.min>0 && i.balance<=i.min;
+    const isNeg = i.balance < 0;
+    const low = !isNeg && i.min>0 && i.balance<=i.min;
     return `<tr>
       <td>${i.name}</td>
       <td><span class="pill pill-store-${i.store}">${STORE_LABELS[i.store]}</span></td>
       <td>${i.unit}</td>
-      <td class="mono ${low?'low-flag':''}">${fmtNum(i.balance)}${low?' ⚠':''}</td>
+      <td class="mono ${isNeg?'neg-flag':(low?'low-flag':'')}">${fmtNum(i.balance)}${isNeg?' ⛔ سالب':(low?' ⚠':'')}</td>
       <td class="mono">${fmtNum(i.min)}</td>
       <td><button class="btn-danger-outline btn-sm" data-del="${i.id}">حذف</button></td>
     </tr>`;
@@ -984,20 +1001,6 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
   if(!number){ alert('الرجاء إدخال رقم السند / الفاتورة.'); return; }
   if(rawLines.length===0){ alert('أضف صنفًا واحدًا على الأقل مع كمية أكبر من صفر.'); return; }
 
-  const resolved = rawLines.map(l=> ({ raw:l, item: findItemByStoreName(l.store, l.name) }));
-  const notFound = resolved.filter(r=> !r.item);
-  if(notFound.length>0){
-    warnEl.style.display = 'block';
-    warnEl.textContent = 'تنبيه: هذه الأصناف غير موجودة في المخزن المحدد لها: ' + notFound.map(r=> r.raw.name+' ('+STORE_LABELS[r.raw.store]+')').join('، ') + '. أضفها أولًا من صفحة الأصناف أو تحقق من الاسم والمخزن.';
-    return;
-  }
-  const shortages = resolved.filter(r=> r.raw.qty > r.item.balance);
-  if(shortages.length>0){
-    warnEl.style.display = 'block';
-    warnEl.textContent = 'تنبيه: الكمية المطلوبة أكبر من الرصيد المتاح لـ: ' + shortages.map(r=>r.item.name).join('، ') + '. لا يمكن الحفظ قبل تعديل الكمية أو تسجيل سند توريد أولًا.';
-    return;
-  }
-
   const btn = document.getElementById('outSubmit');
   busy = true; btn.disabled = true;
   try{
@@ -1005,11 +1008,22 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
     if(dupErr) throw dupErr;
     if(dupCheck && dupCheck.length>0){ alert('رقم السند "'+number+'" مستخدم مسبقًا لسند صرف آخر.'); busy=false; btn.disabled=false; return; }
 
-    for(const r of resolved){
-      const newBalance = Math.round((r.item.balance - r.raw.qty)*100)/100;
-      const { error: uErr } = await sb.from('items').update({ balance:newBalance }).eq('id', r.item.id);
+    const negativeResults = [];
+    for(const l of rawLines){
+      let it = findItemByStoreName(l.store, l.name);
+      if(!it){
+        const { data: created, error: cErr } = await sb.from('items').insert({ store:l.store, name:l.name, unit:l.unit||'وحدة', balance:0, min_qty:0 }).select().single();
+        if(cErr) throw cErr;
+        it = { id:created.id, store:created.store, name:created.name, unit:created.unit, balance:0, min:0 };
+        DB.items.push(it);
+      }
+      const newBalance = Math.round((it.balance - l.qty)*100)/100;
+      const { error: uErr } = await sb.from('items').update({ balance:newBalance }).eq('id', it.id);
       if(uErr) throw uErr;
-      r.item.balance = newBalance;
+      if(newBalance < 0) negativeResults.push(it.name);
+      it.balance = newBalance;
+      l._itemId = it.id;
+      l._unit = it.unit;
     }
 
     const { data: voucher, error: vErr } = await sb.from('vouchers')
@@ -1017,8 +1031,8 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
       .select().single();
     if(vErr) throw vErr;
 
-    const linesPayload = resolved.map(r=>({
-      voucher_id: voucher.id, item_id:r.item.id, store:r.raw.store, name:r.item.name, unit:r.item.unit, qty:r.raw.qty
+    const linesPayload = rawLines.map(l=>({
+      voucher_id: voucher.id, item_id:l._itemId, store:l.store, name:l.name, unit:l._unit, qty:l.qty
     }));
     const { error: lErr } = await sb.from('voucher_lines').insert(linesPayload);
     if(lErr) throw lErr;
@@ -1028,8 +1042,10 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
     document.getElementById('outDest').value = '';
     document.getElementById('outNotes').value = '';
     await loadDB();
-    const touchedStores = [...new Set(resolved.map(r=>r.raw.store))].map(s=>STORE_LABELS[s]).join('، ');
-    showStamp('out', number, 'تم حفظ سند الصرف', 'تم خصم الكميات من: ' + touchedStores + '.');
+    const touchedStores = [...new Set(rawLines.map(l=>l.store))].map(s=>STORE_LABELS[s]).join('، ');
+    let sub = 'تم خصم الكميات من: ' + touchedStores + '.';
+    if(negativeResults.length) sub += ' ⚠ تنبيه: رصيد ' + negativeResults.join('، ') + ' صار سالبًا — راجعه من صفحة الأصناف.';
+    showStamp('out', number, 'تم حفظ سند الصرف', sub);
   }catch(e){
     showErr('تعذر حفظ سند الصرف. لو تحدّث جزء من الأرصدة، راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
     await loadDB();
@@ -1087,9 +1103,11 @@ function renderLogTable(){
   });
 }
 
+let currentDetailVoucher = null;
 function openVoucherDetail(id){
   const v = DB.vouchers.find(x=>x.id===id);
   if(!v) return;
+  currentDetailVoucher = v;
   const body = document.getElementById('voucherDetailBody');
   body.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -1110,6 +1128,100 @@ function openVoucherDetail(id){
 }
 document.getElementById('closeVoucherDetail').addEventListener('click', ()=>{
   document.getElementById('voucherDetailOverlay').classList.remove('show');
+});
+
+/* ---------- PRINT / PDF (single voucher) ---------- */
+function printVoucher(v){
+  const area = document.getElementById('printArea');
+  area.innerHTML = `
+    <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:18px;">
+        <div>
+          <div style="font-weight:800;font-size:20px;">مجموعة العليان</div>
+          <div style="font-size:13px;color:#555;margin-top:2px;">${v.type==='in'?'سند توريد (وارد)':'سند صرف (صادر)'}</div>
+        </div>
+        <div style="text-align:left;">
+          <div style="font-family:monospace;font-weight:700;font-size:19px;">${v.number}</div>
+          <div style="font-size:12px;color:#555;">${fmtDate(v.date)}</div>
+        </div>
+      </div>
+      <p style="margin:6px 0;font-size:14px;"><b>${v.type==='in'?'المورد':'الجهة المستلمة'}:</b> ${v.party||'-'}</p>
+      ${v.notes?`<p style="margin:6px 0;font-size:14px;"><b>ملاحظات:</b> ${v.notes}</p>`:''}
+      <table style="width:100%;border-collapse:collapse;margin-top:16px;font-size:13px;">
+        <thead>
+          <tr style="background:#eee;">
+            <th style="border:1px solid #ccc;padding:8px;text-align:right;">المخزن</th>
+            <th style="border:1px solid #ccc;padding:8px;text-align:right;">الصنف</th>
+            <th style="border:1px solid #ccc;padding:8px;text-align:right;">الكمية</th>
+            <th style="border:1px solid #ccc;padding:8px;text-align:right;">الوحدة</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${v.lines.map(l=>`<tr>
+            <td style="border:1px solid #ccc;padding:8px;">${STORE_LABELS[l.store]||'-'}</td>
+            <td style="border:1px solid #ccc;padding:8px;">${l.name}</td>
+            <td style="border:1px solid #ccc;padding:8px;font-family:monospace;">${fmtNum(l.qty)}</td>
+            <td style="border:1px solid #ccc;padding:8px;">${l.unit}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div style="margin-top:56px;display:flex;justify-content:space-between;font-size:13px;">
+        <div>توقيع ${v.type==='in'?'المورّد':'المستلم'}: ______________________</div>
+        <div>توقيع أمين المخزن: ______________________</div>
+      </div>
+    </div>
+  `;
+  window.print();
+}
+document.getElementById('printVoucherBtn').addEventListener('click', ()=>{
+  if(currentDetailVoucher) printVoucher(currentDetailVoucher);
+});
+
+/* ---------- EXCEL EXPORT (voucher log, respects current filters) ---------- */
+document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
+  const type = document.getElementById('logFilterType').value;
+  const store = document.getElementById('logFilterStore').value;
+  const q = document.getElementById('logSearch').value.trim().toLowerCase();
+  let list = DB.vouchers.slice();
+  if(type!=='all') list = list.filter(v=>v.type===type);
+  if(store!=='all') list = list.filter(v=>voucherStoreList(v).includes(store));
+  if(q) list = list.filter(v=>v.number.toLowerCase().includes(q));
+
+  if(list.length===0){ alert('لا توجد سندات لتصديرها حسب الفلترة الحالية.'); return; }
+
+  const summaryRows = list.map(v=>({
+    'رقم السند': v.number,
+    'النوع': v.type==='in' ? 'توريد (وارد)' : 'صرف (صادر)',
+    'المخزن': voucherStoreList(v).map(s=>STORE_LABELS[s]).join(' + '),
+    'التاريخ': v.date,
+    'الجهة': v.party || '',
+    'ملاحظات': v.notes || '',
+    'عدد الأصناف': v.lines.length
+  }));
+
+  const detailRows = [];
+  list.forEach(v=>{
+    v.lines.forEach(l=>{
+      detailRows.push({
+        'رقم السند': v.number,
+        'النوع': v.type==='in' ? 'توريد' : 'صرف',
+        'التاريخ': v.date,
+        'المخزن': STORE_LABELS[l.store] || l.store,
+        'الصنف': l.name,
+        'الكمية': l.qty,
+        'الوحدة': l.unit
+      });
+    });
+  });
+
+  try{
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'ملخص السندات');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows), 'تفاصيل الأصناف');
+    XLSX.writeFile(wb, 'سندات-' + todayStr() + '.xlsx');
+  }catch(e){
+    showErr('تعذر إنشاء ملف Excel.', e);
+  }
 });
 
 /* ---------- DASHBOARD ---------- */
@@ -1195,12 +1307,13 @@ function renderLedgerTable(){
 
   tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5"><div class="empty-state"><div class="icon">📄</div>لا توجد حركات على هذا الصنف بعد.</div></td></tr>';
 
-  const low = it.min>0 && it.balance<=it.min;
+  const isNeg = it.balance < 0;
+  const low = !isNeg && it.min>0 && it.balance<=it.min;
   summary.innerHTML = `
     <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;">
       <div><label>المخزن</label><span class="pill pill-store-${it.store}">${STORE_LABELS[it.store]}</span></div>
       <div><label>الوحدة</label><span>${it.unit}</span></div>
-      <div><label>الرصيد الحالي</label><span class="ledger-balance ${low?'low-flag':''}">${fmtNum(it.balance)} ${low?'⚠ عند الحد الأدنى':''}</span></div>
+      <div><label>الرصيد الحالي</label><span class="ledger-balance ${isNeg?'neg-flag':(low?'low-flag':'')}">${fmtNum(it.balance)} ${isNeg?'⛔ سالب':(low?'⚠ عند الحد الأدنى':'')}</span></div>
       <div><label>عدد الحركات</label><span class="mono">${moves.length}</span></div>
     </div>
   `;
