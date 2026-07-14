@@ -263,7 +263,7 @@
 
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
-    <div class="brand-mark" style="margin:0 auto 14px;">ABZ</div>
+    <div class="brand-mark" style="margin:0 auto 14px;">عزوز</div>
     <h1>مجموعه العليان</h1>
     <h1>سجل المخزن</h1>
     <p>سجّل دخولك للمتابعة</p>
@@ -284,7 +284,7 @@
 
   <div class="topbar">
     <div class="brand">
-      <div class="brand-mark">ABZ</div>
+      <div class="brand-mark">عزوز</div>
       <div>
         <h1>مجموعه العليان</h1>
         <h1>سجل المخزن</h1>
@@ -633,31 +633,6 @@
   <div class="stamp-card" style="max-width:420px;">
     <video id="scannerVideo" style="width:100%;border-radius:10px;background:#000;" muted playsinline></video>
     <p id="scannerStatus" style="font-size:13px;color:var(--ink-soft);margin:12px 0;min-height:20px;">وجّه الكاميرا نحو الباركود...</p>
-
-    <div id="scannerQuickAdd" style="display:none;text-align:right;background:var(--paper);border-radius:10px;padding:12px;margin-bottom:12px;">
-      <p style="font-size:12.5px;margin:0 0 8px;">باركود جديد (<span id="quickAddCode" class="mono" style="font-weight:700;"></span>) — أضفه كصنف جديد وأربطه بالسند:</p>
-      <div class="field">
-        <label>المخزن</label>
-        <select id="quickAddStore">
-          <option value="freezer">فريزر المواد المجمدة</option>
-          <option value="pantry">مخزن المواد الغذائية</option>
-          <option value="cleaning">مخزن أدوات النظافة</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>اسم الصنف</label>
-        <input id="quickAddName" placeholder="اسم الصنف الجديد">
-      </div>
-      <div class="field">
-        <label>الوحدة</label>
-        <input id="quickAddUnit" placeholder="كرتون / كجم / علبة..." value="وحدة">
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-in btn-sm" id="quickAddConfirmBtn" style="flex:1;">إضافة وربط بالسند</button>
-        <button class="btn-ghost btn-sm" id="quickAddSkipBtn" style="flex:1;">تجاهل ومتابعة المسح</button>
-      </div>
-    </div>
-
     <button class="btn-ghost stamp-close" id="closeScannerBtn" style="width:100%;">إغلاق الماسح</button>
   </div>
 </div>
@@ -683,8 +658,8 @@
    إعداد الاتصال بـ Supabase — عدّل السطرين التاليين فقط
    خذهم من: لوحة تحكم مشروعك بـ Supabase > Settings > API
    ============================================================ */
-const SUPABASE_URL = 'https://kaxwfvegfpezomvlkqjz.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_WXPqJWDFhMOUwPhOsrS3VA_S_ey3IAh';
+const SUPABASE_URL = 'ضع-رابط-مشروعك-هنا';
+const SUPABASE_ANON_KEY = 'ضع-المفتاح-العام-anon-key-هنا';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -977,7 +952,6 @@ let scannerControls = null;
 let scannerOnResult = null;
 let lastScanCode = null;
 let lastScanTime = 0;
-let scannerPaused = false;
 
 async function openScanner(onResult, statusText){
   const overlay = document.getElementById('scannerOverlay');
@@ -986,8 +960,6 @@ async function openScanner(onResult, statusText){
   overlay.classList.add('show');
   scannerOnResult = onResult;
   lastScanCode = null; lastScanTime = 0;
-  scannerPaused = false;
-  document.getElementById('scannerQuickAdd').style.display = 'none';
 
   if(!window.ZXingBrowser){
     statusEl.textContent = 'تعذر تحميل أداة المسح — تأكد من اتصالك بالإنترنت وحدّث الصفحة.';
@@ -997,7 +969,7 @@ async function openScanner(onResult, statusText){
     if(!zxingReader) zxingReader = new ZXingBrowser.BrowserMultiFormatReader();
     const videoEl = document.getElementById('scannerVideo');
     scannerControls = await zxingReader.decodeFromVideoDevice(undefined, videoEl, (result)=>{
-      if(!result || scannerPaused) return;
+      if(!result) return;
       const text = result.getText();
       const now = Date.now();
       if(text === lastScanCode && (now - lastScanTime) < 2000) return;
@@ -1014,9 +986,6 @@ function closeScanner(){
   document.getElementById('scannerOverlay').classList.remove('show');
   if(scannerControls){ try{ scannerControls.stop(); }catch(e){} scannerControls = null; }
   scannerOnResult = null;
-  scannerPaused = false;
-  document.getElementById('scannerQuickAdd').style.display = 'none';
-  quickAddTableId = null;
 }
 document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
 
@@ -1175,69 +1144,7 @@ function addOrIncrementLineForItem(tableId, item){
   newRow.querySelector('.line-qty').value = 1;
 }
 
-/* ---------- QUICK-ADD NEW ITEM FROM AN UNRECOGNIZED BARCODE (receiving only) ---------- */
-let quickAddTableId = null;
-
-function showQuickAddForm(code, tableId){
-  quickAddTableId = tableId;
-  scannerPaused = true;
-  document.getElementById('quickAddCode').textContent = code;
-  document.getElementById('quickAddName').value = '';
-  document.getElementById('quickAddUnit').value = 'وحدة';
-  document.getElementById('scannerQuickAdd').style.display = 'block';
-  document.getElementById('scannerStatus').textContent = 'باركود جديد — عبّي بيانات الصنف بالأسفل أو تجاهله ومتابعة المسح.';
-  document.getElementById('quickAddName').focus();
-}
-function hideQuickAddForm(){
-  document.getElementById('scannerQuickAdd').style.display = 'none';
-  scannerPaused = false;
-  quickAddTableId = null;
-}
-document.getElementById('quickAddSkipBtn').addEventListener('click', ()=>{
-  hideQuickAddForm();
-  document.getElementById('scannerStatus').textContent = 'وجّه الكاميرا نحو باركود الصنف...';
-});
-document.getElementById('quickAddConfirmBtn').addEventListener('click', async ()=>{
-  const code = document.getElementById('quickAddCode').textContent;
-  const store = document.getElementById('quickAddStore').value;
-  const name = document.getElementById('quickAddName').value.trim();
-  const unit = document.getElementById('quickAddUnit').value.trim() || 'وحدة';
-  if(!name){ alert('الرجاء إدخال اسم الصنف.'); return; }
-  const tableId = quickAddTableId;
-  const btn = document.getElementById('quickAddConfirmBtn');
-  btn.disabled = true;
-  try{
-    const { data: created, error } = await sb.from('items').insert({ store, name, unit, balance:0, min_qty:0, barcode:code }).select().single();
-    if(error) throw error;
-    const item = { id:created.id, store:created.store, name:created.name, unit:created.unit, balance:0, min:0, barcode:code };
-    DB.items.push(item);
-    addOrIncrementLineForItem(tableId, item);
-    document.getElementById('scannerStatus').textContent = '✓ تمت إضافة "' + name + '" وربطه بالسند';
-    hideQuickAddForm();
-  }catch(e){
-    alert(e && e.code==='23505' ? 'هذا الباركود مستخدم مسبقًا لصنف آخر.' : 'تعذرت إضافة الصنف.');
-  }
-  btn.disabled = false;
-});
-
-async function quickAddViaPrompt(code, tableId){
-  const name = prompt('صنف جديد (باركود: ' + code + ') — اكتب اسم الصنف:');
-  if(!name || !name.trim()) return;
-  const storeChoice = prompt('اختر رقم المخزن:\n1 = فريزر المواد المجمدة\n2 = مخزن المواد الغذائية\n3 = مخزن أدوات النظافة', '1');
-  const store = ({'1':'freezer','2':'pantry','3':'cleaning'})[(storeChoice||'').trim()] || 'freezer';
-  const unit = prompt('وحدة القياس:', 'وحدة') || 'وحدة';
-  try{
-    const { data: created, error } = await sb.from('items').insert({ store, name:name.trim(), unit, balance:0, min_qty:0, barcode:code }).select().single();
-    if(error) throw error;
-    const item = { id:created.id, store:created.store, name:created.name, unit:created.unit, balance:0, min:0, barcode:code };
-    DB.items.push(item);
-    addOrIncrementLineForItem(tableId, item);
-  }catch(e){
-    alert(e && e.code==='23505' ? 'هذا الباركود مستخدم مسبقًا لصنف آخر.' : 'تعذرت إضافة الصنف: ' + (e && e.message || ''));
-  }
-}
-
-function wireBarcodeScanForVoucher(scanBtnId, manualInputId, tableId, allowQuickAdd){
+function wireBarcodeScanForVoucher(scanBtnId, manualInputId, tableId){
   document.getElementById(scanBtnId).addEventListener('click', ()=>{
     openScanner((code)=>{
       const item = findItemByBarcode(code);
@@ -1245,8 +1152,6 @@ function wireBarcodeScanForVoucher(scanBtnId, manualInputId, tableId, allowQuick
       if(item){
         addOrIncrementLineForItem(tableId, item);
         statusEl.textContent = '✓ تمت إضافة: ' + item.name;
-      } else if(allowQuickAdd){
-        showQuickAddForm(code, tableId);
       } else {
         statusEl.textContent = '⚠ لا يوجد صنف مرتبط بهذا الباركود (' + code + ')';
       }
@@ -1261,13 +1166,12 @@ function wireBarcodeScanForVoucher(scanBtnId, manualInputId, tableId, allowQuick
     manualInput.value = '';
     if(!code) return;
     const item = findItemByBarcode(code);
-    if(item){ addOrIncrementLineForItem(tableId, item); }
-    else if(allowQuickAdd){ quickAddViaPrompt(code, tableId); }
-    else { alert('لا يوجد صنف مرتبط بهذا الباركود: ' + code); }
+    if(item) addOrIncrementLineForItem(tableId, item);
+    else alert('لا يوجد صنف مرتبط بهذا الباركود: ' + code);
   });
 }
-wireBarcodeScanForVoucher('inScanBtn','inManualBarcode','inLinesTable', true);
-wireBarcodeScanForVoucher('outScanBtn','outManualBarcode','outLinesTable', false);
+wireBarcodeScanForVoucher('inScanBtn','inManualBarcode','inLinesTable');
+wireBarcodeScanForVoucher('outScanBtn','outManualBarcode','outLinesTable');
 
 /* ---------- VOUCHER SUBMIT: IN ---------- */
 document.getElementById('inSubmit').addEventListener('click', async ()=>{
