@@ -357,6 +357,13 @@
           <label>الحد الأدنى للتنبيه</label>
           <input id="newItemMin" type="number" min="0" step="any" value="0">
         </div>
+        <div class="field">
+          <label>الباركود (اختياري)</label>
+          <div style="display:flex;gap:6px;">
+            <input id="newItemBarcode" placeholder="امسح أو اكتب الرقم">
+            <button type="button" class="btn-ghost btn-sm" id="scanForNewItemBtn" title="مسح بالكاميرا" style="flex:0 0 auto;">📷</button>
+          </div>
+        </div>
         <div class="field" style="flex:0 0 auto;align-self:end;">
           <button class="btn-primary" id="addItemBtn">إضافة الصنف</button>
         </div>
@@ -381,7 +388,7 @@
 
     <div class="table-wrap">
       <table class="data" id="itemsTable">
-        <thead><tr><th>الصنف</th><th>المخزن</th><th>الوحدة</th><th>الرصيد الحالي</th><th>الحد الأدنى</th><th></th></tr></thead>
+        <thead><tr><th>الصنف</th><th>المخزن</th><th>الوحدة</th><th>الرصيد الحالي</th><th>الحد الأدنى</th><th>الباركود</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -404,6 +411,16 @@
         <div class="field">
           <label>المورد / المصدر (اختياري)</label>
           <input id="inSource" placeholder="اسم المورد...">
+        </div>
+      </div>
+
+      <div class="row" style="align-items:end;background:var(--paper);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+        <div class="field" style="flex:0 0 auto;margin-bottom:0;">
+          <button type="button" class="btn-ghost" id="inScanBtn">📷 مسح باركود لإضافة صنف</button>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label style="margin-bottom:2px;">أو امسح برقم بجهاز خارجي / اكتب يدويًا</label>
+          <input id="inManualBarcode" placeholder="امسح هنا ثم Enter...">
         </div>
       </div>
 
@@ -451,6 +468,16 @@
         <div class="field">
           <label>الجهة المستلمة (اختياري)</label>
           <input id="outDest" placeholder="القسم / الشخص المستلم...">
+        </div>
+      </div>
+
+      <div class="row" style="align-items:end;background:var(--paper);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+        <div class="field" style="flex:0 0 auto;margin-bottom:0;">
+          <button type="button" class="btn-ghost" id="outScanBtn">📷 مسح باركود لإضافة صنف</button>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label style="margin-bottom:2px;">أو امسح برقم بجهاز خارجي / اكتب يدويًا</label>
+          <input id="outManualBarcode" placeholder="امسح هنا ثم Enter...">
         </div>
       </div>
 
@@ -602,6 +629,14 @@
 
 <div id="printArea"></div>
 
+<div class="stamp-overlay" id="scannerOverlay">
+  <div class="stamp-card" style="max-width:420px;">
+    <video id="scannerVideo" style="width:100%;border-radius:10px;background:#000;" muted playsinline></video>
+    <p id="scannerStatus" style="font-size:13px;color:var(--ink-soft);margin:12px 0;min-height:20px;">وجّه الكاميرا نحو الباركود...</p>
+    <button class="btn-ghost stamp-close" id="closeScannerBtn" style="width:100%;">إغلاق الماسح</button>
+  </div>
+</div>
+
 <div class="stamp-overlay" id="stampOverlay">
   <div class="stamp-card">
     <div class="stamp-ring" id="stampRing">
@@ -616,6 +651,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script src="https://unpkg.com/@zxing/browser@latest"></script>
 <script>
 /* ============================================================
    إعداد الاتصال بـ Supabase — عدّل السطرين التاليين فقط
@@ -623,7 +660,7 @@
    ============================================================ */
 const SUPABASE_URL = 'https://kaxwfvegfpezomvlkqjz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_WXPqJWDFhMOUwPhOsrS3VA_S_ey3IAh';
-  
+
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const STORE_LABELS = { freezer:'فريزر المواد المجمدة', pantry:'مخزن المواد الغذائية', cleaning:'مخزن أدوات النظافة' };
@@ -745,7 +782,7 @@ async function loadDB(){
 
     DB.items = (items||[]).map(i=>({
       id:i.id, store:i.store, name:i.name, unit:i.unit,
-      balance:Number(i.balance), min:Number(i.min_qty)
+      balance:Number(i.balance), min:Number(i.min_qty), barcode:i.barcode || null
     }));
     DB.vouchers = (vouchers||[]).map(v=>({
       id:v.id, type:v.type, number:v.number, date:v.voucher_date,
@@ -792,6 +829,11 @@ function findItemByStoreName(store, name){
   const n = normName(name);
   return DB.items.find(i=> i.store===store && normName(i.name)===n);
 }
+function findItemByBarcode(code){
+  code = (code||'').trim();
+  if(!code) return null;
+  return DB.items.find(i=> i.barcode && i.barcode===code);
+}
 
 document.getElementById('addItemBtn').addEventListener('click', async ()=>{
   if(busy) return;
@@ -800,7 +842,13 @@ document.getElementById('addItemBtn').addEventListener('click', async ()=>{
   const unit = document.getElementById('newItemUnit').value.trim() || 'وحدة';
   const balance = parseFloat(document.getElementById('newItemBalance').value) || 0;
   const min = parseFloat(document.getElementById('newItemMin').value) || 0;
+  const barcode = document.getElementById('newItemBarcode').value.trim() || null;
   if(!name){ alert('الرجاء إدخال اسم الصنف.'); return; }
+
+  if(barcode && DB.items.some(i=> i.barcode===barcode)){
+    alert('هذا الباركود مستخدم مسبقًا لصنف آخر. كل باركود يجب أن يكون مرتبطًا بصنف واحد فقط.');
+    return;
+  }
 
   busy = true;
   const existing = findItemByStoreName(store, name);
@@ -809,12 +857,13 @@ document.getElementById('addItemBtn').addEventListener('click', async ()=>{
       const newBalance = Math.round((existing.balance + balance)*100)/100;
       const payload = { balance:newBalance };
       if(min>0) payload.min_qty = min;
+      if(barcode) payload.barcode = barcode;
       const { error } = await sb.from('items').update(payload).eq('id', existing.id);
       if(error) throw error;
       await loadDB();
       alert('هذا الصنف موجود مسبقًا في '+STORE_LABELS[store]+' باسم "'+existing.name+'" — تم دمج الكمية مع رصيده الحالي بدل إنشاء صنف مكرر. الرصيد الآن: '+fmtNum(newBalance)+' '+existing.unit);
     } else {
-      const { error } = await sb.from('items').insert({ store, name, unit, balance, min_qty:min });
+      const { error } = await sb.from('items').insert({ store, name, unit, balance, min_qty:min, barcode });
       if(error) throw error;
       await loadDB();
     }
@@ -822,8 +871,13 @@ document.getElementById('addItemBtn').addEventListener('click', async ()=>{
     document.getElementById('newItemUnit').value='';
     document.getElementById('newItemBalance').value=0;
     document.getElementById('newItemMin').value=0;
+    document.getElementById('newItemBarcode').value='';
   }catch(e){
-    showErr('تعذرت إضافة الصنف.', e);
+    if(e && e.code === '23505'){
+      alert('هذا الباركود مستخدم مسبقًا لصنف آخر بقاعدة البيانات.');
+    } else {
+      showErr('تعذرت إضافة الصنف.', e);
+    }
   }
   busy = false;
 });
@@ -838,7 +892,7 @@ function renderItemsTable(){
   let list = getItemsByStore(store);
   if(q) list = list.filter(i=> i.name.toLowerCase().includes(q));
   if(list.length===0){
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">📦</div>لا توجد أصناف مطابقة. أضف صنفًا جديدًا من الأعلى.</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">📦</div>لا توجد أصناف مطابقة. أضف صنفًا جديدًا من الأعلى.</div></td></tr>';
     return;
   }
   tbody.innerHTML = list.map(i=>{
@@ -849,6 +903,9 @@ function renderItemsTable(){
       <td>${i.unit}</td>
       <td class="mono ${low?'low-flag':''}">${fmtNum(i.balance)}${low?' ⚠':''}</td>
       <td class="mono">${fmtNum(i.min)}</td>
+      <td>
+        ${i.barcode ? `<span class="mono" style="font-size:12px;">${i.barcode}</span>` : `<button class="btn-ghost btn-sm" data-scan-item="${i.id}">📷 ربط باركود</button>`}
+      </td>
       <td><button class="btn-danger-outline btn-sm" data-del="${i.id}">حذف</button></td>
     </tr>`;
   }).join('');
@@ -865,7 +922,80 @@ function renderItemsTable(){
       busy = false;
     });
   });
+  tbody.querySelectorAll('[data-scan-item]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const itemId = btn.dataset.scanItem;
+      openScanner(async (code)=>{
+        if(DB.items.some(x=> x.barcode===code && x.id!==itemId)){
+          document.getElementById('scannerStatus').textContent = '⚠ هذا الباركود مستخدم لصنف آخر بالفعل.';
+          return;
+        }
+        try{
+          const { error } = await sb.from('items').update({ barcode: code }).eq('id', itemId);
+          if(error) throw error;
+          document.getElementById('scannerStatus').textContent = '✓ تم ربط الباركود بنجاح';
+          await loadDB();
+          setTimeout(closeScanner, 700);
+        }catch(e){
+          document.getElementById('scannerStatus').textContent = e && e.code==='23505'
+            ? '⚠ هذا الباركود مستخدم لصنف آخر بالفعل.'
+            : 'تعذر حفظ الباركود.';
+        }
+      }, 'وجّه الكاميرا نحو باركود هذا الصنف...');
+    });
+  });
 }
+
+/* ---------- BARCODE SCANNER (camera-based, shared by Items + Vouchers) ---------- */
+let zxingReader = null;
+let scannerControls = null;
+let scannerOnResult = null;
+let lastScanCode = null;
+let lastScanTime = 0;
+
+async function openScanner(onResult, statusText){
+  const overlay = document.getElementById('scannerOverlay');
+  const statusEl = document.getElementById('scannerStatus');
+  statusEl.textContent = statusText || 'وجّه الكاميرا نحو الباركود...';
+  overlay.classList.add('show');
+  scannerOnResult = onResult;
+  lastScanCode = null; lastScanTime = 0;
+
+  if(!window.ZXingBrowser){
+    statusEl.textContent = 'تعذر تحميل أداة المسح — تأكد من اتصالك بالإنترنت وحدّث الصفحة.';
+    return;
+  }
+  try{
+    if(!zxingReader) zxingReader = new ZXingBrowser.BrowserMultiFormatReader();
+    const videoEl = document.getElementById('scannerVideo');
+    scannerControls = await zxingReader.decodeFromVideoDevice(undefined, videoEl, (result)=>{
+      if(!result) return;
+      const text = result.getText();
+      const now = Date.now();
+      if(text === lastScanCode && (now - lastScanTime) < 2000) return;
+      lastScanCode = text; lastScanTime = now;
+      if(scannerOnResult) scannerOnResult(text);
+    });
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'تعذر فتح الكاميرا — تأكد إنك سمحت للموقع بالوصول للكاميرا.';
+  }
+}
+
+function closeScanner(){
+  document.getElementById('scannerOverlay').classList.remove('show');
+  if(scannerControls){ try{ scannerControls.stop(); }catch(e){} scannerControls = null; }
+  scannerOnResult = null;
+}
+document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
+
+document.getElementById('scanForNewItemBtn').addEventListener('click', ()=>{
+  openScanner((code)=>{
+    document.getElementById('newItemBarcode').value = code;
+    document.getElementById('scannerStatus').textContent = '✓ تم مسح: ' + code;
+    setTimeout(closeScanner, 700);
+  }, 'وجّه الكاميرا نحو الباركود...');
+});
 
 /* ---------- VOUCHER LINE BUILDERS (per-line store + free-text item) ---------- */
 function storeOptionsHtml(selected){
@@ -991,6 +1121,57 @@ function wirePhotoPreview(inputId, previewId){
 }
 wirePhotoPreview('inPhoto','inPhotoPreview');
 wirePhotoPreview('outPhoto','outPhotoPreview');
+
+/* ---------- BARCODE SCAN → ADD/INCREMENT VOUCHER LINE ---------- */
+function addOrIncrementLineForItem(tableId, item){
+  const rows = document.querySelectorAll('#'+tableId+' tbody tr');
+  for(const tr of rows){
+    const storeSel = tr.querySelector('.line-store');
+    const nameInput = tr.querySelector('.line-name');
+    if(storeSel.value === item.store && normName(nameInput.value) === normName(item.name)){
+      const qtyInput = tr.querySelector('.line-qty');
+      qtyInput.value = (parseFloat(qtyInput.value) || 0) + 1;
+      return;
+    }
+  }
+  addVoucherLineRow(tableId);
+  const newRow = document.querySelector('#'+tableId+' tbody tr:last-child');
+  const storeSel = newRow.querySelector('.line-store');
+  storeSel.value = item.store;
+  storeSel.dispatchEvent(new Event('change'));
+  newRow.querySelector('.line-name').value = item.name;
+  newRow.querySelector('.line-unit').value = item.unit;
+  newRow.querySelector('.line-qty').value = 1;
+}
+
+function wireBarcodeScanForVoucher(scanBtnId, manualInputId, tableId){
+  document.getElementById(scanBtnId).addEventListener('click', ()=>{
+    openScanner((code)=>{
+      const item = findItemByBarcode(code);
+      const statusEl = document.getElementById('scannerStatus');
+      if(item){
+        addOrIncrementLineForItem(tableId, item);
+        statusEl.textContent = '✓ تمت إضافة: ' + item.name;
+      } else {
+        statusEl.textContent = '⚠ لا يوجد صنف مرتبط بهذا الباركود (' + code + ')';
+      }
+    }, 'وجّه الكاميرا نحو باركود الصنف...');
+  });
+
+  const manualInput = document.getElementById(manualInputId);
+  manualInput.addEventListener('keydown', (e)=>{
+    if(e.key !== 'Enter') return;
+    e.preventDefault();
+    const code = manualInput.value.trim();
+    manualInput.value = '';
+    if(!code) return;
+    const item = findItemByBarcode(code);
+    if(item) addOrIncrementLineForItem(tableId, item);
+    else alert('لا يوجد صنف مرتبط بهذا الباركود: ' + code);
+  });
+}
+wireBarcodeScanForVoucher('inScanBtn','inManualBarcode','inLinesTable');
+wireBarcodeScanForVoucher('outScanBtn','outManualBarcode','outLinesTable');
 
 /* ---------- VOUCHER SUBMIT: IN ---------- */
 document.getElementById('inSubmit').addEventListener('click', async ()=>{
