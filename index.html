@@ -463,7 +463,7 @@
 
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
-    <div class="brand-mark" style="margin:0 auto 14px;">عزوز</div>
+    <div class="brand-mark" style="margin:0 auto 14px;">ABZ</div>
     <h1>فنادق سليمان موسى العليان</h1>
     <h1>سجل المخزن العليان الذهبي</h1>
     <p>سجّل دخولك للمتابعة</p>
@@ -935,7 +935,7 @@ let busy = false;
 function fmtNum(n){
   n = Number(n);
   if (Number.isNaN(n)) return '0';
-  return (Math.round(n*100)/100).toLocaleString('ar-EG');
+  return (Math.round(n*100)/100).toLocaleString('en-US');
 }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function fmtDate(d){
@@ -972,7 +972,7 @@ function animateCounters(container){
     const step = Math.max(1, Math.ceil(target/24));
     const tick = ()=>{
       cur = Math.min(target, cur + step);
-      el.textContent = cur.toLocaleString('ar-EG');
+      el.textContent = cur.toLocaleString('en-US');
       if(cur < target) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
