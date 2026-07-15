@@ -463,7 +463,7 @@
 
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
-    <div class="brand-mark" style="margin:0 auto 14px;">ABZ</div>
+    <div class="brand-mark" style="margin:0 auto 14px;">عزوز</div>
     <h1>فنادق سليمان موسى العليان</h1>
     <h1>سجل المخزن العليان الذهبي</h1>
     <p>سجّل دخولك للمتابعة</p>
@@ -827,25 +827,25 @@
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">دمج الأصناف المكررة</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">لو صار عندك نفس الصنف مسجل أكثر من مرة في نفس المخزن (بسبب إدخاله مرتين)، هذا الزر يجمع أرصدتها في صنف واحد ويحذف التكرار، مع الحفاظ على سجل السندات القديم كامل.</p>
-      <button class="btn-ghost" id="mergeDuplicatesBtn" disabled>دمج الأصناف المكررة الآن</button>
+      <button class="btn-ghost" id="mergeDuplicatesBtn">دمج الأصناف المكررة الآن</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">تصفير الأرصدة فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يرجع رصيد كل الأصناف إلى صفر، مع الإبقاء على أسماء الأصناف وسجل السندات كما هو.</p>
-      <button class="btn-ghost" id="resetBalancesBtn" disabled>تصفير كل الأرصدة</button>
+      <button class="btn-ghost" id="resetBalancesBtn">تصفير كل الأرصدة</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف سجل السندات فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل سندات التوريد والصرف من السجل، بدون التأثير على الأصناف أو أرصدتها الحالية.</p>
-      <button class="btn-ghost" id="resetVouchersBtn" disabled>حذف كل السندات</button>
+      <button class="btn-ghost" id="resetVouchersBtn">حذف كل السندات</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف كل الأصناف</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل الأصناف من المخازن الثلاثة. سجل السندات القديم يبقى موجودًا كأرشيف فقط.</p>
-      <button class="btn-danger-outline" id="resetItemsBtn" disabled>حذف كل الأصناف</button>
+      <button class="btn-danger-outline" id="resetItemsBtn">حذف كل الأصناف</button>
     </div>
 
     <div class="card" style="border:1.5px solid var(--danger);">
@@ -1174,6 +1174,7 @@ async function loadDB(){
       id:v.id, type:v.type, number:v.number, date:v.voucher_date,
       party:v.party, notes:v.notes, createdAt:new Date(v.created_at).getTime(),
       photoUrl: v.photo_path || null,
+      signedPhotoUrl: v.signed_photo_path || null,
       lines:(v.voucher_lines||[]).map(l=>({
         itemId:l.item_id, name:l.name, unit:l.unit, qty:Number(l.qty), store:l.store
       }))
@@ -1835,8 +1836,41 @@ function openVoucherDetail(id){
       </tbody>
     </table>
     ${v.photoUrl ? `<img src="${v.photoUrl}" class="voucher-photo" onclick="window.open('${v.photoUrl}','_blank')" title="اضغط لعرض الصورة كاملة"><div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">اضغط على الصورة لعرضها بحجمها الكامل</div>` : ''}
+    <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px;">
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 8px;font-weight:700;">صورة السند الموقّع (بعد الختم والتوقيع)</p>
+      <div id="signedPhotoWrap">
+        ${v.signedPhotoUrl
+          ? `<img src="${v.signedPhotoUrl}" class="voucher-photo" onclick="window.open('${v.signedPhotoUrl}','_blank')" title="اضغط لعرض الصورة كاملة">`
+          : `<div class="empty-state" style="padding:16px;"><div class="icon">🖊️</div>لم تُرفع صورة موقّعة بعد — الطباعة حاليًا تصدر النموذج الفارغ.</div>`}
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="file" id="signedPhotoInput" accept="image/*" style="flex:1;min-width:180px;">
+        <button class="btn-in btn-sm" id="signedPhotoUploadBtn">${v.signedPhotoUrl ? 'استبدال الصورة' : 'رفع الصورة الموقّعة'}</button>
+      </div>
+      <p class="note-hint" style="margin-top:6px;margin-bottom:0;">بعد رفع صورة الورقة المختومة والموقّعة، زر "طباعة / PDF" بيطبع هذي الصورة بدل النموذج الفارغ.</p>
+    </div>
   `;
   document.getElementById('voucherDetailOverlay').classList.add('show');
+
+  const signedBtn = document.getElementById('signedPhotoUploadBtn');
+  signedBtn.addEventListener('click', async ()=>{
+    const input = document.getElementById('signedPhotoInput');
+    const file = input.files[0];
+    if(!file){ alert('اختر صورة الورقة الموقّعة أولاً.'); return; }
+    signedBtn.disabled = true;
+    signedBtn.textContent = 'جارٍ الرفع...';
+    try{
+      const url = await uploadVoucherPhoto(file, 'signed-'+v.type, v.number);
+      const { error } = await sb.from('vouchers').update({ signed_photo_path: url }).eq('id', v.id);
+      if(error) throw error;
+      v.signedPhotoUrl = url;
+      openVoucherDetail(v.id);
+    }catch(e){
+      showErr('تعذر رفع الصورة الموقّعة.', e);
+      signedBtn.disabled = false;
+      signedBtn.textContent = v.signedPhotoUrl ? 'استبدال الصورة' : 'رفع الصورة الموقّعة';
+    }
+  });
 }
 document.getElementById('closeVoucherDetail').addEventListener('click', ()=>{
   document.getElementById('voucherDetailOverlay').classList.remove('show');
@@ -1845,6 +1879,17 @@ document.getElementById('closeVoucherDetail').addEventListener('click', ()=>{
 /* ---------- PRINT / PDF (single voucher) ---------- */
 function printVoucher(v){
   const area = document.getElementById('printArea');
+
+  if(v.signedPhotoUrl){
+    area.innerHTML = `
+      <div style="text-align:center;">
+        <img src="${v.signedPhotoUrl}" style="max-width:100%;height:auto;">
+      </div>
+    `;
+    window.print();
+    return;
+  }
+
   area.innerHTML = `
     <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:18px;">
