@@ -849,15 +849,15 @@
     </div>
 
     <div class="card">
-      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">تصفير الأرصدة فقط</h3>
+      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;" disabled>تصفير الأرصدة فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يرجع رصيد كل الأصناف إلى صفر، مع الإبقاء على أسماء الأصناف وسجل السندات كما هو.</p>
-      <button class="btn-ghost" id="resetBalancesBtn">تصفير كل الأرصدة</button>
+      <button class="btn-ghost" id="resetBalancesBtn" disabled>تصفير كل الأرصدة</button>
     </div>
 
     <div class="card">
-      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف سجل السندات فقط</h3>
+      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;" disabled>حذف سجل السندات فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل سندات التوريد والصرف من السجل، بدون التأثير على الأصناف أو أرصدتها الحالية.</p>
-      <button class="btn-ghost" id="resetVouchersBtn">حذف كل السندات</button>
+      <button class="btn-ghost" id="resetVouchersBtn" disabled>حذف كل السندات</button>
     </div>
 
     <div class="card">
@@ -875,7 +875,7 @@
           <input id="fullResetConfirmInput" placeholder="اكتب هنا للتأكيد...">
         </div>
         <div class="field" style="flex:0 0 auto;">
-          <button class="btn-danger-outline" id="fullResetBtn" disabled>إعادة تعيين كل شيء</button>
+          <button class="btn-danger-outline" id="fullResetBtn" disabled disabled>إعادة تعيين كل شيء</button>
         </div>
       </div>
     </div>
