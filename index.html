@@ -845,17 +845,17 @@
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">دمج الأصناف المكررة</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">لو صار عندك نفس الصنف مسجل أكثر من مرة في نفس المخزن (بسبب إدخاله مرتين)، هذا الزر يجمع أرصدتها في صنف واحد ويحذف التكرار، مع الحفاظ على سجل السندات القديم كامل.</p>
-      <button class="btn-ghost" id="mergeDuplicatesBtn">دمج الأصناف المكررة الآن</button>
+      <button class="btn-ghost" id="mergeDuplicatesBtn" disabled>دمج الأصناف المكررة الآن</button>
     </div>
 
     <div class="card">
-      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;" disabled>تصفير الأرصدة فقط</h3>
+      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">تصفير الأرصدة فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يرجع رصيد كل الأصناف إلى صفر، مع الإبقاء على أسماء الأصناف وسجل السندات كما هو.</p>
       <button class="btn-ghost" id="resetBalancesBtn" disabled>تصفير كل الأرصدة</button>
     </div>
 
     <div class="card">
-      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;" disabled>حذف سجل السندات فقط</h3>
+      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف سجل السندات فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل سندات التوريد والصرف من السجل، بدون التأثير على الأصناف أو أرصدتها الحالية.</p>
       <button class="btn-ghost" id="resetVouchersBtn" disabled>حذف كل السندات</button>
     </div>
@@ -863,7 +863,7 @@
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف كل الأصناف</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل الأصناف من المخازن الثلاثة. سجل السندات القديم يبقى موجودًا كأرشيف فقط.</p>
-      <button class="btn-danger-outline" id="resetItemsBtn">حذف كل الأصناف</button>
+      <button class="btn-danger-outline" id="resetItemsBtn" disabled>حذف كل الأصناف</button>
     </div>
 
     <div class="card" style="border:1.5px solid var(--danger);">
@@ -875,7 +875,7 @@
           <input id="fullResetConfirmInput" placeholder="اكتب هنا للتأكيد...">
         </div>
         <div class="field" style="flex:0 0 auto;">
-          <button class="btn-danger-outline" id="fullResetBtn" disabled disabled>إعادة تعيين كل شيء</button>
+          <button class="btn-danger-outline" id="fullResetBtn" disabled>إعادة تعيين كل شيء</button>
         </div>
       </div>
     </div>
@@ -1315,9 +1315,10 @@ function renderItemsTable(){
         ${i.barcode ? `<span class="mono mono-cell" style="font-size:12px;" title="${i.barcode}">${i.barcode}</span>` : `<button class="btn-ghost btn-sm" data-scan-item="${i.id}">📷 ربط باركود</button>`}
       </td>
       <td>
-        <div style="display:flex;align-items:center;gap:6px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           ${i.photo ? `<img src="${i.photo}" alt="" data-view-item-photo="${i.photo}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;border:1px solid var(--line-strong);cursor:pointer;flex-shrink:0;">` : ''}
           <button class="btn-ghost btn-sm" data-photo-item="${i.id}">${i.photo ? '🔄 استبدال' : '📷 إرفاق صورة'}</button>
+          ${i.photo ? `<button class="btn-danger-outline btn-sm" data-photo-remove="${i.id}">🗑</button>` : ''}
         </div>
       </td>
       <td><button class="btn-danger-outline btn-sm" data-del="${i.id}">حذف</button></td>
@@ -1366,6 +1367,19 @@ function renderItemsTable(){
     btn.addEventListener('click', ()=>{
       itemPhotoTargetId = btn.dataset.photoItem;
       document.getElementById('itemPhotoInput').click();
+    });
+  });
+  tbody.querySelectorAll('[data-photo-remove]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(busy) return;
+      if(!confirm('حذف صورة هذا الصنف؟')) return;
+      busy = true;
+      try{
+        const { error } = await sb.from('items').update({ photo_path: null }).eq('id', btn.dataset.photoRemove);
+        if(error) throw error;
+        await loadDB();
+      }catch(e){ showErr('تعذر حذف الصورة.', e); }
+      busy = false;
     });
   });
 }
