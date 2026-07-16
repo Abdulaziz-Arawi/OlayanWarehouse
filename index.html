@@ -480,7 +480,7 @@
 
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
-    <div class="brand-mark" style="margin:0 auto 14px;">عزوز</div>
+    <div class="brand-mark" style="margin:0 auto 14px;">ABZ</div>
     <h1>فنادق سليمان موسى العليان</h1>
     <h1>سجل المخزن العليان الذهبي</h1>
     <p>سجّل دخولك للمتابعة</p>
@@ -635,15 +635,16 @@
     <div class="table-wrap">
       <table class="data" id="itemsTable">
         <colgroup>
-          <col style="width:26%">
-          <col style="width:16%">
+          <col style="width:20%">
+          <col style="width:13%">
+          <col style="width:8%">
           <col style="width:10%">
-          <col style="width:12%">
-          <col style="width:10%">
-          <col style="width:16%">
+          <col style="width:8%">
+          <col style="width:14%">
+          <col style="width:17%">
           <col style="width:10%">
         </colgroup>
-        <thead><tr><th>الصنف</th><th>المخزن</th><th>الوحدة</th><th>الرصيد الحالي</th><th>الحد الأدنى</th><th>الباركود</th><th></th></tr></thead>
+        <thead><tr><th>الصنف</th><th>المخزن</th><th>الوحدة</th><th>الرصيد الحالي</th><th>الحد الأدنى</th><th>الباركود</th><th>الصورة</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -881,6 +882,8 @@
   </div>
 
 </div>
+
+<input type="file" id="itemPhotoInput" accept="image/*" style="display:none;">
 
 <div id="printArea"></div>
 
@@ -1185,7 +1188,8 @@ async function loadDB(){
 
     DB.items = (items||[]).map(i=>({
       id:i.id, store:i.store, name:i.name, unit:i.unit,
-      balance:Number(i.balance), min:Number(i.min_qty), barcode:i.barcode || null
+      balance:Number(i.balance), min:Number(i.min_qty), barcode:i.barcode || null,
+      photo:i.photo_path || null
     }));
     DB.vouchers = (vouchers||[]).map(v=>({
       id:v.id, type:v.type, number:v.number, date:v.voucher_date,
@@ -1296,7 +1300,7 @@ function renderItemsTable(){
   let list = getItemsByStore(store);
   if(q) list = list.filter(i=> i.name.toLowerCase().includes(q));
   if(list.length===0){
-    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">📦</div>لا توجد أصناف مطابقة. أضف صنفًا جديدًا من الأعلى.</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="icon">📦</div>لا توجد أصناف مطابقة. أضف صنفًا جديدًا من الأعلى.</div></td></tr>';
     return;
   }
   tbody.innerHTML = list.map(i=>{
@@ -1309,6 +1313,12 @@ function renderItemsTable(){
       <td class="mono mono-cell">${fmtNum(i.min)}</td>
       <td>
         ${i.barcode ? `<span class="mono mono-cell" style="font-size:12px;" title="${i.barcode}">${i.barcode}</span>` : `<button class="btn-ghost btn-sm" data-scan-item="${i.id}">📷 ربط باركود</button>`}
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          ${i.photo ? `<img src="${i.photo}" alt="" data-view-item-photo="${i.photo}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;border:1px solid var(--line-strong);cursor:pointer;flex-shrink:0;">` : ''}
+          <button class="btn-ghost btn-sm" data-photo-item="${i.id}">${i.photo ? '🔄 استبدال' : '📷 إرفاق صورة'}</button>
+        </div>
       </td>
       <td><button class="btn-danger-outline btn-sm" data-del="${i.id}">حذف</button></td>
     </tr>`;
@@ -1348,7 +1358,34 @@ function renderItemsTable(){
       }, 'وجّه الكاميرا نحو باركود هذا الصنف...');
     });
   });
+
+  tbody.querySelectorAll('[data-view-item-photo]').forEach(img=>{
+    img.addEventListener('click', ()=> window.open(img.dataset.viewItemPhoto, '_blank'));
+  });
+  tbody.querySelectorAll('[data-photo-item]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      itemPhotoTargetId = btn.dataset.photoItem;
+      document.getElementById('itemPhotoInput').click();
+    });
+  });
 }
+
+let itemPhotoTargetId = null;
+document.getElementById('itemPhotoInput').addEventListener('change', async ()=>{
+  const input = document.getElementById('itemPhotoInput');
+  const file = input.files[0];
+  const itemId = itemPhotoTargetId;
+  input.value = '';
+  if(!file || !itemId) return;
+  try{
+    const url = await uploadVoucherPhoto(file, 'items', itemId);
+    const { error } = await sb.from('items').update({ photo_path: url }).eq('id', itemId);
+    if(error) throw error;
+    await loadDB();
+  }catch(e){
+    showErr('تعذر رفع صورة الصنف.', e);
+  }
+});
 
 /* ---------- BARCODE SCANNER (camera-based, shared by Items + Vouchers) ---------- */
 let zxingReader = null;
