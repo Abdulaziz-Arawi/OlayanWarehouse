@@ -521,6 +521,7 @@
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:14px;">
+      <button class="btn-search-trigger" id="newVoucherBtn" type="button" style="display:none;">➕ سند جديد <kbd>n</kbd></button>
       <button class="btn-search-trigger" id="globalSearchBtn" type="button">🔍 بحث <kbd>/</kbd></button>
       <span class="pill" id="roleBadge" style="display:none;background:rgba(255,255,255,0.14);color:#E7EAF0;"></span>
       <div class="conn-badge"><span class="conn-dot" id="connDot"></span><span id="saveStatus">جارٍ الاتصال...</span></div>
@@ -561,12 +562,16 @@
   <div class="tabs" id="tabs">
     <div class="tab active" data-view="dashboard">لوحة التحكم</div>
     <div class="tab" data-view="items" data-admin-only="1">الأصناف</div>
-    <div class="tab" data-view="voucherIn" data-admin-only="1">سند توريد (وارد)</div>
-    <div class="tab" data-view="voucherOut" data-admin-only="1">سند صرف (صادر)</div>
     <div class="tab" data-view="log">سجل السندات</div>
     <div class="tab" data-view="ledger">كشف حركة صنف</div>
     <div class="tab" data-view="reports">تقارير شهرية</div>
     <div class="tab" data-view="settings" data-admin-only="1">الإعدادات</div>
+  </div>
+
+  <!-- هذي التبويبات ما تظهر بالشريط، بس تفضل موجودة عشان منطق الصلاحيات والتنقل البرمجي (زر/اختصار "سند جديد") -->
+  <div style="display:none" aria-hidden="true">
+    <div class="tab" data-view="voucherIn" data-admin-only="1">سند توريد (وارد)</div>
+    <div class="tab" data-view="voucherOut" data-admin-only="1">سند صرف (صادر)</div>
   </div>
 
   <!-- DASHBOARD -->
@@ -917,19 +922,19 @@
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">تصفير الأرصدة فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يرجع رصيد كل الأصناف إلى صفر، مع الإبقاء على أسماء الأصناف وسجل السندات كما هو.</p>
-      <button class="btn-ghost" id="resetBalancesBtn">تصفير كل الأرصدة</button>
+      <button class="btn-ghost" id="resetBalancesBtn" disabled>تصفير كل الأرصدة</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف سجل السندات فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل سندات التوريد والصرف من السجل، بدون التأثير على الأصناف أو أرصدتها الحالية.</p>
-      <button class="btn-ghost" id="resetVouchersBtn" >حذف كل السندات</button>
+      <button class="btn-ghost" id="resetVouchersBtn" disabled>حذف كل السندات</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف كل الأصناف</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل الأصناف من المخازن الثلاثة. سجل السندات القديم يبقى موجودًا كأرشيف فقط.</p>
-      <button class="btn-danger-outline" id="resetItemsBtn">حذف كل الأصناف</button>
+      <button class="btn-danger-outline" id="resetItemsBtn" disabled>حذف كل الأصناف</button>
     </div>
 
     <div class="card" style="border:1.5px solid var(--danger);">
@@ -950,6 +955,16 @@
 </div>
 
 <input type="file" id="itemPhotoInput" accept="image/*" style="display:none;">
+
+<div class="stamp-overlay" id="newVoucherOverlay">
+  <div class="stamp-card" style="max-width:380px;">
+    <h3 style="margin:0 0 4px;font-family:var(--font-display);">سند جديد</h3>
+    <p style="margin:0 0 18px;color:var(--ink-soft);font-size:13px;">اختر نوع السند اللي تبي تسجّله.</p>
+    <button class="btn-in" id="chooseVoucherIn" style="width:100%;margin-bottom:10px;">📥 سند توريد (وارد)</button>
+    <button class="btn-out" id="chooseVoucherOut" style="width:100%;margin-bottom:10px;">📤 سند صرف (صادر)</button>
+    <button class="btn-ghost stamp-close" id="closeNewVoucher" style="width:100%;">إلغاء</button>
+  </div>
+</div>
 
 <div class="stamp-overlay" id="globalSearchOverlay">
   <div class="stamp-card" style="max-width:560px;text-align:right;max-height:80vh;display:flex;flex-direction:column;padding:20px;">
@@ -1124,10 +1139,13 @@ async function applyRole(){
 
   const badge = document.getElementById('roleBadge');
   const adminTabs = document.querySelectorAll('.tab[data-admin-only]');
+  const newVoucherBtn = document.getElementById('newVoucherBtn');
   if(currentRole === 'admin'){
     badge.style.display = 'none';
     adminTabs.forEach(t=> t.style.display = '');
+    if(newVoucherBtn) newVoucherBtn.style.display = 'flex';
   } else {
+    if(newVoucherBtn) newVoucherBtn.style.display = 'none';
     badge.style.display = 'inline-block';
     badge.textContent = 'مشاهدة فقط';
     adminTabs.forEach(t=> t.style.display = 'none');
@@ -2565,6 +2583,21 @@ function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+document.getElementById('newVoucherBtn').addEventListener('click', ()=>{
+  document.getElementById('newVoucherOverlay').classList.add('show');
+});
+document.getElementById('closeNewVoucher').addEventListener('click', ()=>{
+  document.getElementById('newVoucherOverlay').classList.remove('show');
+});
+document.getElementById('chooseVoucherIn').addEventListener('click', ()=>{
+  document.getElementById('newVoucherOverlay').classList.remove('show');
+  switchToTab('voucherIn');
+});
+document.getElementById('chooseVoucherOut').addEventListener('click', ()=>{
+  document.getElementById('newVoucherOverlay').classList.remove('show');
+  switchToTab('voucherOut');
+});
+
 function openGlobalSearch(){
   const overlay = document.getElementById('globalSearchOverlay');
   const input = document.getElementById('globalSearchInput');
@@ -2659,10 +2692,11 @@ function openShortcutsHelp(){
   const rows = [
     ['/', 'فتح البحث الشامل'],
     ['Ctrl / Cmd + K', 'فتح البحث الشامل (بديل)'],
+    ['n', 'سند جديد (توريد أو صرف)'],
     ['d', 'لوحة التحكم'],
     ['a', 'الأصناف'],
-    ['i', 'سند توريد (وارد)'],
-    ['o', 'سند صرف (صادر)'],
+    ['i', 'سند توريد (وارد) مباشرة'],
+    ['o', 'سند صرف (صادر) مباشرة'],
     ['s', 'سجل السندات'],
     ['l', 'كشف حركة صنف'],
     ['r', 'تقارير شهرية']
@@ -2709,6 +2743,7 @@ document.addEventListener('keydown', (e)=>{
     case '?': openShortcutsHelp(); break;
     case 'd': switchToTab('dashboard'); break;
     case 'a': switchToTab('items'); break;
+    case 'n': document.getElementById('newVoucherOverlay').classList.add('show'); break;
     case 'i': switchToTab('voucherIn'); break;
     case 'o': switchToTab('voucherOut'); break;
     case 's': switchToTab('log'); break;
