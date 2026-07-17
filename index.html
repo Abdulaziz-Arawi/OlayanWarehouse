@@ -2289,7 +2289,10 @@ function itemOptionsHtml(){
   return Object.keys(STORE_LABELS).map(s=>{
     const its = (groups[s]||[]).slice().sort((a,b)=> a.name.localeCompare(b.name,'ar'));
     if(!its.length) return '';
-    return `<optgroup label="${STORE_LABELS[s]}">` + its.map(i=>`<option value="${i.id}">${i.name}</option>`).join('') + `</optgroup>`;
+    return `<optgroup label="${STORE_LABELS[s]}">` + its.map(i=>{
+      const low = i.min>0 && i.balance<=i.min;
+      return `<option value="${i.id}">${i.name} — متوفر: ${fmtNum(i.balance)} ${i.unit}${low?' ⚠':''}</option>`;
+    }).join('') + `</optgroup>`;
   }).join('');
 }
 
@@ -2307,7 +2310,12 @@ function addRequestLineRow(){
   const unitCell = tr.querySelector('.req-item-unit');
   sel.addEventListener('change', ()=>{
     const it = findItem(sel.value);
-    unitCell.textContent = it ? it.unit : '-';
+    if(it){
+      const low = it.min>0 && it.balance<=it.min;
+      unitCell.innerHTML = `${it.unit}<br><span class="mono" style="font-size:11px;color:${low?'var(--warn)':'var(--ink-soft)'};">متوفر: ${fmtNum(it.balance)}${low?' ⚠':''}</span>`;
+    } else {
+      unitCell.textContent = '-';
+    }
   });
   tr.querySelector('.rm-line').addEventListener('click', ()=> tr.remove());
 }
