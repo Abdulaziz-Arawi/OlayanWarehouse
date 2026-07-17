@@ -206,6 +206,7 @@
   .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;font-family:var(--font-display);}
   .pill-in{background:var(--cleaning-soft);color:var(--stamp-in);}
   .pill-out{background:#F6DEDA;color:var(--stamp-out);}
+  .pill-pending{background:var(--pantry-soft);color:var(--pantry);}
   .pill-store-freezer{background:var(--freezer-soft);color:var(--freezer);}
   .pill-store-pantry{background:var(--pantry-soft);color:var(--pantry);}
   .pill-store-cleaning{background:var(--cleaning-soft);color:var(--cleaning);}
@@ -562,6 +563,8 @@
   <div class="tabs" id="tabs">
     <div class="tab active" data-view="dashboard">لوحة التحكم</div>
     <div class="tab" data-view="items" data-admin-only="1">الأصناف</div>
+    <div class="tab" data-view="requests" data-admin-only="1">الطلبات الواردة</div>
+    <div class="tab" data-view="myrequests" data-requester-only="1" style="display:none;">طلباتي</div>
     <div class="tab" data-view="log">سجل السندات</div>
     <div class="tab" data-view="ledger">كشف حركة صنف</div>
     <div class="tab" data-view="reports">تقارير شهرية</div>
@@ -834,6 +837,87 @@
     </div>
   </div>
 
+  <!-- MY REQUESTS (requester / chef) -->
+  <div class="view" id="view-myrequests">
+    <h2 class="section-title">طلباتي</h2>
+    <p class="section-sub">اطلب أي أصناف تحتاجها من المستودع، وتابع حالة طلبك أول بأول.</p>
+
+    <div class="card">
+      <div class="row">
+        <div class="field">
+          <label>رقم الطلب (اختياري — يتولّد تلقائيًا)</label>
+          <input id="reqNumber" placeholder="مثال: 45">
+        </div>
+        <div class="field">
+          <label>التاريخ</label>
+          <input id="reqDate" type="date">
+        </div>
+      </div>
+
+      <div style="overflow-x:auto;">
+      <table class="lines-table" id="reqLinesTable" style="min-width:480px;">
+        <colgroup><col><col style="width:110px"><col style="width:100px"><col style="width:40px"></colgroup>
+        <thead><tr><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      </div>
+      <button class="btn-ghost btn-sm" id="reqAddLine">+ إضافة صنف للطلب</button>
+      <br><br>
+      <p class="note-hint">اختر الصنف من القائمة المسجّلة بالمستودع فقط.</p>
+
+      <div class="field" style="margin-top:14px;">
+        <label>ملاحظات</label>
+        <textarea id="reqNotes" rows="2" placeholder="أي تفاصيل إضافية لأمين المستودع..."></textarea>
+      </div>
+
+      <button class="btn-primary" id="reqSubmit">إرسال الطلب</button>
+    </div>
+
+    <h2 class="section-title" style="font-size:16px;">طلباتي السابقة</h2>
+    <div class="table-wrap">
+      <table class="data" id="myRequestsTable">
+        <colgroup><col style="width:12%"><col style="width:38%"><col style="width:15%"><col style="width:15%"><col style="width:20%"></colgroup>
+        <thead><tr><th>رقم الطلب</th><th>الأصناف</th><th>الحالة</th><th>التاريخ</th><th>سند الصرف</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- INCOMING REQUESTS (admin) -->
+  <div class="view" id="view-requests">
+    <h2 class="section-title">الطلبات الواردة</h2>
+    <p class="section-sub">طلبات الأصناف اللي أرسلها الموظفون — حوّل الطلب لسند صرف مباشرة أو ارفضه.</p>
+
+    <div class="toolbar">
+      <div class="field">
+        <label>الحالة</label>
+        <select id="reqFilterStatus">
+          <option value="all">الكل</option>
+          <option value="pending">قيد الانتظار</option>
+          <option value="fulfilled">تم الصرف</option>
+          <option value="rejected">مرفوض</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data" id="incomingRequestsTable">
+        <colgroup><col style="width:10%"><col style="width:20%"><col style="width:26%"><col style="width:12%"><col style="width:12%"><col style="width:20%"></colgroup>
+        <thead><tr><th>رقم الطلب</th><th>الطالب</th><th>الأصناف</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="stamp-overlay" id="requestDetailOverlay">
+    <div class="stamp-card" style="max-width:480px;text-align:right;max-height:85vh;overflow-y:auto;">
+      <div id="requestDetailBody"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn-ghost stamp-close" id="closeRequestDetail" style="flex:1;">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
   <!-- LEDGER -->
   <div class="view" id="view-ledger">
     <h2 class="section-title">كشف حركة صنف</h2>
@@ -916,25 +1000,25 @@
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">دمج الأصناف المكررة</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">لو صار عندك نفس الصنف مسجل أكثر من مرة في نفس المخزن (بسبب إدخاله مرتين)، هذا الزر يجمع أرصدتها في صنف واحد ويحذف التكرار، مع الحفاظ على سجل السندات القديم كامل.</p>
-      <button class="btn-ghost" id="mergeDuplicatesBtn" disabled>دمج الأصناف المكررة الآن</button>
+      <button class="btn-ghost" id="mergeDuplicatesBtn">دمج الأصناف المكررة الآن</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">تصفير الأرصدة فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يرجع رصيد كل الأصناف إلى صفر، مع الإبقاء على أسماء الأصناف وسجل السندات كما هو.</p>
-      <button class="btn-ghost" id="resetBalancesBtn" disabled>تصفير كل الأرصدة</button>
+      <button class="btn-ghost" id="resetBalancesBtn">تصفير كل الأرصدة</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف سجل السندات فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل سندات التوريد والصرف من السجل، بدون التأثير على الأصناف أو أرصدتها الحالية.</p>
-      <button class="btn-ghost" id="resetVouchersBtn" disabled>حذف كل السندات</button>
+      <button class="btn-ghost" id="resetVouchersBtn">حذف كل السندات</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف كل الأصناف</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل الأصناف من المخازن الثلاثة. سجل السندات القديم يبقى موجودًا كأرشيف فقط.</p>
-      <button class="btn-danger-outline" id="resetItemsBtn" disabled>حذف كل الأصناف</button>
+      <button class="btn-danger-outline" id="resetItemsBtn">حذف كل الأصناف</button>
     </div>
 
     <div class="card" style="border:1.5px solid var(--danger);">
@@ -1046,8 +1130,10 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const STORE_LABELS = { freezer:'فريزر المواد المجمدة', pantry:'مخزن المواد الغذائية', cleaning:'مخزن أدوات النظافة' };
 const STORE_SHORT = { freezer:'الفريزر', pantry:'المواد الغذائية', cleaning:'أدوات النظافة' };
 
-let DB = { items: [], vouchers: [] };
+let DB = { items: [], vouchers: [], requests: [] };
 let busy = false;
+let currentUserEmail = null;
+let fulfillingRequestId = null;
 
 function fmtNum(n){
   n = Number(n);
@@ -1132,6 +1218,7 @@ async function applyRole(){
     if(uid){
       const { data: profile } = await sb.from('profiles').select('role').eq('id', uid).single();
       if(profile && profile.role === 'admin') currentRole = 'admin';
+      else if(profile && profile.role === 'requester') currentRole = 'requester';
     }
   }catch(e){
     console.error('تعذر تحديد صلاحية المستخدم، سيتم افتراض "مشاهد فقط" للأمان.', e);
@@ -1140,22 +1227,31 @@ async function applyRole(){
   const badge = document.getElementById('roleBadge');
   const adminTabs = document.querySelectorAll('.tab[data-admin-only]');
   const newVoucherBtn = document.getElementById('newVoucherBtn');
-  if(currentRole === 'admin'){
-    badge.style.display = 'none';
-    adminTabs.forEach(t=> t.style.display = '');
-    if(newVoucherBtn) newVoucherBtn.style.display = 'flex';
-  } else {
-    if(newVoucherBtn) newVoucherBtn.style.display = 'none';
+  const requesterTab = document.querySelector('.tab[data-requester-only]');
+  const searchBtn = document.getElementById('globalSearchBtn');
+
+  adminTabs.forEach(t=> t.style.display = (currentRole === 'admin') ? '' : 'none');
+  if(newVoucherBtn) newVoucherBtn.style.display = (currentRole === 'admin') ? 'flex' : 'none';
+
+  if(currentRole === 'requester'){
     badge.style.display = 'inline-block';
-    badge.textContent = 'مشاهدة فقط';
-    adminTabs.forEach(t=> t.style.display = 'none');
-    // لو كان مفتوح على تبويب مخصص للمدير قبل ما نطبّق الصلاحية، رجّعه للوحة التحكم
-    const activeTab = document.querySelector('.tab.active');
-    if(activeTab && activeTab.hasAttribute('data-admin-only')){
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-      document.querySelector('.tab[data-view="dashboard"]').classList.add('active');
-      document.getElementById('view-dashboard').classList.add('active');
+    badge.textContent = 'طلب أصناف';
+    document.querySelectorAll('.tab').forEach(t=>{ if(!t.hasAttribute('data-requester-only')) t.style.display = 'none'; });
+    if(requesterTab) requesterTab.style.display = '';
+    if(searchBtn) searchBtn.style.display = 'none';
+    switchToTab('myrequests');
+  } else {
+    if(requesterTab) requesterTab.style.display = 'none';
+    if(currentRole === 'admin'){
+      badge.style.display = 'none';
+    } else {
+      badge.style.display = 'inline-block';
+      badge.textContent = 'مشاهدة فقط';
+      // لو كان مفتوح على تبويب مخصص للمدير قبل ما نطبّق الصلاحية، رجّعه للوحة التحكم
+      const activeTab = document.querySelector('.tab.active');
+      if(activeTab && (activeTab.hasAttribute('data-admin-only') || activeTab.hasAttribute('data-requester-only'))){
+        switchToTab('dashboard');
+      }
     }
   }
 }
@@ -1184,6 +1280,7 @@ async function populateProfile(){
     const { data: userData } = await sb.auth.getUser();
     const user = userData && userData.user ? userData.user : null;
     if(!user) return;
+    currentUserEmail = user.email || null;
     const email = user.email || 'بدون بريد';
     const name = (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || email.split('@')[0];
     const ini = initialsOf(email);
@@ -1202,6 +1299,9 @@ async function populateProfile(){
       if(currentRole === 'admin'){
         roleEl.classList.remove('viewer');
         roleText.textContent = 'مسؤول';
+      } else if(currentRole === 'requester'){
+        roleEl.classList.add('viewer');
+        roleText.textContent = 'طلب أصناف';
       } else {
         roleEl.classList.add('viewer');
         roleText.textContent = 'مشاهد فقط';
@@ -1280,12 +1380,14 @@ async function populateProfile(){
 async function loadDB(){
   setConn('', 'جارٍ التحميل...');
   try{
-    const [{ data: items, error: itemsErr }, { data: vouchers, error: vErr }] = await Promise.all([
+    const [{ data: items, error: itemsErr }, { data: vouchers, error: vErr }, { data: requests, error: rErr }] = await Promise.all([
       sb.from('items').select('*').order('name'),
-      sb.from('vouchers').select('*, voucher_lines(*)').order('created_at', { ascending:false })
+      sb.from('vouchers').select('*, voucher_lines(*)').order('created_at', { ascending:false }),
+      sb.from('material_requests').select('*, material_request_lines(*)').order('created_at', { ascending:false })
     ]);
     if(itemsErr) throw itemsErr;
     if(vErr) throw vErr;
+    if(rErr) throw rErr;
 
     DB.items = (items||[]).map(i=>({
       id:i.id, store:i.store, name:i.name, unit:i.unit,
@@ -1301,6 +1403,19 @@ async function loadDB(){
         itemId:l.item_id, name:l.name, unit:l.unit, qty:Number(l.qty), store:l.store
       }))
     }));
+    DB.requests = (requests||[]).map(r=>{
+      const linkedVoucher = r.fulfilled_voucher_id ? DB.vouchers.find(v=>v.id===r.fulfilled_voucher_id) : null;
+      return {
+        id:r.id, number:r.number, requestedBy:r.requested_by, notes:r.notes, status:r.status,
+        date:r.request_date, createdAt:new Date(r.created_at).getTime(),
+        fulfilledVoucherId:r.fulfilled_voucher_id || null,
+        fulfilledVoucherNumber: linkedVoucher ? linkedVoucher.number : null,
+        lines:(r.material_request_lines||[]).map(l=>({
+          itemId:l.item_id, name:l.name, unit:l.unit, qty:Number(l.qty), store:l.store
+        }))
+      };
+    });
+
     setConn('ok', 'متصل بقاعدة البيانات');
     renderAll();
   }catch(e){
@@ -1925,6 +2040,13 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
     const { error: lErr } = await sb.from('voucher_lines').insert(linesPayload);
     if(lErr) throw lErr;
 
+    if(fulfillingRequestId){
+      try{
+        await sb.from('material_requests').update({ status:'fulfilled', fulfilled_voucher_id: voucher.id }).eq('id', fulfillingRequestId);
+      }catch(reqLinkErr){ console.error('تعذر ربط السند بالطلب الأصلي', reqLinkErr); }
+      fulfillingRequestId = null;
+    }
+
     document.querySelector('#outLinesTable tbody').innerHTML = '';
     document.getElementById('outNumber').value = '';
     document.getElementById('outDest').value = '';
@@ -2158,6 +2280,212 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   }catch(e){
     showErr('تعذر إنشاء ملف Excel.', e);
   }
+});
+
+/* ---------- MATERIAL REQUESTS (طلبات الأصناف) ---------- */
+function itemOptionsHtml(){
+  const groups = {};
+  DB.items.forEach(i=>{ (groups[i.store] = groups[i.store] || []).push(i); });
+  return Object.keys(STORE_LABELS).map(s=>{
+    const its = (groups[s]||[]).slice().sort((a,b)=> a.name.localeCompare(b.name,'ar'));
+    if(!its.length) return '';
+    return `<optgroup label="${STORE_LABELS[s]}">` + its.map(i=>`<option value="${i.id}">${i.name}</option>`).join('') + `</optgroup>`;
+  }).join('');
+}
+
+function addRequestLineRow(){
+  const tbody = document.querySelector('#reqLinesTable tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><select class="req-item-select"><option value="">اختر صنف...</option>${itemOptionsHtml()}</select></td>
+    <td class="unit-col req-item-unit">-</td>
+    <td class="qty-col"><input type="number" min="0" step="any" class="req-item-qty" value="1"></td>
+    <td class="rm-col"><button class="rm-line" title="إزالة">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+  const sel = tr.querySelector('.req-item-select');
+  const unitCell = tr.querySelector('.req-item-unit');
+  sel.addEventListener('change', ()=>{
+    const it = findItem(sel.value);
+    unitCell.textContent = it ? it.unit : '-';
+  });
+  tr.querySelector('.rm-line').addEventListener('click', ()=> tr.remove());
+}
+document.getElementById('reqAddLine').addEventListener('click', addRequestLineRow);
+
+function collectRequestLines(){
+  const lines = [];
+  document.querySelectorAll('#reqLinesTable tbody tr').forEach(tr=>{
+    const itemId = tr.querySelector('.req-item-select').value;
+    const qty = parseFloat(tr.querySelector('.req-item-qty').value);
+    if(itemId && qty>0){
+      const it = findItem(itemId);
+      if(it) lines.push({ itemId: it.id, store: it.store, name: it.name, unit: it.unit, qty });
+    }
+  });
+  return lines;
+}
+
+function requestAutoNumber(){
+  const nums = DB.requests.map(r=> parseInt((r.number||'').replace(/\D/g,''),10)).filter(n=>!Number.isNaN(n));
+  return String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4,'0');
+}
+
+document.getElementById('reqSubmit').addEventListener('click', async ()=>{
+  if(busy) return;
+  const lines = collectRequestLines();
+  if(lines.length===0){ alert('أضف صنفًا واحدًا على الأقل مع كمية أكبر من صفر.'); return; }
+  let number = document.getElementById('reqNumber').value.trim();
+  if(!number) number = requestAutoNumber();
+  if(DB.requests.some(r=> r.number.toLowerCase()===number.toLowerCase())){
+    alert('رقم الطلب "'+number+'" مستخدم مسبقًا.'); return;
+  }
+  const date = document.getElementById('reqDate').value || todayStr();
+  const notes = document.getElementById('reqNotes').value.trim();
+
+  const btn = document.getElementById('reqSubmit');
+  busy = true; btn.disabled = true;
+  try{
+    const { data: reqRow, error: rErr } = await sb.from('material_requests')
+      .insert({ number, requested_by: currentUserEmail, notes: notes||null, status:'pending', request_date: date })
+      .select().single();
+    if(rErr) throw rErr;
+
+    const linesPayload = lines.map(l=>({
+      request_id: reqRow.id, item_id:l.itemId, store:l.store, name:l.name, unit:l.unit, qty:l.qty
+    }));
+    const { error: lErr } = await sb.from('material_request_lines').insert(linesPayload);
+    if(lErr) throw lErr;
+
+    document.querySelector('#reqLinesTable tbody').innerHTML = '';
+    document.getElementById('reqNumber').value = '';
+    document.getElementById('reqNotes').value = '';
+    await loadDB();
+    showStamp('in', number, 'تم إرسال الطلب', 'أمين المستودع بيراجعه ويحوّله لسند صرف قريبًا.');
+  }catch(e){
+    showErr('تعذر إرسال الطلب.', e);
+  }
+  busy = false; btn.disabled = false;
+});
+
+function renderMyRequestsTable(){
+  const tbody = document.querySelector('#myRequestsTable tbody');
+  if(!tbody) return;
+  const mine = DB.requests.filter(r=> r.requestedBy === currentUserEmail).sort((a,b)=> b.createdAt - a.createdAt);
+  if(mine.length===0){
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="icon">📝</div>ما سويت أي طلب لسا.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = mine.map(r=>{
+    const statusClass = r.status==='fulfilled' ? 'pill-in' : (r.status==='rejected' ? 'pill-out' : 'pill-pending');
+    const statusText = r.status==='fulfilled' ? 'تم الصرف' : (r.status==='rejected' ? 'مرفوض' : 'قيد الانتظار');
+    const itemsSummary = r.lines.map(l=> l.name+' ('+fmtNum(l.qty)+')').join('، ');
+    return `<tr>
+      <td class="mono mono-cell">${r.number}</td>
+      <td class="wrap-cell" title="${itemsSummary}">${itemsSummary}</td>
+      <td><span class="pill ${statusClass}">${statusText}</span></td>
+      <td>${fmtDate(r.date)}</td>
+      <td class="mono mono-cell">${r.fulfilledVoucherNumber || '-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderIncomingRequestsTable(){
+  const tbody = document.querySelector('#incomingRequestsTable tbody');
+  if(!tbody) return;
+  const filter = document.getElementById('reqFilterStatus').value;
+  let list = DB.requests.slice().sort((a,b)=> b.createdAt - a.createdAt);
+  if(filter !== 'all') list = list.filter(r=> r.status===filter);
+  if(list.length===0){
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">📥</div>لا توجد طلبات مطابقة.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(r=>{
+    const statusClass = r.status==='fulfilled' ? 'pill-in' : (r.status==='rejected' ? 'pill-out' : 'pill-pending');
+    const statusText = r.status==='fulfilled' ? 'تم الصرف' : (r.status==='rejected' ? 'مرفوض' : 'قيد الانتظار');
+    const itemsSummary = r.lines.map(l=> l.name+' ('+fmtNum(l.qty)+')').join('، ');
+    const actions = r.status==='pending'
+      ? `<button class="btn-in btn-sm" data-fulfill="${r.id}">تحويل لسند صرف</button> <button class="btn-danger-outline btn-sm" data-reject="${r.id}">رفض</button>`
+      : `<button class="btn-ghost btn-sm" data-view-req="${r.id}">عرض</button>`;
+    return `<tr>
+      <td class="mono mono-cell">${r.number}</td>
+      <td class="wrap-cell">${escapeHtml(r.requestedBy||'-')}</td>
+      <td class="wrap-cell" title="${itemsSummary}">${itemsSummary}</td>
+      <td><span class="pill ${statusClass}">${statusText}</span></td>
+      <td>${fmtDate(r.date)}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('[data-fulfill]').forEach(btn=>{
+    btn.addEventListener('click', ()=> fulfillRequest(btn.dataset.fulfill));
+  });
+  tbody.querySelectorAll('[data-reject]').forEach(btn=>{
+    btn.addEventListener('click', ()=> rejectRequest(btn.dataset.reject));
+  });
+  tbody.querySelectorAll('[data-view-req]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openRequestDetail(btn.dataset.viewReq));
+  });
+}
+document.getElementById('reqFilterStatus').addEventListener('change', renderIncomingRequestsTable);
+
+function fulfillRequest(id){
+  const r = DB.requests.find(x=>x.id===id);
+  if(!r) return;
+  fulfillingRequestId = id;
+  document.querySelector('#outLinesTable tbody').innerHTML = '';
+  r.lines.forEach(l=>{
+    addVoucherLineRow('outLinesTable');
+    const row = document.querySelector('#outLinesTable tbody tr:last-child');
+    const storeSel = row.querySelector('.line-store');
+    storeSel.value = l.store;
+    storeSel.dispatchEvent(new Event('change'));
+    row.querySelector('.line-name').value = l.name;
+    row.querySelector('.line-unit').value = l.unit;
+    row.querySelector('.line-qty').value = l.qty;
+  });
+  document.getElementById('outDest').value = r.requestedBy || '';
+  document.getElementById('outNotes').value = 'تنفيذًا للطلب رقم ' + r.number + (r.notes ? ' — ' + r.notes : '');
+  switchToTab('voucherOut');
+}
+
+async function rejectRequest(id){
+  if(busy) return;
+  if(!confirm('تأكيد رفض هذا الطلب؟')) return;
+  busy = true;
+  try{
+    const { error } = await sb.from('material_requests').update({ status:'rejected' }).eq('id', id);
+    if(error) throw error;
+    await loadDB();
+  }catch(e){ showErr('تعذر رفض الطلب.', e); }
+  busy = false;
+}
+
+function openRequestDetail(id){
+  const r = DB.requests.find(x=>x.id===id);
+  if(!r) return;
+  const statusClass = r.status==='fulfilled' ? 'pill-in' : (r.status==='rejected' ? 'pill-out' : 'pill-pending');
+  const statusText = r.status==='fulfilled' ? 'تم الصرف' : (r.status==='rejected' ? 'مرفوض' : 'قيد الانتظار');
+  document.getElementById('requestDetailBody').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span class="pill ${statusClass}" style="font-size:13px;">${statusText}</span>
+      <span class="mono" style="font-weight:700;">${r.number}</span>
+    </div>
+    <p style="margin:4px 0;font-size:13px;"><b>الطالب:</b> ${escapeHtml(r.requestedBy||'-')}</p>
+    <p style="margin:4px 0;font-size:13px;"><b>التاريخ:</b> ${fmtDate(r.date)}</p>
+    ${r.notes ? `<p style="margin:4px 0;font-size:13px;"><b>ملاحظات:</b> ${escapeHtml(r.notes)}</p>` : ''}
+    ${r.fulfilledVoucherNumber ? `<p style="margin:4px 0;font-size:13px;"><b>سند الصرف:</b> <span class="mono">${r.fulfilledVoucherNumber}</span></p>` : ''}
+    <table class="lines-table" style="margin-top:10px;">
+      <thead><tr><th>المخزن</th><th>الصنف</th><th>الكمية</th><th>الوحدة</th></tr></thead>
+      <tbody>
+        ${r.lines.map(l=>`<tr><td><span class="pill pill-store-${l.store}">${STORE_LABELS[l.store]||'-'}</span></td><td>${l.name}</td><td class="mono">${fmtNum(l.qty)}</td><td>${l.unit}</td></tr>`).join('')}
+      </tbody>
+    </table>
+  `;
+  document.getElementById('requestDetailOverlay').classList.add('show');
+}
+document.getElementById('closeRequestDetail').addEventListener('click', ()=>{
+  document.getElementById('requestDetailOverlay').classList.remove('show');
 });
 
 /* ---------- DASHBOARD ---------- */
@@ -2462,6 +2790,8 @@ function renderAll(){
   renderLogTable();
   renderLedgerSelect();
   renderMonthlyReport();
+  renderMyRequestsTable();
+  renderIncomingRequestsTable();
   refreshAllLineDatalists('inLinesTable');
   refreshAllLineDatalists('outLinesTable');
 }
@@ -2469,6 +2799,7 @@ function renderAll(){
 document.getElementById('inDate').value = todayStr();
 document.getElementById('outDate').value = todayStr();
 document.getElementById('reportMonth').value = currentMonthStr();
+document.getElementById('reqDate').value = todayStr();
 
 /* ---------- SETTINGS / RESET ---------- */
 document.getElementById('mergeDuplicatesBtn').addEventListener('click', async ()=>{
