@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>سجل المخزن اجياد</title>
+<title>سجل المخزن العليان الذهبي</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -491,9 +491,9 @@
 
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
-    <div class="brand-mark" style="margin:0 auto 14px;">ABZ</div>
-    <h1>مجموعة فنادق سليمان موسى العليان</h1>
-    <h1>سجل المخزن اجياد</h1>
+    <div class="brand-mark" style="margin:0 auto 14px;">عزوز</div>
+    <h1>فنادق سليمان موسى العليان</h1>
+    <h1>سجل المخزن العليان الذهبي</h1>
     <p>سجّل دخولك للمتابعة</p>
     <div class="field" style="text-align:right;margin-top:18px;">
       <label>البريد الإلكتروني</label>
@@ -514,8 +514,8 @@
     <div class="brand">
       <div class="brand-mark">ABZ</div>
       <div>
-        <h1>مجموعة فنادق سليمان موسى العليان</h1>
-        <h1>سجل المخزن اجياد</h1>
+        <h1>فنادق سليمان موسى العليان</h1>
+        <h1>سجل المخزن العليان الذهبي</h1>
 
         <p>الفريزر · المواد الغذائية · أدوات النظافة</p>
       </div>
@@ -906,39 +906,39 @@
   <!-- SETTINGS -->
   <div class="view" id="view-settings">
     <h2 class="section-title">الإعدادات</h2>
-    <p class="section-sub">إجراءات إعادة التعيين معطّلة حاليًا على موقع هذا الفندق للحماية من أي حذف غير مقصود.</p>
+    <p class="section-sub">بياناتك محفوظة على قاعدة بيانات حقيقية سحابية، ومشتركة بين كل من يسجل دخول. تقدر من هنا تعيد أي جزء إلى وضعه الفارغ من جديد.</p>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">دمج الأصناف المكررة</h3>
-      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">لو صار عندك نفس الصنف مسجل أكثر من مرة في نفس المخزن (بسبب إدخاله مرتين)، هذا الزر يجمع أرصدتها في صنف واحد ويحذف التكرار، مع الحفاظ على سجل السندات القديم كامل. <b>— معطّل حاليًا.</b></p>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">لو صار عندك نفس الصنف مسجل أكثر من مرة في نفس المخزن (بسبب إدخاله مرتين)، هذا الزر يجمع أرصدتها في صنف واحد ويحذف التكرار، مع الحفاظ على سجل السندات القديم كامل.</p>
       <button class="btn-ghost" id="mergeDuplicatesBtn" disabled>دمج الأصناف المكررة الآن</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">تصفير الأرصدة فقط</h3>
-      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يرجع رصيد كل الأصناف إلى صفر، مع الإبقاء على أسماء الأصناف وسجل السندات كما هو. <b>— معطّل حاليًا.</b></p>
-      <button class="btn-ghost" id="resetBalancesBtn" disabled>تصفير كل الأرصدة</button>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يرجع رصيد كل الأصناف إلى صفر، مع الإبقاء على أسماء الأصناف وسجل السندات كما هو.</p>
+      <button class="btn-ghost" id="resetBalancesBtn">تصفير كل الأرصدة</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف سجل السندات فقط</h3>
-      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل سندات التوريد والصرف من السجل، بدون التأثير على الأصناف أو أرصدتها الحالية. <b>— معطّل حاليًا.</b></p>
-      <button class="btn-ghost" id="resetVouchersBtn" disabled>حذف كل السندات</button>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل سندات التوريد والصرف من السجل، بدون التأثير على الأصناف أو أرصدتها الحالية.</p>
+      <button class="btn-ghost" id="resetVouchersBtn" >حذف كل السندات</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف كل الأصناف</h3>
-      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل الأصناف من المخازن الثلاثة. سجل السندات القديم يبقى موجودًا كأرشيف فقط. <b>— معطّل حاليًا.</b></p>
-      <button class="btn-danger-outline" id="resetItemsBtn" disabled>حذف كل الأصناف</button>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل الأصناف من المخازن الثلاثة. سجل السندات القديم يبقى موجودًا كأرشيف فقط.</p>
+      <button class="btn-danger-outline" id="resetItemsBtn">حذف كل الأصناف</button>
     </div>
 
     <div class="card" style="border:1.5px solid var(--danger);">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;color:var(--danger);">إعادة تعيين شاملة</h3>
-      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يحذف كل شيء نهائيًا — كل الأصناف وكل السندات — ويرجع الموقع فاضي تمامًا كأول مرة. <b>— معطّل حاليًا على هذا الموقع.</b></p>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يحذف كل شيء نهائيًا — كل الأصناف وكل السندات — ويرجع الموقع فاضي تمامًا كأول مرة. هذا الإجراء لا يمكن التراجع عنه.</p>
       <label>للتأكيد، اكتب كلمة "<b>حذف الكل</b>" بالضبط في الخانة:</label>
       <div class="row" style="align-items:end;">
         <div class="field" style="flex:1;min-width:180px;">
-          <input id="fullResetConfirmInput" placeholder="هذا الإجراء معطّل حاليًا" disabled>
+          <input id="fullResetConfirmInput" placeholder="اكتب هنا للتأكيد...">
         </div>
         <div class="field" style="flex:0 0 auto;">
           <button class="btn-danger-outline" id="fullResetBtn" disabled>إعادة تعيين كل شيء</button>
@@ -1023,8 +1023,8 @@
    إعداد الاتصال بـ Supabase — عدّل السطرين التاليين فقط
    خذهم من: لوحة تحكم مشروعك بـ Supabase > Settings > API
    ============================================================ */
-const SUPABASE_URL = 'https://biylhjskdtuhurqrintv.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_RMw56deKwUzUCHgk4ltpLA_bsgn1kHO';
+const SUPABASE_URL = 'https://kaxwfvegfpezomvlkqjz.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_WXPqJWDFhMOUwPhOsrS3VA_S_ey3IAh';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
