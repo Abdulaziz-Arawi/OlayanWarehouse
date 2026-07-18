@@ -592,11 +592,11 @@
     <div class="tab active" data-view="dashboard">لوحة التحكم</div>
     <div class="tab" data-view="items" data-admin-only="1">الأصناف</div>
     <div class="tab" data-view="requests" data-admin-only="1">الطلبات الواردة</div>
+    <div class="tab" data-view="invoices" data-admin-only="1">أرشيف الفواتير</div>
     <div class="tab" data-view="myrequests" data-requester-only="1" style="display:none;">طلباتي</div>
     <div class="tab" data-view="log">سجل السندات</div>
     <div class="tab" data-view="ledger">كشف حركة صنف</div>
     <div class="tab" data-view="reports">تقارير شهرية</div>
-    <div class="tab" data-view="invoices" data-admin-only="1">أرشيف الفواتير</div>
     <div class="tab" data-view="settings" data-admin-only="1">الإعدادات</div>
   </div>
 
@@ -972,9 +972,15 @@
           <label>التاريخ</label>
           <input type="date" id="invDate">
         </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>اسم المورد / الجهة</label>
+          <input id="invParty" placeholder="مثال: سهم كنان للأغذية">
+        </div>
         <div class="field">
           <label>ملاحظة (اختياري)</label>
-          <input id="invNote" placeholder="مثال: فاتورة مورد الأغذية...">
+          <input id="invNote" placeholder="أي تفاصيل إضافية...">
         </div>
       </div>
       <div class="field">
@@ -997,6 +1003,9 @@
       <div class="field">
         <label>بحث برقم الفاتورة / السند أو الملاحظة</label>
         <input id="invSearch" placeholder="مثال: 4488">
+      </div>
+      <div class="field" style="flex:0 0 auto;align-self:end;">
+        <button class="btn-ghost" id="printAllInvoicesBtn">🖨 طباعة الكل (الظاهر حاليًا)</button>
       </div>
     </div>
 
@@ -1103,7 +1112,7 @@
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف كل الأصناف</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل الأصناف من المخازن الثلاثة. سجل السندات القديم يبقى موجودًا كأرشيف فقط.</p>
-      <button class="btn-danger-outline" id="resetItemsBtn" disabled>حذف كل الأصناف</button>
+      <button class="btn-danger-outline" id="resetItemsBtn">حذف كل الأصناف</button>
     </div>
 
     <div class="card" style="border:1.5px solid var(--danger);">
@@ -1531,7 +1540,7 @@ async function loadDB(){
     });
 
     DB.invoices = (invoices||[]).map(v=>({
-      id:v.id, number:v.number, note:v.note, photoUrl:v.photo_path || null,
+      id:v.id, number:v.number, note:v.note, party:v.party || null, photoUrl:v.photo_path || null,
       docType: v.doc_type || 'supplier',
       docDate: v.doc_date || new Date(v.created_at).toISOString().slice(0,10),
       createdAt:new Date(v.created_at).getTime()
@@ -2341,7 +2350,7 @@ function printVoucher(v){
     <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:18px;">
         <div>
-          <div style="font-weight:800;font-size:20px;">مجموعة العليان</div>
+          <div style="font-weight:800;font-size:20px;">فنادق سليمان موسى العليان</div>
           <div style="font-size:13px;color:#555;margin-top:2px;">${v.type==='in'?'سند توريد (وارد)':'سند صرف (صادر)'}</div>
         </div>
         <div style="text-align:left;">
@@ -2652,6 +2661,7 @@ document.getElementById('invSubmit').addEventListener('click', async ()=>{
   const docType = document.getElementById('invType').value;
   const number = document.getElementById('invNumber').value.trim();
   const date = document.getElementById('invDate').value || todayStr();
+  const party = document.getElementById('invParty').value.trim();
   const note = document.getElementById('invNote').value.trim();
   const photoFile = document.getElementById('invPhoto').files[0] || null;
   if(!number){ alert('الرجاء إدخال رقم الفاتورة أو السند.'); return; }
@@ -2661,10 +2671,11 @@ document.getElementById('invSubmit').addEventListener('click', async ()=>{
   busy = true; btn.disabled = true;
   try{
     const photoUrl = await uploadVoucherPhoto(photoFile, 'invoices', number);
-    const { error } = await sb.from('invoice_archive').insert({ number, note: note||null, photo_path: photoUrl, doc_type: docType, doc_date: date });
+    const { error } = await sb.from('invoice_archive').insert({ number, note: note||null, party: party||null, photo_path: photoUrl, doc_type: docType, doc_date: date });
     if(error) throw error;
 
     document.getElementById('invNumber').value = '';
+    document.getElementById('invParty').value = '';
     document.getElementById('invNote').value = '';
     document.getElementById('invDate').value = todayStr();
     document.getElementById('invPhoto').value = '';
@@ -2690,10 +2701,57 @@ function invoiceRowHtml(v){
     <td class="mono mono-cell">${v.number}</td>
     <td><input type="date" class="mono inv-date-input" data-inv-date="${v.id}" value="${v.docDate}" style="padding:6px 8px;font-size:12.5px;"></td>
     <td>${v.photoUrl ? `<img src="${v.photoUrl}" alt="" data-view-inv-photo="${v.photoUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid var(--line-strong);cursor:pointer;">` : '-'}</td>
-    <td class="wrap-cell">${escapeHtml(v.note||'-')}</td>
-    <td><button class="btn-danger-outline btn-sm" data-inv-del="${v.id}">حذف</button></td>
+    <td class="wrap-cell">${v.party ? `<b>${escapeHtml(v.party)}</b>` : ''}${(v.party && v.note) ? '<br>' : ''}${v.note ? `<span style="color:var(--ink-soft);font-size:12px;">${escapeHtml(v.note)}</span>` : ''}${(!v.party && !v.note) ? '-' : ''}</td>
+    <td>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn-ghost btn-sm" data-inv-print="${v.id}">🖨 PDF</button>
+        <button class="btn-danger-outline btn-sm" data-inv-del="${v.id}">حذف</button>
+      </div>
+    </td>
   </tr>`;
 }
+
+function invoicePrintBlockHtml(v){
+  const typeText = v.docType === 'issue' ? 'سند صرف' : 'فاتورة مورد';
+  return `
+    <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:16px;">
+        <div>
+          <div style="font-weight:800;font-size:22px;">${v.party ? escapeHtml(v.party) : 'فنادق سليمان موسى العليان'}</div>
+          <div style="font-size:13px;color:#555;margin-top:2px;">${typeText}${v.note ? ' — ' + escapeHtml(v.note) : ''}</div>
+        </div>
+        <div style="text-align:left;">
+          <div style="font-family:monospace;font-weight:700;font-size:19px;">${v.number}</div>
+          <div style="font-size:12px;color:#555;">${fmtDate(v.docDate)}</div>
+        </div>
+      </div>
+      ${v.photoUrl ? `<div style="text-align:center;"><img src="${v.photoUrl}" style="max-width:100%;max-height:900px;border:1px solid #ccc;border-radius:6px;"></div>` : '<p>لا توجد صورة مرفقة.</p>'}
+    </div>
+  `;
+}
+
+function printInvoice(v){
+  const area = document.getElementById('printArea');
+  area.innerHTML = invoicePrintBlockHtml(v);
+  window.print();
+}
+
+function printAllInvoices(){
+  const filterType = document.getElementById('invFilterType').value;
+  const q = document.getElementById('invSearch').value.trim().toLowerCase();
+  let list = DB.invoices.slice().sort((a,b)=> (b.docDate||'').localeCompare(a.docDate||''));
+  if(filterType !== 'all') list = list.filter(v=> v.docType === filterType);
+  if(q) list = list.filter(v=> v.number.toLowerCase().includes(q) || (v.note||'').toLowerCase().includes(q) || (v.party||'').toLowerCase().includes(q));
+
+  if(list.length===0){ alert('لا توجد فواتير مطابقة للطباعة.'); return; }
+
+  const area = document.getElementById('printArea');
+  area.innerHTML = list.map((v,idx)=>
+    `<div style="${idx>0 ? 'break-before:page;' : ''}padding-top:${idx>0 ? '20px' : '0'};">${invoicePrintBlockHtml(v)}</div>`
+  ).join('');
+  window.print();
+}
+document.getElementById('printAllInvoicesBtn').addEventListener('click', printAllInvoices);
 
 function renderInvoicesTable(){
   const container = document.getElementById('invoicesGroups');
@@ -2724,8 +2782,8 @@ function renderInvoicesTable(){
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 12px;">${monthLabel} <span class="mono" style="font-size:12px;color:var(--ink-soft);font-weight:400;">(${groups[key].length})</span></h3>
       <div class="table-wrap">
         <table class="data">
-          <colgroup><col style="width:14%"><col style="width:14%"><col style="width:16%"><col style="width:12%"><col style="width:30%"><col style="width:14%"></colgroup>
-          <thead><tr><th>النوع</th><th>الرقم</th><th>التاريخ</th><th>الصورة</th><th>ملاحظة</th><th></th></tr></thead>
+          <colgroup><col style="width:13%"><col style="width:12%"><col style="width:15%"><col style="width:10%"><col style="width:26%"><col style="width:24%"></colgroup>
+          <thead><tr><th>النوع</th><th>الرقم</th><th>التاريخ</th><th>الصورة</th><th>المورد / ملاحظة</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -2746,6 +2804,12 @@ function renderInvoicesTable(){
         await loadDB();
       }catch(e){ showErr('تعذر حذف الفاتورة.', e); }
       busy = false;
+    });
+  });
+  container.querySelectorAll('[data-inv-print]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const v = DB.invoices.find(x=>x.id===btn.dataset.invPrint);
+      if(v) printInvoice(v);
     });
   });
   container.querySelectorAll('[data-inv-date]').forEach(inp=>{
