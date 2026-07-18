@@ -969,6 +969,10 @@
           <input id="invNumber" placeholder="مثال: 4488">
         </div>
         <div class="field">
+          <label>التاريخ</label>
+          <input type="date" id="invDate">
+        </div>
+        <div class="field">
           <label>ملاحظة (اختياري)</label>
           <input id="invNote" placeholder="مثال: فاتورة مورد الأغذية...">
         </div>
@@ -996,13 +1000,7 @@
       </div>
     </div>
 
-    <div class="table-wrap">
-      <table class="data" id="invoicesTable">
-        <colgroup><col style="width:14%"><col style="width:14%"><col style="width:14%"><col style="width:12%"><col style="width:32%"><col style="width:14%"></colgroup>
-        <thead><tr><th>النوع</th><th>الرقم</th><th>تاريخ الأرشفة</th><th>الصورة</th><th>ملاحظة</th><th></th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
+    <div id="invoicesGroups"></div>
   </div>
 
   <!-- LEDGER -->
@@ -1535,6 +1533,7 @@ async function loadDB(){
     DB.invoices = (invoices||[]).map(v=>({
       id:v.id, number:v.number, note:v.note, photoUrl:v.photo_path || null,
       docType: v.doc_type || 'supplier',
+      docDate: v.doc_date || new Date(v.created_at).toISOString().slice(0,10),
       createdAt:new Date(v.created_at).getTime()
     }));
 
@@ -2652,6 +2651,7 @@ document.getElementById('invSubmit').addEventListener('click', async ()=>{
   if(busy) return;
   const docType = document.getElementById('invType').value;
   const number = document.getElementById('invNumber').value.trim();
+  const date = document.getElementById('invDate').value || todayStr();
   const note = document.getElementById('invNote').value.trim();
   const photoFile = document.getElementById('invPhoto').files[0] || null;
   if(!number){ alert('الرجاء إدخال رقم الفاتورة أو السند.'); return; }
@@ -2661,11 +2661,12 @@ document.getElementById('invSubmit').addEventListener('click', async ()=>{
   busy = true; btn.disabled = true;
   try{
     const photoUrl = await uploadVoucherPhoto(photoFile, 'invoices', number);
-    const { error } = await sb.from('invoice_archive').insert({ number, note: note||null, photo_path: photoUrl, doc_type: docType });
+    const { error } = await sb.from('invoice_archive').insert({ number, note: note||null, photo_path: photoUrl, doc_type: docType, doc_date: date });
     if(error) throw error;
 
     document.getElementById('invNumber').value = '';
     document.getElementById('invNote').value = '';
+    document.getElementById('invDate').value = todayStr();
     document.getElementById('invPhoto').value = '';
     document.getElementById('invPhotoPreview').style.display = 'none';
     document.getElementById('invPhotoPreview').innerHTML = '';
@@ -2679,35 +2680,62 @@ document.getElementById('invSubmit').addEventListener('click', async ()=>{
 document.getElementById('invFilterType').addEventListener('change', renderInvoicesTable);
 document.getElementById('invSearch').addEventListener('input', renderInvoicesTable);
 
+const ARABIC_MONTH_NAMES = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+function invoiceRowHtml(v){
+  const typeText = v.docType === 'issue' ? 'سند صرف' : 'فاتورة مورد';
+  const typeClass = v.docType === 'issue' ? 'pill-inv-issue' : 'pill-inv-supplier';
+  return `<tr>
+    <td><span class="pill ${typeClass}">${typeText}</span></td>
+    <td class="mono mono-cell">${v.number}</td>
+    <td><input type="date" class="mono inv-date-input" data-inv-date="${v.id}" value="${v.docDate}" style="padding:6px 8px;font-size:12.5px;"></td>
+    <td>${v.photoUrl ? `<img src="${v.photoUrl}" alt="" data-view-inv-photo="${v.photoUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid var(--line-strong);cursor:pointer;">` : '-'}</td>
+    <td class="wrap-cell">${escapeHtml(v.note||'-')}</td>
+    <td><button class="btn-danger-outline btn-sm" data-inv-del="${v.id}">حذف</button></td>
+  </tr>`;
+}
+
 function renderInvoicesTable(){
-  const tbody = document.querySelector('#invoicesTable tbody');
+  const container = document.getElementById('invoicesGroups');
   const filterType = document.getElementById('invFilterType').value;
   const q = document.getElementById('invSearch').value.trim().toLowerCase();
-  let list = DB.invoices.slice().sort((a,b)=> b.createdAt - a.createdAt);
+  let list = DB.invoices.slice().sort((a,b)=> (b.docDate||'').localeCompare(a.docDate||''));
   if(filterType !== 'all') list = list.filter(v=> v.docType === filterType);
   if(q) list = list.filter(v=> v.number.toLowerCase().includes(q) || (v.note||'').toLowerCase().includes(q));
 
   if(list.length===0){
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">🧾</div>لا توجد فواتير مؤرشفة مطابقة.</div></td></tr>';
+    container.innerHTML = '<div class="empty-state"><div class="icon">🧾</div>لا توجد فواتير مؤرشفة مطابقة.</div>';
     return;
   }
-  tbody.innerHTML = list.map(v=>{
-    const typeText = v.docType === 'issue' ? 'سند صرف' : 'فاتورة مورد';
-    const typeClass = v.docType === 'issue' ? 'pill-inv-issue' : 'pill-inv-supplier';
-    return `<tr>
-      <td><span class="pill ${typeClass}">${typeText}</span></td>
-      <td class="mono mono-cell">${v.number}</td>
-      <td>${fmtDate(new Date(v.createdAt).toISOString().slice(0,10))}</td>
-      <td>${v.photoUrl ? `<img src="${v.photoUrl}" alt="" data-view-inv-photo="${v.photoUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid var(--line-strong);cursor:pointer;">` : '-'}</td>
-      <td class="wrap-cell">${escapeHtml(v.note||'-')}</td>
-      <td><button class="btn-danger-outline btn-sm" data-inv-del="${v.id}">حذف</button></td>
-    </tr>`;
+
+  const groups = {};
+  list.forEach(v=>{
+    const key = (v.docDate || '').slice(0,7); // YYYY-MM
+    if(!groups[key]) groups[key] = [];
+    groups[key].push(v);
+  });
+  const monthKeys = Object.keys(groups).sort((a,b)=> b.localeCompare(a));
+
+  container.innerHTML = monthKeys.map(key=>{
+    const [y, m] = key.split('-').map(Number);
+    const monthLabel = (ARABIC_MONTH_NAMES[m-1] || '') + ' ' + y;
+    const rows = groups[key].map(invoiceRowHtml).join('');
+    return `<div class="card">
+      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 12px;">${monthLabel} <span class="mono" style="font-size:12px;color:var(--ink-soft);font-weight:400;">(${groups[key].length})</span></h3>
+      <div class="table-wrap">
+        <table class="data">
+          <colgroup><col style="width:14%"><col style="width:14%"><col style="width:16%"><col style="width:12%"><col style="width:30%"><col style="width:14%"></colgroup>
+          <thead><tr><th>النوع</th><th>الرقم</th><th>التاريخ</th><th>الصورة</th><th>ملاحظة</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
   }).join('');
 
-  tbody.querySelectorAll('[data-view-inv-photo]').forEach(img=>{
+  container.querySelectorAll('[data-view-inv-photo]').forEach(img=>{
     img.addEventListener('click', ()=> window.open(img.dataset.viewInvPhoto, '_blank'));
   });
-  tbody.querySelectorAll('[data-inv-del]').forEach(btn=>{
+  container.querySelectorAll('[data-inv-del]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       if(busy) return;
       if(!confirm('حذف هذه الفاتورة من الأرشيف؟')) return;
@@ -2717,6 +2745,20 @@ function renderInvoicesTable(){
         if(error) throw error;
         await loadDB();
       }catch(e){ showErr('تعذر حذف الفاتورة.', e); }
+      busy = false;
+    });
+  });
+  container.querySelectorAll('[data-inv-date]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      if(busy) return;
+      const newDate = inp.value;
+      if(!newDate) return;
+      busy = true;
+      try{
+        const { error } = await sb.from('invoice_archive').update({ doc_date: newDate }).eq('id', inp.dataset.invDate);
+        if(error) throw error;
+        await loadDB();
+      }catch(e){ showErr('تعذر تحديث التاريخ.', e); }
       busy = false;
     });
   });
@@ -3035,6 +3077,7 @@ document.getElementById('inDate').value = todayStr();
 document.getElementById('outDate').value = todayStr();
 document.getElementById('reportMonth').value = currentMonthStr();
 document.getElementById('reqDate').value = todayStr();
+document.getElementById('invDate').value = todayStr();
 
 /* ---------- SETTINGS / RESET ---------- */
 document.getElementById('mergeDuplicatesBtn').addEventListener('click', async ()=>{
