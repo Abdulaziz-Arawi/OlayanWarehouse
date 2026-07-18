@@ -993,14 +993,6 @@
 
     <div class="toolbar">
       <div class="field">
-        <label>النوع</label>
-        <select id="invFilterType">
-          <option value="all">الكل</option>
-          <option value="supplier">فواتير الموردين</option>
-          <option value="issue">سندات الصرف</option>
-        </select>
-      </div>
-      <div class="field">
         <label>من تاريخ</label>
         <input type="date" id="invFilterFrom">
       </div>
@@ -1015,12 +1007,19 @@
         <label>بحث برقم الفاتورة / السند أو الملاحظة</label>
         <input id="invSearch" placeholder="مثال: 4488">
       </div>
-      <div class="field" style="flex:0 0 auto;align-self:end;">
-        <button class="btn-ghost" id="printAllInvoicesBtn">🖨 طباعة الكل (الظاهر حاليًا)</button>
-      </div>
     </div>
 
-    <div id="invoicesGroups"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 0 10px;flex-wrap:wrap;gap:8px;">
+      <h2 class="section-title" style="font-size:16px;margin:0;">📥 فواتير الموردين</h2>
+      <button class="btn-ghost btn-sm" id="printSupplierAllBtn">🖨 طباعة كل فواتير الموردين (الظاهرة حاليًا)</button>
+    </div>
+    <div id="invoicesGroupsSupplier"></div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:28px 0 10px;flex-wrap:wrap;gap:8px;">
+      <h2 class="section-title" style="font-size:16px;margin:0;">📤 سندات الصرف</h2>
+      <button class="btn-ghost btn-sm" id="printIssueAllBtn">🖨 طباعة كل سندات الصرف (الظاهرة حاليًا)</button>
+    </div>
+    <div id="invoicesGroupsIssue"></div>
   </div>
 
   <!-- LEDGER -->
@@ -2699,7 +2698,6 @@ document.getElementById('invSubmit').addEventListener('click', async ()=>{
   busy = false; btn.disabled = false;
 });
 
-document.getElementById('invFilterType').addEventListener('change', renderInvoicesTable);
 document.getElementById('invFilterFrom').addEventListener('change', renderInvoicesTable);
 document.getElementById('invFilterTo').addEventListener('change', renderInvoicesTable);
 document.getElementById('invClearDatesBtn').addEventListener('click', ()=>{
@@ -2763,30 +2761,31 @@ function printInvoiceList(list){
   window.print();
 }
 
-function printAllInvoices(){
-  printInvoiceList(getFilteredInvoices());
-}
-document.getElementById('printAllInvoicesBtn').addEventListener('click', printAllInvoices);
+document.getElementById('printSupplierAllBtn').addEventListener('click', ()=>{
+  printInvoiceList(getFilteredInvoices('supplier'));
+});
+document.getElementById('printIssueAllBtn').addEventListener('click', ()=>{
+  printInvoiceList(getFilteredInvoices('issue'));
+});
 
-function getFilteredInvoices(){
-  const filterType = document.getElementById('invFilterType').value;
+function getFilteredInvoices(docType){
   const from = document.getElementById('invFilterFrom').value;
   const to = document.getElementById('invFilterTo').value;
   const q = document.getElementById('invSearch').value.trim().toLowerCase();
   let list = DB.invoices.slice().sort((a,b)=> (b.docDate||'').localeCompare(a.docDate||''));
-  if(filterType !== 'all') list = list.filter(v=> v.docType === filterType);
+  if(docType) list = list.filter(v=> v.docType === docType);
   if(from) list = list.filter(v=> (v.docDate||'') >= from);
   if(to) list = list.filter(v=> (v.docDate||'') <= to);
   if(q) list = list.filter(v=> v.number.toLowerCase().includes(q) || (v.note||'').toLowerCase().includes(q) || (v.party||'').toLowerCase().includes(q));
   return list;
 }
 
-function renderInvoicesTable(){
-  const container = document.getElementById('invoicesGroups');
-  let list = getFilteredInvoices();
+function renderInvoiceBox(containerId, docType){
+  const container = document.getElementById(containerId);
+  const list = getFilteredInvoices(docType);
 
   if(list.length===0){
-    container.innerHTML = '<div class="empty-state"><div class="icon">🧾</div>لا توجد فواتير مؤرشفة مطابقة.</div>';
+    container.innerHTML = '<div class="empty-state"><div class="icon">🧾</div>لا توجد فواتير مطابقة بهذا القسم.</div>';
     return;
   }
 
@@ -2805,7 +2804,7 @@ function renderInvoicesTable(){
     return `<div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
         <h3 style="font-family:var(--font-display);font-size:15px;margin:0;">${monthLabel} <span class="mono" style="font-size:12px;color:var(--ink-soft);font-weight:400;">(${groups[key].length})</span></h3>
-        <button class="btn-ghost btn-sm" data-print-month="${key}">🖨 طباعة هذا الشهر</button>
+        <button class="btn-ghost btn-sm" data-print-month="${key}" data-print-month-type="${docType}">🖨 طباعة هذا الشهر</button>
       </div>
       <div class="table-wrap">
         <table class="data">
@@ -2842,7 +2841,7 @@ function renderInvoicesTable(){
   container.querySelectorAll('[data-print-month]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const key = btn.dataset.printMonth;
-      const monthList = getFilteredInvoices().filter(v=> (v.docDate||'').slice(0,7) === key);
+      const monthList = getFilteredInvoices(btn.dataset.printMonthType).filter(v=> (v.docDate||'').slice(0,7) === key);
       printInvoiceList(monthList);
     });
   });
@@ -2860,6 +2859,11 @@ function renderInvoicesTable(){
       busy = false;
     });
   });
+}
+
+function renderInvoicesTable(){
+  renderInvoiceBox('invoicesGroupsSupplier', 'supplier');
+  renderInvoiceBox('invoicesGroupsIssue', 'issue');
 }
 
 /* ---------- DASHBOARD ---------- */
