@@ -592,11 +592,11 @@
     <div class="tab active" data-view="dashboard">لوحة التحكم</div>
     <div class="tab" data-view="items" data-admin-only="1">الأصناف</div>
     <div class="tab" data-view="requests" data-admin-only="1">الطلبات الواردة</div>
+    <div class="tab" data-view="invoices" data-admin-only="1">أرشيف الفواتير</div>
     <div class="tab" data-view="myrequests" data-requester-only="1" style="display:none;">طلباتي</div>
     <div class="tab" data-view="log">سجل السندات</div>
     <div class="tab" data-view="ledger">كشف حركة صنف</div>
     <div class="tab" data-view="reports">تقارير شهرية</div>
-    <div class="tab" data-view="invoices" data-admin-only="1">أرشيف الفواتير</div>
     <div class="tab" data-view="settings" data-admin-only="1">الإعدادات</div>
   </div>
 
@@ -1001,6 +1001,17 @@
         </select>
       </div>
       <div class="field">
+        <label>من تاريخ</label>
+        <input type="date" id="invFilterFrom">
+      </div>
+      <div class="field">
+        <label>إلى تاريخ</label>
+        <input type="date" id="invFilterTo">
+      </div>
+      <div class="field" style="flex:0 0 auto;align-self:end;">
+        <button class="btn-ghost btn-sm" id="invClearDatesBtn">كل التواريخ</button>
+      </div>
+      <div class="field">
         <label>بحث برقم الفاتورة / السند أو الملاحظة</label>
         <input id="invSearch" placeholder="مثال: 4488">
       </div>
@@ -1112,7 +1123,7 @@
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف كل الأصناف</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل الأصناف من المخازن الثلاثة. سجل السندات القديم يبقى موجودًا كأرشيف فقط.</p>
-      <button class="btn-danger-outline" id="resetItemsBtn">حذف كل الأصناف</button>
+      <button class="btn-danger-outline" id="resetItemsBtn" disabled>حذف كل الأصناف</button>
     </div>
 
     <div class="card" style="border:1.5px solid var(--danger);">
@@ -2689,6 +2700,13 @@ document.getElementById('invSubmit').addEventListener('click', async ()=>{
 });
 
 document.getElementById('invFilterType').addEventListener('change', renderInvoicesTable);
+document.getElementById('invFilterFrom').addEventListener('change', renderInvoicesTable);
+document.getElementById('invFilterTo').addEventListener('change', renderInvoicesTable);
+document.getElementById('invClearDatesBtn').addEventListener('click', ()=>{
+  document.getElementById('invFilterFrom').value = '';
+  document.getElementById('invFilterTo').value = '';
+  renderInvoicesTable();
+});
 document.getElementById('invSearch').addEventListener('input', renderInvoicesTable);
 
 const ARABIC_MONTH_NAMES = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
@@ -2736,30 +2754,36 @@ function printInvoice(v){
   window.print();
 }
 
-function printAllInvoices(){
-  const filterType = document.getElementById('invFilterType').value;
-  const q = document.getElementById('invSearch').value.trim().toLowerCase();
-  let list = DB.invoices.slice().sort((a,b)=> (b.docDate||'').localeCompare(a.docDate||''));
-  if(filterType !== 'all') list = list.filter(v=> v.docType === filterType);
-  if(q) list = list.filter(v=> v.number.toLowerCase().includes(q) || (v.note||'').toLowerCase().includes(q) || (v.party||'').toLowerCase().includes(q));
-
-  if(list.length===0){ alert('لا توجد فواتير مطابقة للطباعة.'); return; }
-
+function printInvoiceList(list){
+  if(!list || list.length===0){ alert('لا توجد فواتير مطابقة للطباعة.'); return; }
   const area = document.getElementById('printArea');
   area.innerHTML = list.map((v,idx)=>
     `<div style="${idx>0 ? 'break-before:page;' : ''}padding-top:${idx>0 ? '20px' : '0'};">${invoicePrintBlockHtml(v)}</div>`
   ).join('');
   window.print();
 }
+
+function printAllInvoices(){
+  printInvoiceList(getFilteredInvoices());
+}
 document.getElementById('printAllInvoicesBtn').addEventListener('click', printAllInvoices);
 
-function renderInvoicesTable(){
-  const container = document.getElementById('invoicesGroups');
+function getFilteredInvoices(){
   const filterType = document.getElementById('invFilterType').value;
+  const from = document.getElementById('invFilterFrom').value;
+  const to = document.getElementById('invFilterTo').value;
   const q = document.getElementById('invSearch').value.trim().toLowerCase();
   let list = DB.invoices.slice().sort((a,b)=> (b.docDate||'').localeCompare(a.docDate||''));
   if(filterType !== 'all') list = list.filter(v=> v.docType === filterType);
-  if(q) list = list.filter(v=> v.number.toLowerCase().includes(q) || (v.note||'').toLowerCase().includes(q));
+  if(from) list = list.filter(v=> (v.docDate||'') >= from);
+  if(to) list = list.filter(v=> (v.docDate||'') <= to);
+  if(q) list = list.filter(v=> v.number.toLowerCase().includes(q) || (v.note||'').toLowerCase().includes(q) || (v.party||'').toLowerCase().includes(q));
+  return list;
+}
+
+function renderInvoicesTable(){
+  const container = document.getElementById('invoicesGroups');
+  let list = getFilteredInvoices();
 
   if(list.length===0){
     container.innerHTML = '<div class="empty-state"><div class="icon">🧾</div>لا توجد فواتير مؤرشفة مطابقة.</div>';
@@ -2779,7 +2803,10 @@ function renderInvoicesTable(){
     const monthLabel = (ARABIC_MONTH_NAMES[m-1] || '') + ' ' + y;
     const rows = groups[key].map(invoiceRowHtml).join('');
     return `<div class="card">
-      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 12px;">${monthLabel} <span class="mono" style="font-size:12px;color:var(--ink-soft);font-weight:400;">(${groups[key].length})</span></h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <h3 style="font-family:var(--font-display);font-size:15px;margin:0;">${monthLabel} <span class="mono" style="font-size:12px;color:var(--ink-soft);font-weight:400;">(${groups[key].length})</span></h3>
+        <button class="btn-ghost btn-sm" data-print-month="${key}">🖨 طباعة هذا الشهر</button>
+      </div>
       <div class="table-wrap">
         <table class="data">
           <colgroup><col style="width:13%"><col style="width:12%"><col style="width:15%"><col style="width:10%"><col style="width:26%"><col style="width:24%"></colgroup>
@@ -2810,6 +2837,13 @@ function renderInvoicesTable(){
     btn.addEventListener('click', ()=>{
       const v = DB.invoices.find(x=>x.id===btn.dataset.invPrint);
       if(v) printInvoice(v);
+    });
+  });
+  container.querySelectorAll('[data-print-month]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key = btn.dataset.printMonth;
+      const monthList = getFilteredInvoices().filter(v=> (v.docDate||'').slice(0,7) === key);
+      printInvoiceList(monthList);
     });
   });
   container.querySelectorAll('[data-inv-date]').forEach(inp=>{
