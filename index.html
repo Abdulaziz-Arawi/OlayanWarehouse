@@ -208,6 +208,8 @@
   .pill-in{background:var(--cleaning-soft);color:var(--stamp-in);}
   .pill-out{background:#F6DEDA;color:var(--stamp-out);}
   .pill-pending{background:var(--pantry-soft);color:var(--pantry);}
+  .pill-inv-supplier{background:var(--freezer-soft);color:var(--freezer);}
+  .pill-inv-issue{background:#F6DEDA;color:var(--stamp-out);}
   .pill-store-freezer{background:var(--freezer-soft);color:var(--freezer);}
   .pill-store-pantry{background:var(--pantry-soft);color:var(--pantry);}
   .pill-store-cleaning{background:var(--cleaning-soft);color:var(--cleaning);}
@@ -594,6 +596,7 @@
     <div class="tab" data-view="log">سجل السندات</div>
     <div class="tab" data-view="ledger">كشف حركة صنف</div>
     <div class="tab" data-view="reports">تقارير شهرية</div>
+    <div class="tab" data-view="invoices" data-admin-only="1">أرشيف الفواتير</div>
     <div class="tab" data-view="settings" data-admin-only="1">الإعدادات</div>
   </div>
 
@@ -677,6 +680,9 @@
       <div class="field">
         <label>بحث</label>
         <input id="itemsSearch" placeholder="اسم الصنف...">
+      </div>
+      <div class="field" style="flex:0 0 auto;align-self:end;">
+        <button class="btn-ghost" id="exportItemsExcelBtn">⬇ تصدير Excel</button>
       </div>
     </div>
 
@@ -944,6 +950,61 @@
     </div>
   </div>
 
+  <!-- INVOICE ARCHIVE -->
+  <div class="view" id="view-invoices">
+    <h2 class="section-title">أرشيف الفواتير</h2>
+    <p class="section-sub">احفظ رقم أي فاتورة مع صورة منها للرجوع لها بسهولة لاحقًا — أرشيف مستقل عن السندات.</p>
+
+    <div class="card">
+      <div class="row">
+        <div class="field">
+          <label>النوع</label>
+          <select id="invType">
+            <option value="supplier">فاتورة مورد</option>
+            <option value="issue">سند صرف</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>رقم الفاتورة / السند</label>
+          <input id="invNumber" placeholder="مثال: 4488">
+        </div>
+        <div class="field">
+          <label>ملاحظة (اختياري)</label>
+          <input id="invNote" placeholder="مثال: فاتورة مورد الأغذية...">
+        </div>
+      </div>
+      <div class="field">
+        <label>الصورة</label>
+        <input type="file" id="invPhoto" accept="image/*">
+        <div id="invPhotoPreview" style="display:none;margin-top:8px;"></div>
+      </div>
+      <button class="btn-primary" id="invSubmit">حفظ بالأرشيف</button>
+    </div>
+
+    <div class="toolbar">
+      <div class="field">
+        <label>النوع</label>
+        <select id="invFilterType">
+          <option value="all">الكل</option>
+          <option value="supplier">فواتير الموردين</option>
+          <option value="issue">سندات الصرف</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>بحث برقم الفاتورة / السند أو الملاحظة</label>
+        <input id="invSearch" placeholder="مثال: 4488">
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data" id="invoicesTable">
+        <colgroup><col style="width:14%"><col style="width:14%"><col style="width:14%"><col style="width:12%"><col style="width:32%"><col style="width:14%"></colgroup>
+        <thead><tr><th>النوع</th><th>الرقم</th><th>تاريخ الأرشفة</th><th>الصورة</th><th>ملاحظة</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- LEDGER -->
   <div class="view" id="view-ledger">
     <h2 class="section-title">كشف حركة صنف</h2>
@@ -1026,25 +1087,25 @@
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">دمج الأصناف المكررة</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">لو صار عندك نفس الصنف مسجل أكثر من مرة في نفس المخزن (بسبب إدخاله مرتين)، هذا الزر يجمع أرصدتها في صنف واحد ويحذف التكرار، مع الحفاظ على سجل السندات القديم كامل.</p>
-      <button class="btn-ghost" id="mergeDuplicatesBtn">دمج الأصناف المكررة الآن</button>
+      <button class="btn-ghost" id="mergeDuplicatesBtn" disabled>دمج الأصناف المكررة الآن</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">تصفير الأرصدة فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يرجع رصيد كل الأصناف إلى صفر، مع الإبقاء على أسماء الأصناف وسجل السندات كما هو.</p>
-      <button class="btn-ghost" id="resetBalancesBtn">تصفير كل الأرصدة</button>
+      <button class="btn-ghost" id="resetBalancesBtn" disabled>تصفير كل الأرصدة</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف سجل السندات فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل سندات التوريد والصرف من السجل، بدون التأثير على الأصناف أو أرصدتها الحالية.</p>
-      <button class="btn-ghost" id="resetVouchersBtn">حذف كل السندات</button>
+      <button class="btn-ghost" id="resetVouchersBtn" disabled>حذف كل السندات</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف كل الأصناف</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل الأصناف من المخازن الثلاثة. سجل السندات القديم يبقى موجودًا كأرشيف فقط.</p>
-      <button class="btn-danger-outline" id="resetItemsBtn">حذف كل الأصناف</button>
+      <button class="btn-danger-outline" id="resetItemsBtn" disabled>حذف كل الأصناف</button>
     </div>
 
     <div class="card" style="border:1.5px solid var(--danger);">
@@ -1056,7 +1117,7 @@
           <input id="fullResetConfirmInput" placeholder="اكتب هنا للتأكيد...">
         </div>
         <div class="field" style="flex:0 0 auto;">
-          <button class="btn-danger-outline" id="fullResetBtn">إعادة تعيين كل شيء</button>
+          <button class="btn-danger-outline" id="fullResetBtn" disabled>إعادة تعيين كل شيء</button>
         </div>
       </div>
     </div>
@@ -1153,21 +1214,10 @@ const SUPABASE_ANON_KEY = 'sb_publishable_WXPqJWDFhMOUwPhOsrS3VA_S_ey3IAh';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-
-//start devFunction 
-
-const devFunction = async () => {
-  console.log(`
-        hello world my name is abdulaziz i love Olayan
-  `);
-};
-
-//end devFunction
-
 const STORE_LABELS = { freezer:'فريزر المواد المجمدة', pantry:'مخزن المواد الغذائية', cleaning:'مخزن أدوات النظافة' };
 const STORE_SHORT = { freezer:'الفريزر', pantry:'المواد الغذائية', cleaning:'أدوات النظافة' };
 
-let DB = { items: [], vouchers: [], requests: [] };
+let DB = { items: [], vouchers: [], requests: [], invoices: [] };
 let busy = false;
 let currentUserEmail = null;
 let fulfillingRequestId = null;
@@ -1444,14 +1494,16 @@ async function populateProfile(){
 async function loadDB(){
   setConn('', 'جارٍ التحميل...');
   try{
-    const [{ data: items, error: itemsErr }, { data: vouchers, error: vErr }, { data: requests, error: rErr }] = await Promise.all([
+    const [{ data: items, error: itemsErr }, { data: vouchers, error: vErr }, { data: requests, error: rErr }, { data: invoices, error: invErr }] = await Promise.all([
       sb.from('items').select('*').order('name'),
       sb.from('vouchers').select('*, voucher_lines(*)').order('created_at', { ascending:false }),
-      sb.from('material_requests').select('*, material_request_lines(*)').order('created_at', { ascending:false })
+      sb.from('material_requests').select('*, material_request_lines(*)').order('created_at', { ascending:false }),
+      sb.from('invoice_archive').select('*').order('created_at', { ascending:false })
     ]);
     if(itemsErr) throw itemsErr;
     if(vErr) throw vErr;
     if(rErr) throw rErr;
+    if(invErr) throw invErr;
 
     DB.items = (items||[]).map(i=>({
       id:i.id, store:i.store, name:i.name, unit:i.unit,
@@ -1479,6 +1531,12 @@ async function loadDB(){
         }))
       };
     });
+
+    DB.invoices = (invoices||[]).map(v=>({
+      id:v.id, number:v.number, note:v.note, photoUrl:v.photo_path || null,
+      docType: v.doc_type || 'supplier',
+      createdAt:new Date(v.created_at).getTime()
+    }));
 
     setConn('ok', 'متصل بقاعدة البيانات');
     renderAll();
@@ -1580,6 +1638,33 @@ document.getElementById('addItemBtn').addEventListener('click', async ()=>{
 
 document.getElementById('itemsFilterStore').addEventListener('change', renderItemsTable);
 document.getElementById('itemsSearch').addEventListener('input', renderItemsTable);
+
+document.getElementById('exportItemsExcelBtn').addEventListener('click', ()=>{
+  const store = document.getElementById('itemsFilterStore').value;
+  const q = document.getElementById('itemsSearch').value.trim().toLowerCase();
+  let list = getItemsByStore(store);
+  if(q) list = list.filter(i=> i.name.toLowerCase().includes(q));
+
+  if(list.length===0){ alert('لا توجد أصناف لتصديرها حسب الفلترة الحالية.'); return; }
+
+  const rows = list.map(i=>({
+    'الصنف': i.name,
+    'المخزن': STORE_LABELS[i.store] || i.store,
+    'الوحدة': i.unit,
+    'الرصيد الحالي': i.balance,
+    'الحد الأدنى': i.min,
+    'الباركود': i.barcode || '',
+    'عند الحد الأدنى؟': (i.min>0 && i.balance<=i.min) ? 'نعم' : 'لا'
+  }));
+
+  try{
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'الأصناف');
+    XLSX.writeFile(wb, 'أصناف-' + todayStr() + '.xlsx');
+  }catch(e){
+    showErr('تعذر إنشاء ملف Excel.', e);
+  }
+});
 
 function renderItemsTable(){
   const store = document.getElementById('itemsFilterStore').value;
@@ -2560,6 +2645,83 @@ document.getElementById('closeRequestDetail').addEventListener('click', ()=>{
   document.getElementById('requestDetailOverlay').classList.remove('show');
 });
 
+/* ---------- INVOICE ARCHIVE (بنك الفواتير) ---------- */
+wirePhotoPreview('invPhoto','invPhotoPreview');
+
+document.getElementById('invSubmit').addEventListener('click', async ()=>{
+  if(busy) return;
+  const docType = document.getElementById('invType').value;
+  const number = document.getElementById('invNumber').value.trim();
+  const note = document.getElementById('invNote').value.trim();
+  const photoFile = document.getElementById('invPhoto').files[0] || null;
+  if(!number){ alert('الرجاء إدخال رقم الفاتورة أو السند.'); return; }
+  if(!photoFile){ alert('الرجاء إرفاق الصورة.'); return; }
+
+  const btn = document.getElementById('invSubmit');
+  busy = true; btn.disabled = true;
+  try{
+    const photoUrl = await uploadVoucherPhoto(photoFile, 'invoices', number);
+    const { error } = await sb.from('invoice_archive').insert({ number, note: note||null, photo_path: photoUrl, doc_type: docType });
+    if(error) throw error;
+
+    document.getElementById('invNumber').value = '';
+    document.getElementById('invNote').value = '';
+    document.getElementById('invPhoto').value = '';
+    document.getElementById('invPhotoPreview').style.display = 'none';
+    document.getElementById('invPhotoPreview').innerHTML = '';
+    await loadDB();
+  }catch(e){
+    showErr('تعذر حفظ الفاتورة بالأرشيف.', e);
+  }
+  busy = false; btn.disabled = false;
+});
+
+document.getElementById('invFilterType').addEventListener('change', renderInvoicesTable);
+document.getElementById('invSearch').addEventListener('input', renderInvoicesTable);
+
+function renderInvoicesTable(){
+  const tbody = document.querySelector('#invoicesTable tbody');
+  const filterType = document.getElementById('invFilterType').value;
+  const q = document.getElementById('invSearch').value.trim().toLowerCase();
+  let list = DB.invoices.slice().sort((a,b)=> b.createdAt - a.createdAt);
+  if(filterType !== 'all') list = list.filter(v=> v.docType === filterType);
+  if(q) list = list.filter(v=> v.number.toLowerCase().includes(q) || (v.note||'').toLowerCase().includes(q));
+
+  if(list.length===0){
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">🧾</div>لا توجد فواتير مؤرشفة مطابقة.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(v=>{
+    const typeText = v.docType === 'issue' ? 'سند صرف' : 'فاتورة مورد';
+    const typeClass = v.docType === 'issue' ? 'pill-inv-issue' : 'pill-inv-supplier';
+    return `<tr>
+      <td><span class="pill ${typeClass}">${typeText}</span></td>
+      <td class="mono mono-cell">${v.number}</td>
+      <td>${fmtDate(new Date(v.createdAt).toISOString().slice(0,10))}</td>
+      <td>${v.photoUrl ? `<img src="${v.photoUrl}" alt="" data-view-inv-photo="${v.photoUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid var(--line-strong);cursor:pointer;">` : '-'}</td>
+      <td class="wrap-cell">${escapeHtml(v.note||'-')}</td>
+      <td><button class="btn-danger-outline btn-sm" data-inv-del="${v.id}">حذف</button></td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('[data-view-inv-photo]').forEach(img=>{
+    img.addEventListener('click', ()=> window.open(img.dataset.viewInvPhoto, '_blank'));
+  });
+  tbody.querySelectorAll('[data-inv-del]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(busy) return;
+      if(!confirm('حذف هذه الفاتورة من الأرشيف؟')) return;
+      busy = true;
+      try{
+        const { error } = await sb.from('invoice_archive').delete().eq('id', btn.dataset.invDel);
+        if(error) throw error;
+        await loadDB();
+      }catch(e){ showErr('تعذر حذف الفاتورة.', e); }
+      busy = false;
+    });
+  });
+}
+
 /* ---------- DASHBOARD ---------- */
 function renderDashboard(){
   const cardsEl = document.getElementById('dashCards');
@@ -2864,6 +3026,7 @@ function renderAll(){
   renderMonthlyReport();
   renderMyRequestsTable();
   renderIncomingRequestsTable();
+  renderInvoicesTable();
   refreshAllLineDatalists('inLinesTable');
   refreshAllLineDatalists('outLinesTable');
 }
@@ -3154,7 +3317,6 @@ document.addEventListener('keydown', (e)=>{
     case 'r': switchToTab('reports'); break;
     case 't': switchToTab('tickets'); break;
     case 'e': switchToTab('settings'); break;
-    case 'h': devFunction(); break;
   }
 });
 </script>
