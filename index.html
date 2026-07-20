@@ -841,6 +841,13 @@
 
     <div class="toolbar">
       <div class="field">
+        <label>الحالة</label>
+        <select id="logFilterPeriod">
+          <option value="open">السندات المفتوحة (الشهر الحالي)</option>
+          <option value="all">الكل (يشمل الأرشيف المقفل)</option>
+        </select>
+      </div>
+      <div class="field">
         <label>النوع</label>
         <select id="logFilterType">
           <option value="all">الكل</option>
@@ -868,7 +875,7 @@
 
     <div class="table-wrap">
       <table class="data" id="logTable">
-        <thead><tr><th>رقم السند</th><th>النوع</th><th>المخزن</th><th>التاريخ</th><th>الجهة</th><th>عدد الأصناف</th><th></th></tr></thead>
+        <thead><tr><th>رقم السند</th><th>الحالة</th><th>النوع</th><th>المخزن</th><th>التاريخ</th><th>الجهة</th><th>عدد الأصناف</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -1182,33 +1189,40 @@
     <h2 class="section-title">الإعدادات</h2>
     <p class="section-sub">بياناتك محفوظة على قاعدة بيانات حقيقية سحابية، ومشتركة بين كل من يسجل دخول. تقدر من هنا تعيد أي جزء إلى وضعه الفارغ من جديد.</p>
 
+    <div class="card" style="border:1.5px solid var(--freezer);">
+      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;color:var(--freezer);">🔒 إقفال الشهر الحالي</h3>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يقفل كل السندات المفتوحة الآن (توريد وصرف) ويحوّلها لأرشيف دائم لا يمكن تعديله أو حذفه. بعد الإقفال، "سجل السندات" يرجع فاضي تلقائيًا ويبدأ من جديد، بينما تقدر أي وقت تشوف السندات المقفلة من فلتر "الحالة" باختيار "الكل". أرصدة الأصناف ما تتأثر إطلاقًا.</p>
+      <div id="closePeriodSummary" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;"></div>
+      <button class="btn-primary" id="closePeriodBtn" style="background:var(--freezer);">إقفال السندات المفتوحة الآن</button>
+    </div>
+
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">دمج الأصناف المكررة</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">لو صار عندك نفس الصنف مسجل أكثر من مرة في نفس المخزن (بسبب إدخاله مرتين)، هذا الزر يجمع أرصدتها في صنف واحد ويحذف التكرار، مع الحفاظ على سجل السندات القديم كامل.</p>
-      <button class="btn-ghost" id="mergeDuplicatesBtn" disabled>دمج الأصناف المكررة الآن</button>
+      <button class="btn-ghost" id="mergeDuplicatesBtn">دمج الأصناف المكررة الآن</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">تصفير الأرصدة فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يرجع رصيد كل الأصناف إلى صفر، مع الإبقاء على أسماء الأصناف وسجل السندات كما هو.</p>
-      <button class="btn-ghost" id="resetBalancesBtn" disabled>تصفير كل الأرصدة</button>
+      <button class="btn-ghost" id="resetBalancesBtn">تصفير كل الأرصدة</button>
     </div>
 
     <div class="card">
-      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف سجل السندات فقط</h3>
-      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل سندات التوريد والصرف من السجل، بدون التأثير على الأصناف أو أرصدتها الحالية.</p>
-      <button class="btn-ghost" id="resetVouchersBtn" disabled>حذف كل السندات</button>
+      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف سجل السندات المفتوحة فقط</h3>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح سندات التوريد والصرف <b>غير المقفلة</b> فقط، بدون التأثير على الأصناف أو أرصدتها الحالية. السندات المقفلة (المؤرشفة شهريًا) محمية تمامًا ولن تُحذف مهما كان.</p>
+      <button class="btn-ghost" id="resetVouchersBtn">حذف السندات المفتوحة</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف كل الأصناف</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل الأصناف من المخازن الثلاثة. سجل السندات القديم يبقى موجودًا كأرشيف فقط.</p>
-      <button class="btn-danger-outline" id="resetItemsBtn" disabled>حذف كل الأصناف</button>
+      <button class="btn-danger-outline" id="resetItemsBtn">حذف كل الأصناف</button>
     </div>
 
     <div class="card" style="border:1.5px solid var(--danger);">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;color:var(--danger);">إعادة تعيين شاملة</h3>
-      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يحذف كل شيء نهائيًا — كل الأصناف وكل السندات — ويرجع الموقع فاضي تمامًا كأول مرة. هذا الإجراء لا يمكن التراجع عنه.</p>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يحذف كل الأصناف وكل السندات <b>غير المقفلة</b> نهائيًا. السندات المقفلة (الأرشيف الشهري) محمية دائمًا ولن تُحذف حتى بهذا الإجراء. هذا الإجراء لا يمكن التراجع عنه.</p>
       <label>للتأكيد، اكتب كلمة "<b>حذف الكل</b>" بالضبط في الخانة:</label>
       <div class="row" style="align-items:end;">
         <div class="field" style="flex:1;min-width:180px;">
@@ -1645,6 +1659,8 @@ async function loadDB(){
       party:v.party, notes:v.notes, createdAt:new Date(v.created_at).getTime(),
       photoUrl: v.photo_path || null,
       signedPhotoUrl: v.signed_photo_path || null,
+      closed: !!v.closed,
+      closedAt: v.closed_at || null,
       lines:(v.voucher_lines||[]).map(l=>({
         itemId:l.item_id, name:l.name, unit:l.unit, qty:Number(l.qty), store:l.store
       }))
@@ -2366,27 +2382,33 @@ document.getElementById('stampCloseBtn').addEventListener('click', ()=>{
 });
 
 /* ---------- LOG ---------- */
-['logFilterType','logFilterStore','logSearch'].forEach(id=>{
+['logFilterPeriod','logFilterType','logFilterStore','logSearch'].forEach(id=>{
   document.getElementById(id).addEventListener('input', renderLogTable);
 });
 
 function renderLogTable(){
+  const period = document.getElementById('logFilterPeriod').value;
   const type = document.getElementById('logFilterType').value;
   const store = document.getElementById('logFilterStore').value;
   const q = document.getElementById('logSearch').value.trim().toLowerCase();
   let list = DB.vouchers.slice();
+  if(period==='open') list = list.filter(v=>!v.closed);
   if(type!=='all') list = list.filter(v=>v.type===type);
   if(store!=='all') list = list.filter(v=>voucherStoreList(v).includes(store));
   if(q) list = list.filter(v=>v.number.toLowerCase().includes(q));
 
   const tbody = document.querySelector('#logTable tbody');
   if(list.length===0){
-    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">🧾</div>لا توجد سندات مطابقة.</div></td></tr>';
+    const msg = period==='open'
+      ? 'لا توجد سندات مفتوحة حاليًا — إما إنك بدأت شهر جديد بعد الإقفال، أو ما فيه سندات بعد. اختر "الكل" من فلتر الحالة لعرض الأرشيف.'
+      : 'لا توجد سندات مطابقة.';
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">🧾</div>${msg}</div></td></tr>`;
     return;
   }
   tbody.innerHTML = list.map(v=>`
     <tr>
       <td class="mono">${v.number}</td>
+      <td>${v.closed ? '<span class="pill" style="background:var(--freezer-soft);color:var(--freezer);">🔒 مقفل</span>' : '<span class="pill pill-in">مفتوح</span>'}</td>
       <td><span class="pill ${v.type==='in'?'pill-in':'pill-out'}">${v.type==='in'?'وارد':'صادر'}</span></td>
       <td>${storePillsHtml(voucherStoreList(v))}</td>
       <td>${fmtDate(v.date)}</td>
@@ -2411,6 +2433,7 @@ function openVoucherDetail(id){
       <span class="pill ${v.type==='in'?'pill-in':'pill-out'}" style="font-size:13px;">${v.type==='in'?'سند توريد':'سند صرف'}</span>
       <span class="mono" style="font-weight:700;">${v.number}</span>
     </div>
+    ${v.closed ? `<div style="background:var(--freezer-soft);color:var(--freezer);border-radius:9px;padding:8px 12px;font-size:12.5px;font-weight:700;margin-bottom:10px;">🔒 سند مقفل (مؤرشف) — لا يمكن تعديله أو حذفه.</div>` : ''}
     <p style="margin:4px 0;font-size:13px;"><b>التاريخ:</b> ${fmtDate(v.date)}</p>
     <p style="margin:4px 0;font-size:13px;"><b>${v.type==='in'?'المورد':'الجهة المستلمة'}:</b> ${v.party||'-'}</p>
     ${v.notes?`<p style="margin:4px 0;font-size:13px;"><b>ملاحظات:</b> ${v.notes}</p>`:''}
@@ -2428,14 +2451,17 @@ function openVoucherDetail(id){
           ? `<img src="${v.signedPhotoUrl}" class="voucher-photo" onclick="window.open('${v.signedPhotoUrl}','_blank')" title="اضغط لعرض الصورة كاملة">`
           : `<div class="empty-state" style="padding:16px;"><div class="icon">🖊️</div>لم تُرفع صورة موقّعة بعد — الطباعة حاليًا تصدر النموذج الفارغ.</div>`}
       </div>
+      ${v.closed ? '' : `
       <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <input type="file" id="signedPhotoInput" accept="image/*" style="flex:1;min-width:180px;">
         <button class="btn-in btn-sm" id="signedPhotoUploadBtn">${v.signedPhotoUrl ? 'استبدال الصورة' : 'رفع الصورة الموقّعة'}</button>
       </div>
       <p class="note-hint" style="margin-top:6px;margin-bottom:0;">بعد رفع صورة الورقة المختومة والموقّعة، زر "طباعة / PDF" بيطبع هذي الصورة بدل النموذج الفارغ.</p>
+      `}
     </div>
   `;
   document.getElementById('voucherDetailOverlay').classList.add('show');
+  if(v.closed) return;
 
   const signedBtn = document.getElementById('signedPhotoUploadBtn');
   signedBtn.addEventListener('click', async ()=>{
@@ -2522,10 +2548,12 @@ document.getElementById('printVoucherBtn').addEventListener('click', ()=>{
 
 /* ---------- EXCEL EXPORT (voucher log, respects current filters) ---------- */
 document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
+  const period = document.getElementById('logFilterPeriod').value;
   const type = document.getElementById('logFilterType').value;
   const store = document.getElementById('logFilterStore').value;
   const q = document.getElementById('logSearch').value.trim().toLowerCase();
   let list = DB.vouchers.slice();
+  if(period==='open') list = list.filter(v=>!v.closed);
   if(type!=='all') list = list.filter(v=>v.type===type);
   if(store!=='all') list = list.filter(v=>voucherStoreList(v).includes(store));
   if(q) list = list.filter(v=>v.number.toLowerCase().includes(q));
@@ -2534,6 +2562,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
 
   const summaryRows = list.map(v=>({
     'رقم السند': v.number,
+    'الحالة': v.closed ? 'مقفل (مؤرشف)' : 'مفتوح',
     'النوع': v.type==='in' ? 'توريد (وارد)' : 'صرف (صادر)',
     'المخزن': voucherStoreList(v).map(s=>STORE_LABELS[s]).join(' + '),
     'التاريخ': v.date,
@@ -3377,6 +3406,7 @@ function renderAll(){
   renderIncomingRequestsTable();
   renderInvoicesTable();
   renderQualityTable();
+  renderClosePeriodSummary();
   refreshAllLineDatalists('inLinesTable');
   refreshAllLineDatalists('outLinesTable');
 }
@@ -3389,6 +3419,50 @@ document.getElementById('qcDate').value = todayStr();
 document.getElementById('invDate').value = todayStr();
 
 /* ---------- SETTINGS / RESET ---------- */
+
+/* إقفال الشهر الحالي: يحوّل كل السندات المفتوحة إلى أرشيف دائم لا يُعدَّل ولا يُحذف */
+function renderClosePeriodSummary(){
+  const el = document.getElementById('closePeriodSummary');
+  if(!el) return;
+  const open = DB.vouchers.filter(v=>!v.closed);
+  if(open.length===0){
+    el.textContent = 'لا توجد سندات مفتوحة حاليًا للإقفال.';
+    return;
+  }
+  const inCount = open.filter(v=>v.type==='in').length;
+  const outCount = open.filter(v=>v.type==='out').length;
+  const dates = open.map(v=>v.date).filter(Boolean).sort();
+  const from = dates[0], to = dates[dates.length-1];
+  el.innerHTML = `السندات المفتوحة حاليًا: <b>${open.length}</b> (${inCount} توريد، ${outCount} صرف)${from?` — من ${fmtDate(from)} إلى ${fmtDate(to)}`:''}`;
+}
+
+document.getElementById('closePeriodBtn').addEventListener('click', async ()=>{
+  if(busy) return;
+  const open = DB.vouchers.filter(v=>!v.closed);
+  if(open.length===0){ showAppAlert('لا توجد سندات مفتوحة حاليًا للإقفال.'); return; }
+  const inCount = open.filter(v=>v.type==='in').length;
+  const outCount = open.filter(v=>v.type==='out').length;
+  if(!confirm(
+    'سيتم إقفال '+open.length+' سند ('+inCount+' توريد، '+outCount+' صرف) وتحويلها لأرشيف دائم.\n'+
+    'بعد الإقفال لن تقدر تعدّلها أو تحذفها أبدًا، وسجل السندات (المفتوح) بيرجع فاضي ويبدأ من جديد.\n'+
+    'أرصدة الأصناف لن تتأثر إطلاقًا. متابعة؟'
+  )) return;
+
+  const btn = document.getElementById('closePeriodBtn');
+  busy = true; btn.disabled = true;
+  try{
+    const { error } = await sb.from('vouchers')
+      .update({ closed:true, closed_at: new Date().toISOString() })
+      .eq('closed', false);
+    if(error) throw error;
+    await loadDB();
+    showAppAlert('تم إقفال '+open.length+' سند بنجاح وترحيلها للأرشيف. سجل السندات المفتوح صار فاضي ويبدأ من جديد.');
+  }catch(e){
+    showErr('تعذر إقفال الشهر الحالي. تأكد إنك أضفت عمودي closed و closed_at لجدول vouchers بقاعدة البيانات.', e);
+  }
+  busy = false; btn.disabled = false;
+});
+
 document.getElementById('mergeDuplicatesBtn').addEventListener('click', async ()=>{
   if(busy) return;
   const groups = {};
@@ -3445,14 +3519,25 @@ document.getElementById('resetBalancesBtn').addEventListener('click', async ()=>
 
 document.getElementById('resetVouchersBtn').addEventListener('click', async ()=>{
   if(busy) return;
-  if(DB.vouchers.length===0){ showAppAlert('لا توجد سندات حاليًا.'); return; }
-  if(!confirm('سيتم حذف كل سندات التوريد والصرف نهائيًا. الأصناف وأرصدتها الحالية ستبقى كما هي. متابعة؟')) return;
+  const openVouchers = DB.vouchers.filter(v=>!v.closed);
+  const closedCount = DB.vouchers.length - openVouchers.length;
+  if(openVouchers.length===0){
+    showAppAlert(closedCount>0
+      ? 'لا توجد سندات مفتوحة للحذف. يوجد '+closedCount+' سند مقفل (مؤرشف) وهي محمية ولن تُحذف.'
+      : 'لا توجد سندات حاليًا.');
+    return;
+  }
+  if(!confirm(
+    'سيتم حذف '+openVouchers.length+' سند مفتوح (غير مقفل) نهائيًا.'+
+    (closedCount>0 ? ' يوجد '+closedCount+' سند مقفل (مؤرشف) محمي تمامًا ولن يتأثر.' : '')+
+    ' الأصناف وأرصدتها الحالية ستبقى كما هي. متابعة؟'
+  )) return;
   busy = true;
   try{
-    const { error } = await sb.from('vouchers').delete().not('id','is',null);
+    const { error } = await sb.from('vouchers').delete().eq('closed', false);
     if(error) throw error;
     await loadDB();
-    showAppAlert('تم حذف سجل السندات.');
+    showAppAlert('تم حذف السندات المفتوحة. السندات المقفلة (الأرشيف) بقيت محفوظة كما هي.');
   }catch(e){ showErr('تعذر حذف سجل السندات.', e); }
   busy = false;
 });
@@ -3479,17 +3564,22 @@ fullResetInput.addEventListener('input', ()=>{
 fullResetBtn.addEventListener('click', async ()=>{
   if(busy) return;
   if(fullResetInput.value.trim() !== 'حذف الكل') return;
-  if(!confirm('تأكيد أخير: سيتم حذف كل الأصناف وكل السندات نهائيًا ولا يمكن التراجع. متابعة؟')) return;
+  const closedCount = DB.vouchers.filter(v=>v.closed).length;
+  if(!confirm(
+    'تأكيد أخير: سيتم حذف كل الأصناف وكل السندات المفتوحة (غير المقفلة) نهائيًا ولا يمكن التراجع.'+
+    (closedCount>0 ? ' يوجد '+closedCount+' سند مقفل (أرشيف شهري) محمي تمامًا ولن يُحذف.' : '')+
+    ' متابعة؟'
+  )) return;
   busy = true;
   try{
-    const { error: e1 } = await sb.from('vouchers').delete().not('id','is',null);
+    const { error: e1 } = await sb.from('vouchers').delete().eq('closed', false);
     if(e1) throw e1;
     const { error: e2 } = await sb.from('items').delete().not('id','is',null);
     if(e2) throw e2;
     await loadDB();
     fullResetInput.value = '';
     fullResetBtn.disabled = true;
-    showAppAlert('تمت إعادة تعيين الموقع بالكامل.');
+    showAppAlert('تمت إعادة التعيين. السندات المقفلة (الأرشيف) بقيت محفوظة كما هي.');
   }catch(e){ showErr('تعذرت إعادة التعيين الشاملة.', e); }
   busy = false;
 });
