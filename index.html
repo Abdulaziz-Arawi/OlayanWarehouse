@@ -88,7 +88,7 @@
 
   /* nav */
   .tabs{
-    display:flex;gap:6px;flex-wrap:wrap;
+    display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;
     background:var(--paper-card);
     border:1px solid var(--line);
     border-radius:14px;
@@ -97,9 +97,9 @@
     position:relative;z-index:1;
   }
   .tab{
-    flex:1;min-width:120px;text-align:center;
-    padding:10px 8px;border-radius:10px;
-    font-family:var(--font-display);font-weight:700;font-size:13.5px;
+    flex:1;min-width:0;white-space:nowrap;text-align:center;
+    padding:10px 6px;border-radius:10px;
+    font-family:var(--font-display);font-weight:700;font-size:12.5px;
     color:var(--ink-soft);cursor:pointer;user-select:none;
     border:1px solid transparent;
     transition:.15s;
@@ -503,6 +503,28 @@
     .brand h1{font-size:14px;line-height:1.3;}
     .brand p{font-size:10.5px;}
     .conn-badge{font-size:10px;}
+
+    /* التبويبات: تمرير أفقي بدل الضغط */
+    .tabs{
+      flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
+      gap:4px;padding:5px;
+      scrollbar-width:none;
+    }
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab{
+      flex:0 0 auto;min-width:80px;white-space:nowrap;
+      font-size:12px;padding:9px 10px;
+    }
+
+    /* right-to-left scroll hint */
+    .tabs{scroll-padding-inline:10px;}
+
+    /* النماذج والبطاقات */
+    .card{padding:16px 14px;}
+    .row{gap:10px;}
+    .row > .field{min-width:100%;}
+    .toolbar{gap:8px;}
+    .toolbar .field{min-width:100%;}
   }
 
   @media (max-width:620px){
@@ -535,7 +557,7 @@
 
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
-    <div class="brand-mark" style="margin:0 auto 14px;">ABZ</div>
+    <div class="brand-mark" style="margin:0 auto 14px;">عزوز</div>
     <h1>فنادق سليمان موسى العليان</h1>
     <p class="brand-sub">سجل المخزن العليان الذهبي</p>
     <p>سجّل دخولك للمتابعة</p>
@@ -612,6 +634,7 @@
     <div class="tab" data-view="reports">تقارير شهرية</div>
     <div class="tab" data-view="invoices" data-admin-only="1">الأرشيف</div>
     <div class="tab" data-view="quality" data-admin-only="1">الجودة</div>
+    <div class="tab" data-view="workforce" data-admin-only="1">تحضير العمال</div>
     <div class="tab" data-view="settings" data-admin-only="1">الإعدادات</div>
   </div>
 
@@ -1184,6 +1207,83 @@
     </div>
   </div>
 
+  <!-- WORKFORCE / ATTENDANCE -->
+  <div class="view" id="view-workforce">
+    <h2 class="section-title">تحضير العمال</h2>
+    <p class="section-sub">سجّل حضور وغياب عمال المستودع يوميًا، وأدر قائمة أسماء العمال ووظائفهم.</p>
+
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 12px;">إضافة عامل جديد</h3>
+      <div class="row">
+        <div class="field">
+          <label>اسم العامل</label>
+          <input id="newWorkerName" placeholder="اسم العامل">
+        </div>
+        <div class="field">
+          <label>الوظيفة</label>
+          <input id="newWorkerJob" placeholder="مثال: عامل مستودع، سائق...">
+        </div>
+        <div class="field" style="flex:0 0 auto;align-self:end;">
+          <button class="btn-primary" id="addWorkerBtn">إضافة العامل</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data" id="workersTable">
+          <colgroup><col style="width:45%"><col style="width:35%"><col style="width:20%"></colgroup>
+          <thead><tr><th>الاسم</th><th>الوظيفة</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="align-items:end;">
+        <div class="field">
+          <label>تاريخ التحضير</label>
+          <input type="date" id="attendanceDate">
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <button class="btn-ghost btn-sm" id="attendanceTodayBtn">اليوم</button>
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <button class="btn-ghost btn-sm" id="markAllPresentBtn">تحديد الكل حاضر</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data" id="attendanceGridTable">
+          <colgroup><col style="width:40%"><col style="width:30%"><col style="width:30%"></colgroup>
+          <thead><tr><th>الاسم</th><th>الوظيفة</th><th>الحالة</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <button class="btn-in" id="saveAttendanceBtn" style="margin-top:14px;">حفظ تحضير هذا اليوم</button>
+    </div>
+
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 12px;">سجل الحضور</h3>
+      <div class="toolbar">
+        <div class="field">
+          <label>الشهر</label>
+          <input type="month" id="attendanceLogMonth">
+        </div>
+        <div class="field">
+          <label>بحث باسم العامل</label>
+          <input id="attendanceLogSearch" placeholder="اسم العامل...">
+        </div>
+        <div class="field" style="flex:0 0 auto;align-self:end;">
+          <button class="btn-ghost" id="exportAttendanceExcelBtn">⬇ تصدير Excel</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data" id="attendanceLogTable">
+          <colgroup><col style="width:20%"><col style="width:35%"><col style="width:25%"><col style="width:20%"></colgroup>
+          <thead><tr><th>التاريخ</th><th>الاسم</th><th>الوظيفة</th><th>الحالة</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- SETTINGS -->
   <div class="view" id="view-settings">
     <h2 class="section-title">الإعدادات</h2>
@@ -1199,25 +1299,25 @@
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">دمج الأصناف المكررة</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">لو صار عندك نفس الصنف مسجل أكثر من مرة في نفس المخزن (بسبب إدخاله مرتين)، هذا الزر يجمع أرصدتها في صنف واحد ويحذف التكرار، مع الحفاظ على سجل السندات القديم كامل.</p>
-      <button class="btn-ghost" id="mergeDuplicatesBtn" disabled>دمج الأصناف المكررة الآن</button>
+      <button class="btn-ghost" id="mergeDuplicatesBtn">دمج الأصناف المكررة الآن</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">تصفير الأرصدة فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يرجع رصيد كل الأصناف إلى صفر، مع الإبقاء على أسماء الأصناف وسجل السندات كما هو.</p>
-      <button class="btn-ghost" id="resetBalancesBtn" disabled>تصفير كل الأرصدة</button>
+      <button class="btn-ghost" id="resetBalancesBtn">تصفير كل الأرصدة</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف سجل السندات المفتوحة فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح سندات التوريد والصرف <b>غير المقفلة</b> فقط، بدون التأثير على الأصناف أو أرصدتها الحالية. السندات المقفلة (المؤرشفة شهريًا) محمية تمامًا ولن تُحذف مهما كان.</p>
-      <button class="btn-ghost" id="resetVouchersBtn" disabled>حذف السندات المفتوحة</button>
+      <button class="btn-ghost" id="resetVouchersBtn">حذف السندات المفتوحة</button>
     </div>
 
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف كل الأصناف</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل الأصناف من المخازن الثلاثة. سجل السندات القديم يبقى موجودًا كأرشيف فقط.</p>
-      <button class="btn-danger-outline" id="resetItemsBtn" disabled>حذف كل الأصناف</button>
+      <button class="btn-danger-outline" id="resetItemsBtn">حذف كل الأصناف</button>
     </div>
 
     <div class="card" style="border:1.5px solid var(--danger);">
@@ -1350,7 +1450,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const STORE_LABELS = { freezer:'فريزر المواد المجمدة', pantry:'مخزن المواد الغذائية', cleaning:'مخزن أدوات النظافة' };
 const STORE_SHORT = { freezer:'الفريزر', pantry:'المواد الغذائية', cleaning:'أدوات النظافة' };
 
-let DB = { items: [], vouchers: [], requests: [], invoices: [], quality: [] };
+let DB = { items: [], vouchers: [], requests: [], invoices: [], quality: [], workers: [], attendance: [] };
 let busy = false;
 let currentUserEmail = null;
 let fulfillingRequestId = null;
@@ -1636,18 +1736,22 @@ async function populateProfile(){
 async function loadDB(){
   setConn('', 'جارٍ التحميل...');
   try{
-    const [{ data: items, error: itemsErr }, { data: vouchers, error: vErr }, { data: requests, error: rErr }, { data: invoices, error: invErr }, { data: quality, error: qErr }] = await Promise.all([
+    const [{ data: items, error: itemsErr }, { data: vouchers, error: vErr }, { data: requests, error: rErr }, { data: invoices, error: invErr }, { data: quality, error: qErr }, { data: workers, error: wErr }, { data: attendance, error: attErr }] = await Promise.all([
       sb.from('items').select('*').order('name'),
       sb.from('vouchers').select('*, voucher_lines(*)').order('created_at', { ascending:false }),
       sb.from('material_requests').select('*, material_request_lines(*)').order('created_at', { ascending:false }),
       sb.from('invoice_archive').select('*').order('created_at', { ascending:false }),
-      sb.from('quality_checks').select('*').order('created_at', { ascending:false })
+      sb.from('quality_checks').select('*').order('created_at', { ascending:false }),
+      sb.from('workers').select('*').order('name'),
+      sb.from('attendance').select('*').order('attendance_date', { ascending:false })
     ]);
     if(itemsErr) throw itemsErr;
     if(vErr) throw vErr;
     if(rErr) throw rErr;
     if(invErr) throw invErr;
     if(qErr) throw qErr;
+    if(wErr) throw wErr;
+    if(attErr) throw attErr;
 
     DB.items = (items||[]).map(i=>({
       id:i.id, store:i.store, name:i.name, unit:i.unit,
@@ -1689,6 +1793,13 @@ async function loadDB(){
       id:q.id, store:q.store, photoUrl:q.photo_path || null,
       warehouseNote:q.warehouse_note, storageNote:q.storage_note,
       date:q.check_date, createdAt:new Date(q.created_at).getTime()
+    }));
+
+    DB.workers = (workers||[]).map(w=>({
+      id:w.id, name:w.name, jobTitle:w.job_title, active: w.active !== false, createdAt:new Date(w.created_at).getTime()
+    }));
+    DB.attendance = (attendance||[]).map(a=>({
+      id:a.id, workerId:a.worker_id, date:a.attendance_date, status:a.status, createdAt:new Date(a.created_at).getTime()
     }));
 
     setConn('ok', 'متصل بقاعدة البيانات');
@@ -3406,6 +3517,9 @@ function renderAll(){
   renderIncomingRequestsTable();
   renderInvoicesTable();
   renderQualityTable();
+  renderWorkersTable();
+  renderAttendanceGrid();
+  renderAttendanceLog();
   renderClosePeriodSummary();
   refreshAllLineDatalists('inLinesTable');
   refreshAllLineDatalists('outLinesTable');
@@ -3417,6 +3531,8 @@ document.getElementById('reportMonth').value = currentMonthStr();
 document.getElementById('reqDate').value = todayStr();
 document.getElementById('qcDate').value = todayStr();
 document.getElementById('invDate').value = todayStr();
+document.getElementById('attendanceDate').value = todayStr();
+document.getElementById('attendanceLogMonth').value = currentMonthStr();
 
 /* ---------- SETTINGS / RESET ---------- */
 
@@ -3584,6 +3700,171 @@ fullResetBtn.addEventListener('click', async ()=>{
   busy = false;
 });
 
+
+/* ---------- WORKFORCE / ATTENDANCE ---------- */
+const ATTENDANCE_STATUS_LABELS = { present:'حاضر', absent:'غائب' };
+
+function findWorker(id){ return DB.workers.find(w=>w.id===id); }
+
+document.getElementById('addWorkerBtn').addEventListener('click', async ()=>{
+  if(busy) return;
+  const name = document.getElementById('newWorkerName').value.trim();
+  const job = document.getElementById('newWorkerJob').value.trim();
+  if(!name){ showAppAlert('الرجاء إدخال اسم العامل.'); return; }
+  busy = true;
+  try{
+    const { error } = await sb.from('workers').insert({ name, job_title: job||null, active:true });
+    if(error) throw error;
+    document.getElementById('newWorkerName').value = '';
+    document.getElementById('newWorkerJob').value = '';
+    await loadDB();
+  }catch(e){ showErr('تعذرت إضافة العامل.', e); }
+  busy = false;
+});
+
+function renderWorkersTable(){
+  const tbody = document.querySelector('#workersTable tbody');
+  if(!tbody) return;
+  if(DB.workers.length===0){
+    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="icon">👷</div>لا يوجد عمال مسجّلين بعد.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = DB.workers.slice().sort((a,b)=> a.name.localeCompare(b.name,'ar')).map(w=>`
+    <tr>
+      <td>${escapeHtml(w.name)}</td>
+      <td>${escapeHtml(w.jobTitle||'-')}</td>
+      <td><button class="btn-danger-outline btn-sm" data-del-worker="${w.id}">حذف</button></td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('[data-del-worker]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(busy) return;
+      if(!confirm('حذف هذا العامل؟ سجل الحضور القديم الخاص فيه يبقى محفوظًا.')) return;
+      busy = true;
+      try{
+        const { error } = await sb.from('workers').delete().eq('id', btn.dataset.delWorker);
+        if(error) throw error;
+        await loadDB();
+      }catch(e){ showErr('تعذر حذف العامل.', e); }
+      busy = false;
+    });
+  });
+}
+
+function renderAttendanceGrid(){
+  const tbody = document.querySelector('#attendanceGridTable tbody');
+  if(!tbody) return;
+  const date = document.getElementById('attendanceDate').value || todayStr();
+  if(DB.workers.length===0){
+    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="icon">👷</div>أضف عمال أولاً من الأعلى.</div></td></tr>';
+    return;
+  }
+  const list = DB.workers.slice().sort((a,b)=> a.name.localeCompare(b.name,'ar'));
+  tbody.innerHTML = list.map(w=>{
+    const rec = DB.attendance.find(a=> a.workerId===w.id && a.date===date);
+    const status = rec ? rec.status : 'present';
+    return `<tr data-worker-row="${w.id}">
+      <td>${escapeHtml(w.name)}</td>
+      <td>${escapeHtml(w.jobTitle||'-')}</td>
+      <td>
+        <select class="attendance-status-select" data-worker-status="${w.id}">
+          <option value="present" ${status==='present'?'selected':''}>حاضر</option>
+          <option value="absent" ${status==='absent'?'selected':''}>غائب</option>
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('attendanceDate').addEventListener('change', renderAttendanceGrid);
+document.getElementById('attendanceTodayBtn').addEventListener('click', ()=>{
+  document.getElementById('attendanceDate').value = todayStr();
+  renderAttendanceGrid();
+});
+document.getElementById('markAllPresentBtn').addEventListener('click', ()=>{
+  document.querySelectorAll('#attendanceGridTable [data-worker-status]').forEach(sel=> sel.value='present');
+});
+
+document.getElementById('saveAttendanceBtn').addEventListener('click', async ()=>{
+  if(busy) return;
+  const date = document.getElementById('attendanceDate').value || todayStr();
+  const rows = document.querySelectorAll('#attendanceGridTable [data-worker-status]');
+  if(rows.length===0){ showAppAlert('لا يوجد عمال لتسجيل حضورهم.'); return; }
+  const payload = Array.from(rows).map(sel=>({
+    worker_id: sel.dataset.workerStatus,
+    attendance_date: date,
+    status: sel.value
+  }));
+  busy = true;
+  const btn = document.getElementById('saveAttendanceBtn');
+  btn.disabled = true;
+  try{
+    const { error } = await sb.from('attendance').upsert(payload, { onConflict: 'worker_id,attendance_date' });
+    if(error) throw error;
+    await loadDB();
+    showAppAlert('تم حفظ تحضير يوم ' + fmtDate(date) + ' بنجاح.');
+  }catch(e){ showErr('تعذر حفظ التحضير.', e); }
+  busy = false; btn.disabled = false;
+});
+
+function renderAttendanceLog(){
+  const tbody = document.querySelector('#attendanceLogTable tbody');
+  if(!tbody) return;
+  const month = document.getElementById('attendanceLogMonth').value;
+  const q = document.getElementById('attendanceLogSearch').value.trim().toLowerCase();
+  let list = DB.attendance.slice();
+  if(month) list = list.filter(a=> (a.date||'').slice(0,7) === month);
+  if(q) list = list.filter(a=>{
+    const w = findWorker(a.workerId);
+    return w && w.name.toLowerCase().includes(q);
+  });
+  list.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+
+  if(list.length===0){
+    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="icon">📋</div>لا توجد سجلات حضور مطابقة.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(a=>{
+    const w = findWorker(a.workerId);
+    const cls = a.status==='present' ? 'pill-in' : 'pill-out';
+    return `<tr>
+      <td>${fmtDate(a.date)}</td>
+      <td>${w ? escapeHtml(w.name) : '(عامل محذوف)'}</td>
+      <td>${w ? escapeHtml(w.jobTitle||'-') : '-'}</td>
+      <td><span class="pill ${cls}">${ATTENDANCE_STATUS_LABELS[a.status]||a.status}</span></td>
+    </tr>`;
+  }).join('');
+}
+document.getElementById('attendanceLogMonth').addEventListener('change', renderAttendanceLog);
+document.getElementById('attendanceLogSearch').addEventListener('input', renderAttendanceLog);
+
+document.getElementById('exportAttendanceExcelBtn').addEventListener('click', ()=>{
+  const month = document.getElementById('attendanceLogMonth').value;
+  const q = document.getElementById('attendanceLogSearch').value.trim().toLowerCase();
+  let list = DB.attendance.slice();
+  if(month) list = list.filter(a=> (a.date||'').slice(0,7) === month);
+  if(q) list = list.filter(a=>{
+    const w = findWorker(a.workerId);
+    return w && w.name.toLowerCase().includes(q);
+  });
+  if(list.length===0){ showAppAlert('لا توجد سجلات لتصديرها حسب الفلترة الحالية.'); return; }
+  list.sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+  const rows = list.map(a=>{
+    const w = findWorker(a.workerId);
+    return {
+      'التاريخ': a.date,
+      'الاسم': w ? w.name : '(عامل محذوف)',
+      'الوظيفة': w ? (w.jobTitle||'') : '',
+      'الحالة': ATTENDANCE_STATUS_LABELS[a.status] || a.status
+    };
+  });
+  try{
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'الحضور');
+    XLSX.writeFile(wb, 'حضور-العمال-' + todayStr() + '.xlsx');
+  }catch(e){ showErr('تعذر إنشاء ملف Excel.', e); }
+});
+
 /* ============================================================
    🔎 بحث شامل فوري + ⌨️ اختصارات لوحة المفاتيح
    ============================================================ */
@@ -3710,6 +3991,7 @@ function openShortcutsHelp(){
     ['r', 'تقارير شهرية']
   ];
   if(document.querySelector('.tab[data-view="tickets"]')) rows.push(['t','بلاغات الصيانة']);
+  if(document.querySelector('.tab[data-view="workforce"]')) rows.push(['w','تحضير العمال']);
   rows.push(['e','الإعدادات']);
   rows.push(['Esc','إغلاق أي نافذة مفتوحة']);
   rows.push(['?','عرض هذه القائمة']);
@@ -3791,6 +4073,7 @@ document.addEventListener('keydown', (e)=>{
     case 'r': switchToTab('reports'); break;
     case 't': switchToTab('tickets'); break;
     case 'e': switchToTab('settings'); break;
+    case 'w': switchToTab('workforce'); break;
   }
 });
 </script>
