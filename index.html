@@ -47,10 +47,6 @@
   }
   .app{max-width:1180px;margin:0 auto;padding:20px 18px 60px;position:relative;z-index:1;}
 
-  /* ============================================================
-     ✨ خلفية زخرفية متحركة — الحركة الوحيدة المستمرة بالصفحة
-     كتل ضوء بطيئة جدًا خلف كل شيء، بدون تفاعل، لا تتقاطع مع المحتوى
-     ============================================================ */
   .bg-orbs{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;transition:transform .35s ease-out;will-change:transform;}
   .bg-orb{position:absolute;border-radius:50%;filter:blur(70px);will-change:transform;}
   .bg-orb.o1{width:400px;height:400px;background:var(--freezer);opacity:.16;top:-100px;right:-80px;animation:orbFloat 20s ease-in-out infinite;}
@@ -63,7 +59,6 @@
     66%{transform:translate(-18px,16px) scale(.96);}
   }
 
-  /* header */
   .topbar{
     display:flex;align-items:center;justify-content:space-between;
     gap:14px;padding:18px 22px;margin-bottom:18px;
@@ -86,7 +81,6 @@
   .topbar .status{font-family:var(--font-mono);font-size:11px;color:#9AA5B1;text-align:left;}
   .topbar .status.save-failed{color:#F0A99E;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
 
-  /* nav */
   .tabs{
     display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;
     background:var(--paper-card);
@@ -120,7 +114,6 @@
   }
   .section-sub{color:var(--ink-soft);font-size:13.5px;line-height:1.6;margin:0 0 20px;max-width:760px;}
 
-  /* cards */
   .card{
     background:var(--paper-card);border:1px solid var(--line);
     border-radius:14px;padding:20px 22px;margin-bottom:18px;
@@ -150,7 +143,6 @@
   .store-card .low-badge.warn{animation:lowPulse 2.6s ease-in-out infinite;}
   @keyframes lowPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0);}50%{box-shadow:0 0 0 6px rgba(255,255,255,0.14);}}
 
-  /* forms */
   label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
   input,select,textarea{
     width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--line-strong);
@@ -178,7 +170,6 @@
   .btn-sm{padding:6px 10px;font-size:12px;border-radius:7px;}
   .btn-danger-outline{background:transparent;border:1px solid var(--danger);color:var(--danger);}
 
-  /* lines editor for vouchers */
   .lines-table{width:100%;border-collapse:collapse;margin-bottom:10px;table-layout:fixed;}
   .lines-table th{
     text-align:right;font-size:11.5px;color:var(--ink-soft);font-weight:600;
@@ -195,7 +186,6 @@
   .lines-table td{overflow:hidden;}
   .rm-line{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px;}
 
-  /* tables */
   table.data{width:100%;border-collapse:collapse;font-size:13px;}
   table.data th{
     text-align:right;padding:11px 12px;background:var(--paper);
@@ -233,7 +223,6 @@
   .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:16px;}
   .toolbar .field{margin-bottom:0;min-width:150px;}
 
-  /* stamp modal */
   .stamp-overlay{
     position:fixed;inset:0;background:rgba(27,36,48,0.55);
     display:none;align-items:center;justify-content:center;z-index:200;padding:20px;
@@ -305,7 +294,6 @@
     #printArea{display:block;position:absolute;top:0;right:0;left:0;padding:26px;}
   }
 
-  /* login screen */
   .login-screen{
     min-height:100vh;display:flex;align-items:center;justify-content:center;
     padding:20px;position:relative;z-index:1;
@@ -324,10 +312,6 @@
   .conn-dot.err{background:var(--stamp-out);}
   .btn-logout{background:transparent;color:#C7CDD6;border:1px solid #48505C;font-size:12px;padding:7px 12px;}
   .btn-logout:hover{background:rgba(255,255,255,0.08);}
-
-  /* ============================================================
-     🎬 حركة الواجهة — دخول متدرّج + تفاعلات لطيفة بدون تعارض
-     ============================================================ */
 
   html{scroll-behavior:smooth;}
 
@@ -411,9 +395,6 @@
     *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;}
   }
 
-  /* ============================================================
-     👤 قائمة البروفايل / حسابي
-     ============================================================ */
   .profile{position:relative;z-index:150;}
   .profile-trigger{
     display:flex;align-items:center;gap:10px;
@@ -492,9 +473,6 @@
   .profile-trigger,.profile-avatar,.tab,.profile-item{-webkit-tap-highlight-color:transparent;}
   .profile-trigger:focus,.profile-trigger:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(255,255,255,0.35);}
 
-  /* ============================================================
-     📱 تصميم الجوال — الهيدر يتقسّم لسطرين بدل ما ينضغط ويكسر النص
-     ============================================================ */
   @media (max-width:700px){
     .topbar{flex-direction:column;align-items:stretch;gap:10px;padding:14px 16px;}
     .topbar > div:last-child{width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px;}
@@ -504,7 +482,6 @@
     .brand p{font-size:10.5px;}
     .conn-badge{font-size:10px;}
 
-    /* التبويبات: تمرير أفقي بدل الضغط */
     .tabs{
       flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
       gap:4px;padding:5px;
@@ -516,10 +493,8 @@
       font-size:12px;padding:9px 10px;
     }
 
-    /* right-to-left scroll hint */
     .tabs{scroll-padding-inline:10px;}
 
-    /* النماذج والبطاقات */
     .card{padding:16px 14px;}
     .row{gap:10px;}
     .row > .field{min-width:100%;}
@@ -534,7 +509,6 @@
     .profile-menu{left:12px;right:12px;width:auto;min-width:0;}
   }
 
-  /* Alert modal (يحاكي stamp-card) */
   #appAlertOverlay .stamp-card{max-width:360px;}
 </style>
 </head>
@@ -558,7 +532,7 @@
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <div class="brand-mark" style="margin:0 auto 14px;">ABZ</div>
-    <h1>فنادق سليمان موسى العليان</h1>
+    <h1>فنادق سليمان العليان</h1>
     <p class="brand-sub">سجل المخزن العليان الذهبي</p>
     <p>سجّل دخولك للمتابعة</p>
     <div class="field" style="text-align:right;margin-top:18px;">
@@ -580,7 +554,7 @@
     <div class="brand">
       <div class="brand-mark">ABZ</div>
       <div>
-        <h1>فنادق سليمان موسى العليان</h1>
+        <h1>فنادق سليمان العليان</h1>
         <p class="brand-sub">سجل المخزن العليان الذهبي</p>
         <p>الفريزر · المواد الغذائية · أدوات النظافة</p>
       </div>
@@ -638,7 +612,6 @@
     <div class="tab" data-view="settings" data-admin-only="1">الإعدادات</div>
   </div>
 
-  <!-- هذي التبويبات ما تظهر بالشريط، بس تفضل موجودة عشان منطق الصلاحيات والتنقل البرمجي (زر/اختصار "سند جديد") -->
   <div style="display:none" aria-hidden="true">
     <div class="tab" data-view="voucherIn" data-admin-only="1">سند توريد (وارد)</div>
     <div class="tab" data-view="voucherOut" data-admin-only="1">سند صرف (صادر)</div>
@@ -975,6 +948,9 @@
           <option value="rejected">مرفوض</option>
         </select>
       </div>
+      <div class="field" style="flex:0 0 auto;align-self:end;">
+        <button class="btn-ghost" id="exportRequestsExcelBtn">⬇ تصدير Excel</button>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -1053,6 +1029,9 @@
         <label>بحث برقم الفاتورة / السند أو الملاحظة</label>
         <input id="invSearch" placeholder="مثال: 4488">
       </div>
+      <div class="field" style="flex:0 0 auto;align-self:end;">
+        <button class="btn-ghost" id="exportInvoicesExcelBtn">⬇ تصدير Excel</button>
+      </div>
     </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 0 10px;flex-wrap:wrap;gap:8px;">
@@ -1122,6 +1101,9 @@
           <option value="cleaning">مخزن أدوات النظافة</option>
         </select>
       </div>
+      <div class="field" style="flex:0 0 auto;align-self:end;">
+        <button class="btn-ghost" id="exportQualityExcelBtn">⬇ تصدير Excel</button>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -1142,6 +1124,9 @@
       <div class="field" style="min-width:260px;">
         <label>الصنف</label>
         <select id="ledgerItemSelect"></select>
+      </div>
+      <div class="field" style="flex:0 0 auto;align-self:end;">
+        <button class="btn-ghost" id="exportLedgerExcelBtn">⬇ تصدير Excel</button>
       </div>
     </div>
 
@@ -1359,7 +1344,7 @@
 
 <div class="stamp-overlay" id="brandListOverlay">
   <div class="stamp-card" style="max-width:680px;text-align:right;max-height:85vh;display:flex;flex-direction:column;">
-    <h3 style="margin:0 0 4px;font-family:var(--font-display);flex-shrink:0;">فنادق سليمان موسى العليان</h3>
+    <h3 style="margin:0 0 4px;font-family:var(--font-display);flex-shrink:0;">فنادق سليمان العليان</h3>
     <p style="margin:0 0 14px;color:var(--ink-soft);font-size:12px;flex-shrink:0;">أرصدة كل الأصناف بكل المخازن</p>
 
     <div id="brandBalancesList" style="overflow-y:auto;flex:1;text-align:right;min-height:80px;padding-left:16px;margin-left:-4px;"></div>
@@ -1438,10 +1423,6 @@
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 <script>
-/* ============================================================
-   إعداد الاتصال بـ Supabase — عدّل السطرين التاليين فقط
-   خذهم من: لوحة تحكم مشروعك بـ Supabase > Settings > API
-   ============================================================ */
 const SUPABASE_URL = 'https://kaxwfvegfpezomvlkqjz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_WXPqJWDFhMOUwPhOsrS3VA_S_ey3IAh';
 
@@ -1478,7 +1459,6 @@ function hideBootLoader(){
   if(el) el.classList.add('hide');
 }
 
-/* ---------- نافذة تنبيه موحّدة بنفس تصميم الموقع (بديل alert()) ---------- */
 function showAppAlert(message){
   document.getElementById('appAlertMessage').textContent = message;
   document.getElementById('appAlertOverlay').classList.add('show');
@@ -1516,7 +1496,6 @@ function showErr(prefix, error){
   alert(prefix + (error && error.message ? ('\n\nتفاصيل تقنية: ' + error.message) : ''));
 }
 
-/* ---------- عداد أرقام متحرك (يُستخدم بلوحة التحكم) ---------- */
 function animateCounters(container){
   container.querySelectorAll('[data-count]').forEach(el=>{
     const target = parseInt(el.dataset.count, 10) || 0;
@@ -1532,7 +1511,6 @@ function animateCounters(container){
   });
 }
 
-/* ---------- AUTH ---------- */
 async function tryLogin(){
   const email = document.getElementById('loginUser').value.trim();
   const password = document.getElementById('loginPass').value;
@@ -1601,7 +1579,6 @@ async function applyRole(){
     } else {
       badge.style.display = 'inline-block';
       badge.textContent = 'مشاهدة فقط';
-      // لو كان مفتوح على تبويب مخصص للمدير قبل ما نطبّق الصلاحية، رجّعه للوحة التحكم
       const activeTab = document.querySelector('.tab.active');
       if(activeTab && (activeTab.hasAttribute('data-admin-only') || activeTab.hasAttribute('data-requester-only'))){
         switchToTab('dashboard');
@@ -1621,11 +1598,9 @@ document.getElementById('logoutBtn').addEventListener('click', async ()=>{
   location.reload();
 });
 
-/* ---------- PROFILE MENU ---------- */
 function initialsOf(email){
   if(!email) return '؟';
   const local = email.split('@')[0] || '';
-  // يدعم العربي والإنجليزي والأرقام
   const clean = local.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g,'').toLowerCase();
   return (clean.slice(0,2) || local.slice(0,2)).toUpperCase();
 }
@@ -1662,7 +1637,6 @@ async function populateProfile(){
       }
     }
 
-    // إخفاء عنصر الإعدادات لغير المدير
     const pmSettings = document.getElementById('pmSettings');
     if(pmSettings) pmSettings.style.display = (currentRole === 'admin') ? 'flex' : 'none';
   }catch(e){ console.error('profile populate failed', e); }
@@ -1689,7 +1663,6 @@ async function populateProfile(){
     if(!root.contains(e.target)) toggle(false);
   });
   menu.addEventListener('click', (e)=>{
-    // لو ضغط على عنصر بدون id، لا تغلق القائمة تلقائيًا
     if(!e.target.closest('.profile-item')) return;
   });
 
@@ -1732,7 +1705,6 @@ async function populateProfile(){
   }
 })();
 
-/* ---------- LOAD (replaces window.storage) ---------- */
 async function loadDB(){
   setConn('', 'جارٍ التحميل...');
   try{
@@ -1811,7 +1783,6 @@ async function loadDB(){
   }
 }
 
-/* ---------- NAV ---------- */
 function switchToTab(view){
   const tab = document.querySelector('.tab[data-view="'+view+'"]');
   if(!tab || tab.style.display === 'none') return false;
@@ -1830,7 +1801,6 @@ document.getElementById('tabs').addEventListener('click', (e)=>{
   switchToTab(tab.dataset.view);
 });
 
-/* ---------- ITEMS ---------- */
 function getItemsByStore(store){
   return DB.items.filter(i=> store==='all' || i.store===store);
 }
@@ -2038,7 +2008,6 @@ document.getElementById('itemPhotoInput').addEventListener('change', async ()=>{
   }
 });
 
-/* ---------- BARCODE SCANNER (camera-based, shared by Items + Vouchers) ---------- */
 let zxingReader = null;
 let scannerControls = null;
 let scannerOnResult = null;
@@ -2095,7 +2064,6 @@ document.getElementById('scanForNewItemBtn').addEventListener('click', ()=>{
   }, 'وجّه الكاميرا نحو الباركود...');
 });
 
-/* ---------- VOUCHER LINE BUILDERS (per-line store + free-text item) ---------- */
 function storeOptionsHtml(selected){
   return Object.keys(STORE_SHORT).map(s=> `<option value="${s}" ${s===selected?'selected':''}>${STORE_SHORT[s]}</option>`).join('');
 }
@@ -2169,7 +2137,6 @@ function storePillsHtml(stores){
   return stores.map(s=> `<span class="pill pill-store-${s}">${STORE_LABELS[s]}</span>`).join(' ');
 }
 
-/* ---------- VOUCHER PHOTOS (compress client-side, upload to Supabase Storage) ---------- */
 function compressImage(file, maxDim, quality){
   maxDim = maxDim || 1600; quality = quality || 0.82;
   return new Promise((resolve, reject)=>{
@@ -2220,7 +2187,6 @@ function wirePhotoPreview(inputId, previewId){
 wirePhotoPreview('inPhoto','inPhotoPreview');
 wirePhotoPreview('outPhoto','outPhotoPreview');
 
-/* ---------- BARCODE SCAN → ADD/INCREMENT VOUCHER LINE ---------- */
 function addOrIncrementLineForItem(tableId, item){
   const rows = document.querySelectorAll('#'+tableId+' tbody tr');
   for(const tr of rows){
@@ -2242,7 +2208,6 @@ function addOrIncrementLineForItem(tableId, item){
   newRow.querySelector('.line-qty').value = 1;
 }
 
-/* ---------- QUICK-ADD NEW ITEM FROM AN UNRECOGNIZED BARCODE (receiving only) ---------- */
 let quickAddTableId = null;
 
 function showQuickAddForm(code, tableId){
@@ -2336,7 +2301,6 @@ function wireBarcodeScanForVoucher(scanBtnId, manualInputId, tableId, allowQuick
 wireBarcodeScanForVoucher('inScanBtn','inManualBarcode','inLinesTable', true);
 wireBarcodeScanForVoucher('outScanBtn','outManualBarcode','outLinesTable', false);
 
-/* ---------- VOUCHER SUBMIT: IN ---------- */
 document.getElementById('inSubmit').addEventListener('click', async ()=>{
   if(busy) return;
   const number = document.getElementById('inNumber').value.trim();
@@ -2402,7 +2366,6 @@ document.getElementById('inSubmit').addEventListener('click', async ()=>{
   busy = false; btn.disabled = false;
 });
 
-/* ---------- VOUCHER SUBMIT: OUT ---------- */
 document.getElementById('outSubmit').addEventListener('click', async ()=>{
   if(busy) return;
   const number = document.getElementById('outNumber').value.trim();
@@ -2433,7 +2396,6 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
         l._itemId = it.id;
         l._unit = it.unit;
       } else {
-        // ما فيه صنف مسجّل بهذا المخزن أصلًا: يتسجل بالسند فقط، وما يُنشأ له صنف جديد ولا رصيد بالمخزون
         l._itemId = null;
         l._unit = l.unit || 'وحدة';
       }
@@ -2477,7 +2439,6 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
   busy = false; btn.disabled = false;
 });
 
-/* ---------- STAMP MODAL ---------- */
 function showStamp(type, number, title, sub){
   const overlay = document.getElementById('stampOverlay');
   const ring = document.getElementById('stampRing');
@@ -2492,7 +2453,6 @@ document.getElementById('stampCloseBtn').addEventListener('click', ()=>{
   document.getElementById('stampOverlay').classList.remove('show');
 });
 
-/* ---------- LOG ---------- */
 ['logFilterPeriod','logFilterType','logFilterStore','logSearch'].forEach(id=>{
   document.getElementById(id).addEventListener('input', renderLogTable);
 });
@@ -2598,7 +2558,6 @@ document.getElementById('closeVoucherDetail').addEventListener('click', ()=>{
   document.getElementById('voucherDetailOverlay').classList.remove('show');
 });
 
-/* ---------- PRINT / PDF (single voucher) ---------- */
 function printVoucher(v){
   const area = document.getElementById('printArea');
 
@@ -2616,7 +2575,7 @@ function printVoucher(v){
     <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:18px;">
         <div>
-          <div style="font-weight:800;font-size:20px;">فنادق سليمان موسى العليان</div>
+          <div style="font-weight:800;font-size:20px;">فنادق سليمان العليان</div>
           <div style="font-size:13px;color:#555;margin-top:2px;">${v.type==='in'?'سند توريد (وارد)':'سند صرف (صادر)'}</div>
         </div>
         <div style="text-align:left;">
@@ -2657,7 +2616,6 @@ document.getElementById('printVoucherBtn').addEventListener('click', ()=>{
   if(currentDetailVoucher) printVoucher(currentDetailVoucher);
 });
 
-/* ---------- EXCEL EXPORT (voucher log, respects current filters) ---------- */
 document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   const period = document.getElementById('logFilterPeriod').value;
   const type = document.getElementById('logFilterType').value;
@@ -2708,7 +2666,6 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   }
 });
 
-/* ---------- MATERIAL REQUESTS (طلبات الأصناف) ---------- */
 function itemOptionsHtml(){
   const groups = {};
   DB.items.forEach(i=>{ (groups[i.store] = groups[i.store] || []).push(i); });
@@ -2863,6 +2820,32 @@ function renderIncomingRequestsTable(){
 }
 document.getElementById('reqFilterStatus').addEventListener('change', renderIncomingRequestsTable);
 
+document.getElementById('exportRequestsExcelBtn').addEventListener('click', ()=>{
+  const filter = document.getElementById('reqFilterStatus').value;
+  let list = DB.requests.slice().sort((a,b)=> b.createdAt - a.createdAt);
+  if(filter !== 'all') list = list.filter(r=> r.status===filter);
+  if(list.length===0){ showAppAlert('لا توجد طلبات لتصديرها حسب الفلترة الحالية.'); return; }
+
+  const statusLabels = { pending:'قيد الانتظار', fulfilled:'تم الصرف', rejected:'مرفوض' };
+  const rows = list.map(r=>({
+    'رقم الطلب': r.number,
+    'الطالب': r.requestedBy || '',
+    'الأصناف': r.lines.map(l=> l.name+' ('+fmtNum(l.qty)+' '+l.unit+')').join('، '),
+    'الحالة': statusLabels[r.status] || r.status,
+    'التاريخ': r.date,
+    'سند الصرف': r.fulfilledVoucherNumber || '',
+    'ملاحظات': r.notes || ''
+  }));
+
+  try{
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'الطلبات');
+    XLSX.writeFile(wb, 'طلبات-الأصناف-' + todayStr() + '.xlsx');
+  }catch(e){
+    showErr('تعذر إنشاء ملف Excel.', e);
+  }
+});
+
 function fulfillRequest(id){
   const r = DB.requests.find(x=>x.id===id);
   if(!r) return;
@@ -2922,7 +2905,6 @@ document.getElementById('closeRequestDetail').addEventListener('click', ()=>{
   document.getElementById('requestDetailOverlay').classList.remove('show');
 });
 
-/* ---------- INVOICE ARCHIVE (بنك الفواتير) ---------- */
 wirePhotoPreview('invPhoto','invPhotoPreview');
 
 document.getElementById('invSubmit').addEventListener('click', async ()=>{
@@ -2995,7 +2977,7 @@ function invoicePrintBlockHtml(v){
     <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:16px;">
         <div>
-          <div style="font-weight:800;font-size:22px;">${v.party ? escapeHtml(v.party) : 'فنادق سليمان موسى العليان'}</div>
+          <div style="font-weight:800;font-size:22px;">${v.party ? escapeHtml(v.party) : 'فنادق سليمان  العليان'}</div>
           <div style="font-size:13px;color:#555;margin-top:2px;">${typeText}${v.note ? ' — ' + escapeHtml(v.note) : ''}</div>
         </div>
         <div style="text-align:left;">
@@ -3056,7 +3038,7 @@ function renderInvoiceBox(containerId, docType){
 
   const groups = {};
   list.forEach(v=>{
-    const key = (v.docDate || '').slice(0,7); // YYYY-MM
+    const key = (v.docDate || '').slice(0,7);
     if(!groups[key]) groups[key] = [];
     groups[key].push(v);
   });
@@ -3132,7 +3114,28 @@ function renderInvoicesTable(){
   renderInvoiceBox('invoicesGroupsPurchase', 'purchase_request');
 }
 
-/* ---------- QUALITY (الجودة) ---------- */
+document.getElementById('exportInvoicesExcelBtn').addEventListener('click', ()=>{
+  const list = getFilteredInvoices(null); // كل الأنواع، بنفس فلاتر التاريخ والبحث الحالية
+  if(list.length===0){ showAppAlert('لا توجد فواتير لتصديرها حسب الفلترة الحالية.'); return; }
+
+  const rows = list.map(v=>({
+    'النوع': INVOICE_TYPE_LABELS[v.docType] || v.docType,
+    'الرقم': v.number,
+    'التاريخ': v.docDate,
+    'المورد / الجهة': v.party || '',
+    'ملاحظة': v.note || '',
+    'رابط الصورة': v.photoUrl || ''
+  }));
+
+  try{
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'الأرشيف');
+    XLSX.writeFile(wb, 'أرشيف-الفواتير-' + todayStr() + '.xlsx');
+  }catch(e){
+    showErr('تعذر إنشاء ملف Excel.', e);
+  }
+});
+
 wirePhotoPreview('qcPhoto','qcPhotoPreview');
 
 document.getElementById('qcSubmit').addEventListener('click', async ()=>{
@@ -3171,6 +3174,29 @@ document.getElementById('qcSubmit').addEventListener('click', async ()=>{
 });
 
 document.getElementById('qcFilterStore').addEventListener('change', renderQualityTable);
+
+document.getElementById('exportQualityExcelBtn').addEventListener('click', ()=>{
+  const store = document.getElementById('qcFilterStore').value;
+  let list = DB.quality.slice().sort((a,b)=> b.createdAt - a.createdAt);
+  if(store !== 'all') list = list.filter(q=> q.store === store);
+  if(list.length===0){ showAppAlert('لا توجد تقييمات جودة لتصديرها حسب الفلترة الحالية.'); return; }
+
+  const rows = list.map(q=>({
+    'المخزن': STORE_LABELS[q.store] || q.store,
+    'التاريخ': q.date,
+    'جودة المخزن': q.warehouseNote || '',
+    'جودة التخزين': q.storageNote || '',
+    'رابط الصورة': q.photoUrl || ''
+  }));
+
+  try{
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'الجودة');
+    XLSX.writeFile(wb, 'تقييمات-الجودة-' + todayStr() + '.xlsx');
+  }catch(e){
+    showErr('تعذر إنشاء ملف Excel.', e);
+  }
+});
 
 function renderQualityTable(){
   const tbody = document.querySelector('#qualityTable tbody');
@@ -3211,7 +3237,6 @@ function renderQualityTable(){
   });
 }
 
-/* ---------- DASHBOARD ---------- */
 function renderDashboard(){
   const cardsEl = document.getElementById('dashCards');
   const stores = ['freezer','pantry','cleaning'];
@@ -3250,7 +3275,6 @@ function renderDashboard(){
   }
 }
 
-/* ---------- LEDGER ---------- */
 document.getElementById('ledgerItemSelect').addEventListener('change', renderLedgerTable);
 
 function renderLedgerSelect(){
@@ -3266,13 +3290,9 @@ function renderLedgerSelect(){
   renderLedgerTable();
 }
 
-function renderLedgerTable(){
-  const id = document.getElementById('ledgerItemSelect').value;
+function getItemMovesWithBalance(id){
   const it = findItem(id);
-  const tbody = document.querySelector('#ledgerTable tbody');
-  const summary = document.getElementById('ledgerSummary');
-  if(!it){ tbody.innerHTML=''; summary.innerHTML=''; return; }
-
+  if(!it) return { it:null, rows:[] };
   const moves = [];
   DB.vouchers.forEach(v=>{
     v.lines.forEach(l=>{
@@ -3280,18 +3300,28 @@ function renderLedgerTable(){
     });
   });
   moves.sort((a,b)=> a.createdAt - b.createdAt);
-
   let running = it.balance - moves.reduce((acc,m)=> acc + (m.type==='in'?m.qty:-m.qty), 0);
   const rows = moves.map(m=>{
     running += (m.type==='in' ? m.qty : -m.qty);
-    return `<tr>
+    return { date:m.date, number:m.number, type:m.type, qty:m.qty, balanceAfter: running };
+  });
+  return { it, rows };
+}
+
+function renderLedgerTable(){
+  const id = document.getElementById('ledgerItemSelect').value;
+  const { it, rows: moves } = getItemMovesWithBalance(id);
+  const tbody = document.querySelector('#ledgerTable tbody');
+  const summary = document.getElementById('ledgerSummary');
+  if(!it){ tbody.innerHTML=''; summary.innerHTML=''; return; }
+
+  const rows = moves.map(m=>`<tr>
       <td>${fmtDate(m.date)}</td>
       <td class="mono">${m.number}</td>
       <td><span class="pill ${m.type==='in'?'pill-in':'pill-out'}">${m.type==='in'?'وارد':'صادر'}</span></td>
       <td class="mono">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
-      <td class="ledger-balance">${fmtNum(running)}</td>
-    </tr>`;
-  });
+      <td class="ledger-balance">${fmtNum(m.balanceAfter)}</td>
+    </tr>`);
 
   tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5"><div class="empty-state"><div class="icon">📄</div>لا توجد حركات على هذا الصنف بعد.</div></td></tr>';
 
@@ -3306,7 +3336,29 @@ function renderLedgerTable(){
   `;
 }
 
-/* ---------- MONTHLY REPORTS ---------- */
+document.getElementById('exportLedgerExcelBtn').addEventListener('click', ()=>{
+  const id = document.getElementById('ledgerItemSelect').value;
+  const { it, rows: moves } = getItemMovesWithBalance(id);
+  if(!it){ showAppAlert('اختر صنفًا أولاً.'); return; }
+  if(moves.length===0){ showAppAlert('لا توجد حركات على هذا الصنف لتصديرها.'); return; }
+
+  const rows = moves.map(m=>({
+    'التاريخ': m.date,
+    'رقم السند': m.number,
+    'النوع': m.type==='in' ? 'وارد' : 'صادر',
+    'الكمية': m.type==='in' ? m.qty : -m.qty,
+    'الرصيد بعد الحركة': m.balanceAfter
+  }));
+
+  try{
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'كشف الحركة');
+    XLSX.writeFile(wb, 'كشف-حركة-' + it.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g,'_') + '-' + todayStr() + '.xlsx');
+  }catch(e){
+    showErr('تعذر إنشاء ملف Excel.', e);
+  }
+});
+
 function currentMonthStr(){ return todayStr().slice(0,7); }
 
 function vouchersInMonth(monthStr){
@@ -3506,7 +3558,6 @@ document.getElementById('reportExportBtn').addEventListener('click', ()=>{
   }
 });
 
-/* ---------- RENDER ALL ---------- */
 function renderAll(){
   renderDashboard();
   renderItemsTable();
@@ -3534,9 +3585,6 @@ document.getElementById('invDate').value = todayStr();
 document.getElementById('attendanceDate').value = todayStr();
 document.getElementById('attendanceLogMonth').value = currentMonthStr();
 
-/* ---------- SETTINGS / RESET ---------- */
-
-/* إقفال الشهر الحالي: يحوّل كل السندات المفتوحة إلى أرشيف دائم لا يُعدَّل ولا يُحذف */
 function renderClosePeriodSummary(){
   const el = document.getElementById('closePeriodSummary');
   if(!el) return;
@@ -3700,8 +3748,6 @@ fullResetBtn.addEventListener('click', async ()=>{
   busy = false;
 });
 
-
-/* ---------- WORKFORCE / ATTENDANCE ---------- */
 const ATTENDANCE_STATUS_LABELS = { present:'حاضر', absent:'غائب' };
 
 function findWorker(id){ return DB.workers.find(w=>w.id===id); }
@@ -3865,9 +3911,6 @@ document.getElementById('exportAttendanceExcelBtn').addEventListener('click', ()
   }catch(e){ showErr('تعذر إنشاء ملف Excel.', e); }
 });
 
-/* ============================================================
-   🔎 بحث شامل فوري + ⌨️ اختصارات لوحة المفاتيح
-   ============================================================ */
 function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -4008,7 +4051,6 @@ document.getElementById('closeBrandList').addEventListener('click', ()=>{
   document.getElementById('brandListOverlay').classList.remove('show');
 });
 
-/* ---------- قائمة مخفية: أرصدة كل الأصناف بكل المخازن (Shift+L) ---------- */
 function renderBrandBalancesList(){
   const el = document.getElementById('brandBalancesList');
   const storeKeys = Object.keys(STORE_LABELS);
