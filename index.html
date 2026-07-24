@@ -532,7 +532,7 @@
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <div class="brand-mark" style="margin:0 auto 14px;">ABZ</div>
-    <h1>فنادق سليمان العليان</h1>
+    <h1>فنادق سليمان موسى العليان</h1>
     <p class="brand-sub">سجل المخزن العليان الذهبي</p>
     <p>سجّل دخولك للمتابعة</p>
     <div class="field" style="text-align:right;margin-top:18px;">
@@ -554,7 +554,7 @@
     <div class="brand">
       <div class="brand-mark">ABZ</div>
       <div>
-        <h1>فنادق سليمان العليان</h1>
+        <h1>فنادق سليمان موسى العليان</h1>
         <p class="brand-sub">سجل المخزن العليان الذهبي</p>
         <p>الفريزر · المواد الغذائية · أدوات النظافة</p>
       </div>
@@ -1344,7 +1344,7 @@
 
 <div class="stamp-overlay" id="brandListOverlay">
   <div class="stamp-card" style="max-width:680px;text-align:right;max-height:85vh;display:flex;flex-direction:column;">
-    <h3 style="margin:0 0 4px;font-family:var(--font-display);flex-shrink:0;">فنادق سليمان العليان</h3>
+    <h3 style="margin:0 0 4px;font-family:var(--font-display);flex-shrink:0;">فنادق سليمان موسى العليان</h3>
     <p style="margin:0 0 14px;color:var(--ink-soft);font-size:12px;flex-shrink:0;">أرصدة كل الأصناف بكل المخازن</p>
 
     <div id="brandBalancesList" style="overflow-y:auto;flex:1;text-align:right;min-height:80px;padding-left:16px;margin-left:-4px;"></div>
@@ -1919,7 +1919,10 @@ function renderItemsTable(){
       <td class="mono mono-cell ${low?'low-flag':''}">${fmtNum(i.balance)}${low?' ⚠':''}</td>
       <td class="mono mono-cell">${fmtNum(i.min)}</td>
       <td>
-        ${i.barcode ? `<span class="mono mono-cell" style="font-size:12px;" title="${i.barcode}">${i.barcode}</span>` : `<button class="btn-ghost btn-sm" data-scan-item="${i.id}">📷 ربط باركود</button>`}
+        <div style="display:flex;gap:5px;align-items:center;">
+          <input class="mono item-barcode-input" data-item-barcode="${i.id}" value="${i.barcode||''}" placeholder="بدون باركود" style="font-size:12px;padding:6px 8px;min-width:0;">
+          <button class="btn-ghost btn-sm" data-scan-item="${i.id}" title="مسح بالكاميرا" style="flex:0 0 auto;padding:6px 8px;">📷</button>
+        </div>
       </td>
       <td>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -1964,6 +1967,38 @@ function renderItemsTable(){
             : 'تعذر حفظ الباركود.';
         }
       }, 'وجّه الكاميرا نحو باركود هذا الصنف...');
+    });
+  });
+
+  tbody.querySelectorAll('[data-item-barcode]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      if(busy) return;
+      const itemId = inp.dataset.itemBarcode;
+      const original = (findItem(itemId) || {}).barcode || null;
+      const newCode = inp.value.trim() || null;
+      if(newCode === original) return;
+
+      if(newCode && DB.items.some(x=> x.barcode===newCode && x.id!==itemId)){
+        showAppAlert('هذا الباركود مستخدم مسبقًا لصنف آخر. كل باركود يجب أن يكون مرتبطًا بصنف واحد فقط.');
+        inp.value = original || '';
+        return;
+      }
+      busy = true;
+      inp.disabled = true;
+      try{
+        const { error } = await sb.from('items').update({ barcode: newCode }).eq('id', itemId);
+        if(error) throw error;
+        await loadDB();
+      }catch(e){
+        if(e && e.code === '23505'){
+          showAppAlert('هذا الباركود مستخدم مسبقًا لصنف آخر بقاعدة البيانات.');
+        } else {
+          showErr('تعذر حفظ الباركود.', e);
+        }
+        inp.value = original || '';
+        inp.disabled = false;
+      }
+      busy = false;
     });
   });
 
@@ -2575,7 +2610,7 @@ function printVoucher(v){
     <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:18px;">
         <div>
-          <div style="font-weight:800;font-size:20px;">فنادق سليمان العليان</div>
+          <div style="font-weight:800;font-size:20px;">فنادق سليمان موسى العليان</div>
           <div style="font-size:13px;color:#555;margin-top:2px;">${v.type==='in'?'سند توريد (وارد)':'سند صرف (صادر)'}</div>
         </div>
         <div style="text-align:left;">
@@ -2977,7 +3012,7 @@ function invoicePrintBlockHtml(v){
     <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:16px;">
         <div>
-          <div style="font-weight:800;font-size:22px;">${v.party ? escapeHtml(v.party) : 'فنادق سليمان  العليان'}</div>
+          <div style="font-weight:800;font-size:22px;">${v.party ? escapeHtml(v.party) : 'فنادق سليمان موسى العليان'}</div>
           <div style="font-size:13px;color:#555;margin-top:2px;">${typeText}${v.note ? ' — ' + escapeHtml(v.note) : ''}</div>
         </div>
         <div style="text-align:left;">
