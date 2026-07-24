@@ -124,7 +124,7 @@
     position:relative;z-index:1;
   }
   .card h3{line-height:1.4;}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:4px;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom: 50px;}
   @media (max-width:820px){.grid3{grid-template-columns:1fr;}}
 
   .store-card{
@@ -576,11 +576,11 @@
     <p>سجّل دخولك للمتابعة</p>
     <div class="field" style="text-align:right;margin-top:18px;">
       <label>البريد الإلكتروني</label>
-      <input id="loginUser" type="email" placeholder="name@example.com" autocomplete="username">
+      <input id="loginUser" type="email" placeholder="اكتب ايميلك" autocomplete="username">
     </div>
     <div class="field" style="text-align:right;">
       <label>كلمة السر</label>
-      <input id="loginPass" type="password" placeholder="كلمة السر" autocomplete="current-password">
+      <input id="loginPass" type="password" placeholder="اكتب كلمه السر" autocomplete="current-password">
     </div>
     <div id="loginError" style="display:none;color:var(--danger);font-size:12.5px;margin-bottom:12px;text-align:right;">بيانات الدخول غير صحيحة.</div>
     <button class="btn-primary" id="loginBtn" style="width:100%;">دخول</button>
@@ -1329,7 +1329,7 @@
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">تفعيل و ايقاف التفعيل وضع المطور</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">تفعيل و ايقاف التفعيل</p>
-      <button class="btn-danger-outline" id="DeveloperMode">تفعيل وضع المطور</button>
+      <button class="btn-danger-outline" id="DeveloperMode">الغاء وضع المطور</button>
     </div>
 
     <div class="card" style="border:1.5px solid var(--danger);">
@@ -4240,7 +4240,7 @@ document.onkeydown = function(e)
         }
         document.onkeydown = function (event) {
             event = (event || window.event);
-            //alert(event.keyCode);   return false;
+            alert(event.keyCode);   return false;
             if (event.keyCode === 123 ||
                     event.ctrlKey && event.shiftKey && event.keyCode === 73 ||
                     event.ctrlKey && event.shiftKey && event.keyCode === 75) {
