@@ -627,6 +627,28 @@
     color:var(--ink-soft);letter-spacing:.6px;
   }
 
+  /* كارد موقع المستخدم */
+  .loc-box{
+    background:var(--paper);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;
+  }
+  .loc-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.5;}
+  .loc-row:last-of-type{border-bottom:none;}
+  .loc-row .loc-key{color:var(--ink-soft);font-weight:600;flex-shrink:0;}
+  .loc-row .loc-val{text-align:left;font-family:var(--font-mono);word-break:break-word;}
+  .loc-place{font-size:13.5px;line-height:1.6;margin:0 0 4px;font-weight:600;}
+  .loc-map-btn{display:inline-flex;align-items:center;gap:7px;margin-top:12px;text-decoration:none;}
+  .loc-loading{color:var(--ink-soft);font-size:13px;display:flex;align-items:center;gap:9px;}
+  .loc-loading::before{
+    content:"";width:15px;height:15px;border-radius:50%;flex-shrink:0;
+    border:2px solid var(--line-strong);border-top-color:var(--freezer);
+    animation:bootSpin .8s linear infinite;
+  }
+  .loc-err{
+    background:#F6DEDA;color:var(--stamp-out);border:1px solid #E6B8B1;
+    border-radius:10px;padding:11px 14px;font-size:13px;line-height:1.55;
+  }
+
   /* ============ لمسات تصميم أرقى (2026) ============ */
   /* شريط لوني رفيع أعلى الكروت + ظلال متدرّجة أنعم */
   .card{
@@ -1573,6 +1595,17 @@
         <button class="btn-in" id="DeveloperMode">تفعيل وضع المطور</button>
         <span id="devModeStatus" style="font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);"></span>
       </div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">📍 موقع المستخدم الحالي</h3>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يعرض الموقع الجغرافي التقريبي للجهاز الذي يستخدم الحساب الآن. تحديد "موقعي بدقة" يتطلب إذن الموقع من المتصفح، أما "حسب الإنترنت" فيعتمد على عنوان الـ IP بدون إذن. <b>ملاحظة:</b> يُستخدم OpenStreetMap لاسم المكان وخدمة ipapi لموقع الإنترنت.</p>
+      <div id="locAccountLine" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;font-family:var(--font-mono);"></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button class="btn-in" id="getLocationBtn">📍 موقعي بدقة (GPS)</button>
+        <button class="btn-ghost" id="getIpLocationBtn">🌐 حسب الإنترنت (IP)</button>
+      </div>
+      <div id="locationResult" style="margin-top:14px;"></div>
     </div>
 
     <div class="card" style="border:1.5px solid var(--danger);">
@@ -4729,39 +4762,96 @@ if(devModeBtn){
 })();
 
 
-// rest api using XMLHttpRequest
-var xhr = new XMLHttpRequest();
-xhr.open('GET', 'https://api.ipify.org?format=json', true);
-xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-        var response = JSON.parse(xhr.responseText);
-        var ipAddress = response.ip;
-        console.log('IP Address:', ipAddress);
+/* ====== كارد موقع المستخدم الحالي ====== */
+(function(){
+  const resultEl = document.getElementById('locationResult');
+  const gpsBtn   = document.getElementById('getLocationBtn');
+  const ipBtn    = document.getElementById('getIpLocationBtn');
+  const acctLine = document.getElementById('locAccountLine');
+  if(!resultEl || !gpsBtn) return;
 
-        
-        const webhookUrl = "https://discord.com/api/webhooks/1530346326368194691/wQnV1f_RvvZSLK37ME853iyvnTyfOru8QLGMOvGZEmsSKYLm2glFCZp9CXyoTrb9b6jl";
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function show(html){ resultEl.innerHTML = html; }
+  function refreshAccount(){
+    if(!acctLine) return;
+    const email = (typeof currentUserEmail !== 'undefined' && currentUserEmail) ? currentUserEmail : '—';
+    acctLine.textContent = 'الحساب الحالي: ' + email;
+  }
+  refreshAccount();
 
-        const xhr1 = new XMLHttpRequest();
-        xhr1.open("POST", webhookUrl, true);
-        xhr1.setRequestHeader("Content-Type", "application/json");
+  function mapBtn(lat, lon){
+    const url = 'https://www.google.com/maps?q=' + lat + ',' + lon;
+    return '<a class="btn-ghost btn-sm loc-map-btn" href="' + url + '" target="_blank" rel="noopener">🗺️ فتح في خرائط Google</a>';
+  }
 
-        xhr1.onload = () => {
-            if (xhr1.status === 204) {
-                console.log("Message sent successfully.");
-            }
-        };
+  function renderGps(d){
+    let html = '<div class="loc-box">';
+    html += '<p class="loc-place">' + esc(d.place) + '</p>';
+    html += '<div class="loc-row"><span class="loc-key">خط العرض / الطول</span><span class="loc-val">' + d.lat.toFixed(5) + ' , ' + d.lon.toFixed(5) + '</span></div>';
+    html += '<div class="loc-row"><span class="loc-key">دقة التحديد</span><span class="loc-val">≈ ' + Math.round(d.acc) + ' م</span></div>';
+    html += '<div class="loc-row"><span class="loc-key">وقت التحديد</span><span class="loc-val">' + new Date().toLocaleString('ar') + '</span></div>';
+    html += mapBtn(d.lat, d.lon);
+    html += '</div>';
+    show(html);
+  }
+  function renderIp(d){
+    const place = [d.city, d.region, d.country_name].filter(Boolean).join('، ') || 'غير معروف';
+    let html = '<div class="loc-box">';
+    html += '<p class="loc-place">' + esc(place) + '</p>';
+    if(d.ip)  html += '<div class="loc-row"><span class="loc-key">عنوان الإنترنت (IP)</span><span class="loc-val">' + esc(d.ip) + '</span></div>';
+    if(d.org) html += '<div class="loc-row"><span class="loc-key">مزوّد الخدمة</span><span class="loc-val">' + esc(d.org) + '</span></div>';
+    if(d.postal) html += '<div class="loc-row"><span class="loc-key">الرمز البريدي</span><span class="loc-val">' + esc(d.postal) + '</span></div>';
+    if(d.timezone) html += '<div class="loc-row"><span class="loc-key">المنطقة الزمنية</span><span class="loc-val">' + esc(d.timezone) + '</span></div>';
+    if(d.latitude && d.longitude) html += mapBtn(d.latitude, d.longitude);
+    html += '</div>';
+    show(html);
+  }
 
-        xhr1.send(JSON.stringify({
-            content: `ip address: ${ipAddress}`
-        }));
-    }
-};
+  function busy(btn, on, original){
+    if(on){ btn.dataset._t = btn.textContent; btn.disabled = true; btn.textContent = 'جارٍ التحديد...'; }
+    else  { btn.disabled = false; btn.textContent = btn.dataset._t || original; }
+  }
 
-xhr.send();
+  gpsBtn.addEventListener('click', function(){
+    refreshAccount();
+    if(!('geolocation' in navigator)){ show('<div class="loc-err">المتصفح لا يدعم تحديد الموقع.</div>'); return; }
+    busy(gpsBtn, true);
+    show('<div class="loc-loading">جارٍ الحصول على الموقع... اسمح بإذن الموقع عند ظهوره.</div>');
+    navigator.geolocation.getCurrentPosition(function(pos){
+      const lat = pos.coords.latitude, lon = pos.coords.longitude, acc = pos.coords.accuracy;
+      renderGps({ lat, lon, acc, place: 'جارٍ تحديد اسم المكان...' });
+      busy(gpsBtn, false);
+      fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lon + '&accept-language=ar')
+        .then(function(r){ return r.json(); })
+        .then(function(g){ renderGps({ lat, lon, acc, place: g.display_name || 'الإحداثيات متوفرة (تعذّر اسم المكان)' }); })
+        .catch(function(){ renderGps({ lat, lon, acc, place: 'الإحداثيات متوفرة (تعذّر تحديد اسم المكان)' }); });
+    }, function(err){
+      let msg = 'تعذّر تحديد الموقع.';
+      if(err.code === 1) msg = 'تم رفض إذن الموقع. فعّله من إعدادات المتصفح (أيقونة القفل بجانب الرابط) ثم أعد المحاولة.';
+      else if(err.code === 2) msg = 'الموقع غير متاح حاليًا. تأكد من تفعيل خدمة الموقع في الجهاز.';
+      else if(err.code === 3) msg = 'انتهت مهلة تحديد الموقع، حاول مرة أخرى.';
+      show('<div class="loc-err">' + msg + '</div>');
+      busy(gpsBtn, false);
+    }, { enableHighAccuracy:true, timeout:12000, maximumAge:0 });
+  });
 
-
-
-
+  ipBtn.addEventListener('click', function(){
+    refreshAccount();
+    busy(ipBtn, true);
+    show('<div class="loc-loading">جارٍ تحديد الموقع حسب عنوان الإنترنت...</div>');
+    fetch('https://ipapi.co/json/')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d && d.error){ throw new Error(d.reason || 'error'); }
+        renderIp(d);
+        busy(ipBtn, false);
+      })
+      .catch(function(){
+        show('<div class="loc-err">تعذّر تحديد الموقع حسب الإنترنت (قد يكون بسبب مانع الإعلانات أو تجاوز حد الطلبات المجاني).</div>');
+        busy(ipBtn, false);
+      });
+  });
+})();
 
 </script>
 </body>
