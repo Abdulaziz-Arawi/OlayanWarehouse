@@ -45,7 +45,7 @@
     min-height:100vh;
     position:relative;
   }
-  .app{max-width:1180px;margin:0 auto;padding:20px 18px 60px;position:relative;z-index:1;}
+  .app{max-width:1180px;margin:0 auto;padding:38px 18px 60px;position:relative;z-index:1;}
 
   .bg-orbs{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;transition:transform .35s ease-out;will-change:transform;}
   .bg-orb{position:absolute;border-radius:50%;filter:blur(70px);will-change:transform;}
@@ -60,12 +60,15 @@
   }
 
   .topbar{
-    display:flex;align-items:center;justify-content:space-between;
-    gap:14px;padding:18px 22px;margin-bottom:18px;
     background:var(--ink);color:var(--paper-card);
-    border-radius:14px;
-    box-shadow:0 8px 20px rgba(27,36,48,0.18);
+    box-shadow:0 4px 16px rgba(27,36,48,0.18);
     position:relative;z-index:100;
+    width:100%;
+  }
+  .topbar-inner{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:14px;padding:18px 22px;
+    max-width:1180px;margin:0 auto;
   }
   .brand{display:flex;align-items:center;gap:12px;}
   .brand-mark{
@@ -306,7 +309,21 @@
   .login-card h1{font-family:var(--font-display);font-weight:800;font-size:18px;margin:4px 0 0;line-height:1.35;}
   .login-card .brand-sub{font-family:var(--font-display);font-weight:700;font-size:13.5px;margin:2px 0 10px;color:var(--ink-soft);}
   .login-card p{color:var(--ink-soft);font-size:13px;margin:0;}
-  .conn-badge{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;color:#9AA5B1;}
+  .db-activity{
+    background:transparent;border:none;padding:8px;cursor:default;
+    display:flex;align-items:center;justify-content:center;border-radius:50%;
+  }
+  .db-activity-dot{
+    width:9px;height:9px;border-radius:50%;background:#6B7684;position:relative;
+    transition:background .2s ease;
+  }
+  .db-activity.busy .db-activity-dot{background:var(--freezer);animation:dbPulse .9s ease-in-out infinite;}
+  .db-activity.ok .db-activity-dot{background:var(--stamp-in);}
+  .db-activity.ok .db-activity-dot::after{content:"";position:absolute;inset:0;border-radius:50%;animation:dotPing 1s ease-out;}
+  .db-activity.err .db-activity-dot{background:var(--stamp-out);}
+  .db-activity.err{cursor:pointer;}
+  .db-activity.err:hover{background:rgba(255,255,255,0.08);}
+  @keyframes dbPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(.65);}}
   .conn-dot{width:7px;height:7px;border-radius:50%;background:#6B7684;position:relative;}
   .conn-dot.ok{background:var(--stamp-in);}
   .conn-dot.err{background:var(--stamp-out);}
@@ -474,13 +491,13 @@
   .profile-trigger:focus,.profile-trigger:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(255,255,255,0.35);}
 
   @media (max-width:700px){
-    .topbar{flex-direction:column;align-items:stretch;gap:10px;padding:14px 16px;}
-    .topbar > div:last-child{width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+    .topbar-inner{flex-direction:column;align-items:stretch;gap:10px;padding:14px 16px;}
+    .topbar-inner > div:last-child{width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px;}
     .brand{gap:9px;}
     .brand-mark{width:34px;height:34px;font-size:11px;flex-shrink:0;}
     .brand h1{font-size:14px;line-height:1.3;}
     .brand p{font-size:10.5px;}
-    .conn-badge{font-size:10px;}
+    .db-activity{padding:6px;}
 
     .tabs{
       flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
@@ -500,6 +517,28 @@
     .row > .field{min-width:100%;}
     .toolbar{gap:8px;}
     .toolbar .field{min-width:100%;}
+
+    /* جدول الأصناف: يتحول لبطاقات مكدّسة بدل التمرير الأفقي على الجوال */
+    #itemsTable{min-width:0;table-layout:auto;}
+    #itemsTable colgroup{display:none;}
+    #itemsTable thead{display:none;}
+    #itemsTable tbody, #itemsTable tr, #itemsTable td{display:block;width:100%;}
+    #itemsTable tr{
+      border:1px solid var(--line);border-radius:12px;
+      margin-bottom:12px;padding:10px 12px;background:var(--paper-card);
+    }
+    #itemsTable td{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:9px 2px;border-bottom:1px solid var(--line);
+      white-space:normal;overflow:visible;text-overflow:clip;max-width:none;text-align:left;
+    }
+    #itemsTable td:last-child{border-bottom:none;}
+    #itemsTable td::before{
+      content:attr(data-label);flex-shrink:0;
+      font-family:var(--font-display);font-weight:700;font-size:11.5px;color:var(--ink-soft);
+    }
+    #itemsTable td:empty::before, #itemsTable td[data-label=""]::before{content:none;}
+    #itemsTable td[data-label=""]{justify-content:flex-end;}
   }
 
   @media (max-width:620px){
@@ -548,55 +587,59 @@
   </div>
 </div>
 
-<div class="app" id="appRoot" style="display:none;">
+<div id="appRoot" style="display:none;">
 
   <div class="topbar">
-    <div class="brand">
-      <div class="brand-mark">ABZ</div>
-      <div>
-        <h1>فنادق سليمان موسى العليان</h1>
-        <p class="brand-sub">سجل المخزن العليان الذهبي</p>
-        <p>الفريزر · المواد الغذائية · أدوات النظافة</p>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:14px;">
-      <button class="btn-search-trigger" id="newVoucherBtn" type="button" style="display:none;">➕ سند جديد <kbd>n</kbd></button>
-      <button class="btn-search-trigger" id="globalSearchBtn" type="button">🔍 بحث <kbd>/</kbd></button>
-      <span class="pill" id="roleBadge" style="display:none;background:rgba(255,255,255,0.14);color:#E7EAF0;"></span>
-      <div class="conn-badge"><span class="conn-dot" id="connDot"></span><span id="saveStatus">جارٍ الاتصال...</span></div>
-      <div class="profile" id="profileRoot">
-        <div class="profile-trigger" id="profileTrigger" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false">
-          <div class="profile-avatar" id="profileAvatar">—</div>
-          <div class="profile-meta">
-            <span class="profile-name" id="profileName">الحساب</span>
-            <span class="profile-email" id="profileEmail">—</span>
-          </div>
-          <span class="profile-caret">▾</span>
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">ABZ</div>
+        <div>
+          <h1>فنادق سليمان موسى العليان</h1>
+          <p class="brand-sub">سجل المخزن العليان الذهبي</p>
+          <p>الفريزر · المواد الغذائية · أدوات النظافة</p>
         </div>
-        <div class="profile-menu" id="profileMenu" role="menu">
-          <div class="profile-head">
-            <div class="profile-avatar" id="profileAvatarBig">—</div>
-            <div class="profile-head-info">
-              <b id="profileHeadName">الحساب</b>
-              <span id="profileHeadEmail">—</span>
-              <span class="profile-role" id="profileRole" style="margin-top:6px;"><span class="role-dot"></span><span id="profileRoleText">مسؤول</span></span>
-              <span class="profile-session online"><span class="conn-dot ok"></span>متصل الآن</span>
-              <span class="profile-session" id="profileDbStatus"><span class="conn-dot" id="profileDbDot"></span><span id="profileDbText">جارٍ الاتصال...</span></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <button class="btn-search-trigger" id="newVoucherBtn" type="button" style="display:none;">➕ سند جديد <kbd>n</kbd></button>
+        <button class="btn-search-trigger" id="globalSearchBtn" type="button">🔍 بحث <kbd>/</kbd></button>
+        <span class="pill" id="roleBadge" style="display:none;background:rgba(255,255,255,0.14);color:#E7EAF0;"></span>
+        <button type="button" class="db-activity" id="dbActivity" title="جارٍ الاتصال..."><span class="db-activity-dot"></span></button>
+        <div class="profile" id="profileRoot">
+          <div class="profile-trigger" id="profileTrigger" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false">
+            <div class="profile-avatar" id="profileAvatar">—</div>
+            <div class="profile-meta">
+              <span class="profile-name" id="profileName">الحساب</span>
+              <span class="profile-email" id="profileEmail">—</span>
             </div>
+            <span class="profile-caret">▾</span>
           </div>
-          <div class="profile-item" id="pmDashboard"><span class="ico">🏠</span>لوحة التحكم</div>
-          <div class="profile-item" id="pmLedger"><span class="ico">📊</span>كشف حركة صنف</div>
-          <div class="profile-item" id="pmLog"><span class="ico">📑</span>سجل السندات</div>
-          <div class="profile-sep"></div>
-          <div class="profile-item" id="pmSettings" data-admin-only="1"><span class="ico">⚙️</span>الإعدادات</div>
-          <div class="profile-item" id="pmFullscreen"><span class="ico">⛶</span>شاشة كاملة</div>
-          <div class="profile-item" id="pmShortcuts"><span class="ico">⌨️</span>اختصارات لوحة المفاتيح</div>
-          <div class="profile-sep"></div>
-          <div class="profile-item danger" id="logoutBtn"><span class="ico">↩</span>تسجيل الخروج</div>
+          <div class="profile-menu" id="profileMenu" role="menu">
+            <div class="profile-head">
+              <div class="profile-avatar" id="profileAvatarBig">—</div>
+              <div class="profile-head-info">
+                <b id="profileHeadName">الحساب</b>
+                <span id="profileHeadEmail">—</span>
+                <span class="profile-role" id="profileRole" style="margin-top:6px;"><span class="role-dot"></span><span id="profileRoleText">مسؤول</span></span>
+                <span class="profile-session online"><span class="conn-dot ok"></span>متصل الآن</span>
+                <span class="profile-session" id="profileDbStatus"><span class="conn-dot" id="profileDbDot"></span><span id="profileDbText">جارٍ الاتصال...</span></span>
+              </div>
+            </div>
+            <div class="profile-item" id="pmDashboard"><span class="ico">🏠</span>لوحة التحكم</div>
+            <div class="profile-item" id="pmLedger"><span class="ico">📊</span>كشف حركة صنف</div>
+            <div class="profile-item" id="pmLog"><span class="ico">📑</span>سجل السندات</div>
+            <div class="profile-sep"></div>
+            <div class="profile-item" id="pmSettings" data-admin-only="1"><span class="ico">⚙️</span>الإعدادات</div>
+            <div class="profile-item" id="pmFullscreen"><span class="ico">⛶</span>شاشة كاملة</div>
+            <div class="profile-item" id="pmShortcuts"><span class="ico">⌨️</span>اختصارات لوحة المفاتيح</div>
+            <div class="profile-sep"></div>
+            <div class="profile-item danger" id="logoutBtn"><span class="ico">↩</span>تسجيل الخروج</div>
+          </div>
         </div>
       </div>
     </div>
   </div>
+
+  <div class="app">
 
   <div class="tabs" id="tabs">
     <div class="tab active" data-view="dashboard">لوحة التحكم</div>
@@ -667,10 +710,7 @@
         </div>
         <div class="field">
           <label>الباركود (اختياري)</label>
-          <div style="display:flex;gap:6px;">
-            <input id="newItemBarcode" placeholder="امسح أو اكتب الرقم">
-            <button type="button" class="btn-ghost btn-sm" id="scanForNewItemBtn" title="مسح بالكاميرا" style="flex:0 0 auto;">📷</button>
-          </div>
+          <input id="newItemBarcode" placeholder="اكتب الرقم">
         </div>
         <div class="field" style="flex:0 0 auto;align-self:end;">
           <button class="btn-primary" id="addItemBtn">إضافة الصنف</button>
@@ -700,14 +740,14 @@
     <div class="table-wrap">
       <table class="data" id="itemsTable">
         <colgroup>
+          <col style="width:18%">
+          <col style="width:15%">
+          <col style="width:8%">
+          <col style="width:9%">
+          <col style="width:7%">
           <col style="width:20%">
-          <col style="width:13%">
+          <col style="width:15%">
           <col style="width:8%">
-          <col style="width:10%">
-          <col style="width:8%">
-          <col style="width:14%">
-          <col style="width:17%">
-          <col style="width:10%">
         </colgroup>
         <thead><tr><th>الصنف</th><th>المخزن</th><th>الوحدة</th><th>الرصيد الحالي</th><th>الحد الأدنى</th><th>الباركود</th><th>الصورة</th><th></th></tr></thead>
         <tbody></tbody>
@@ -875,16 +915,6 @@
         <tbody></tbody>
       </table>
     </div>
-
-    <div class="stamp-overlay" id="voucherDetailOverlay">
-      <div class="stamp-card" style="max-width:480px;text-align:right;max-height:85vh;overflow-y:auto;">
-        <div id="voucherDetailBody"></div>
-        <div style="display:flex;gap:10px;margin-top:16px;">
-          <button class="btn-ghost" id="printVoucherBtn" style="flex:1;">🖨 طباعة / PDF</button>
-          <button class="btn-ghost stamp-close" id="closeVoucherDetail" style="flex:1;">إغلاق</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- MY REQUESTS (requester / chef) -->
@@ -959,15 +989,6 @@
         <thead><tr><th>رقم الطلب</th><th>الطالب</th><th>الأصناف</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
-    </div>
-  </div>
-
-  <div class="stamp-overlay" id="requestDetailOverlay">
-    <div class="stamp-card" style="max-width:480px;text-align:right;max-height:85vh;overflow-y:auto;">
-      <div id="requestDetailBody"></div>
-      <div style="display:flex;gap:10px;margin-top:16px;">
-        <button class="btn-ghost stamp-close" id="closeRequestDetail" style="flex:1;">إغلاق</button>
-      </div>
     </div>
   </div>
 
@@ -1305,6 +1326,12 @@
       <button class="btn-danger-outline" id="resetItemsBtn" disabled>حذف كل الأصناف</button>
     </div>
 
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">تفعيل و ايقاف التفعيل وضع المطور</h3>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">تفعيل و ايقاف التفعيل</p>
+      <button class="btn-danger-outline" id="DeveloperMode">تفعيل وضع المطور</button>
+    </div>
+
     <div class="card" style="border:1.5px solid var(--danger);">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;color:var(--danger);">إعادة تعيين شاملة</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يحذف كل الأصناف وكل السندات <b>غير المقفلة</b> نهائيًا. السندات المقفلة (الأرشيف الشهري) محمية دائمًا ولن تُحذف حتى بهذا الإجراء. هذا الإجراء لا يمكن التراجع عنه.</p>
@@ -1321,8 +1348,28 @@
   </div>
 
 </div>
+</div>
 
 <input type="file" id="itemPhotoInput" accept="image/*" style="display:none;">
+
+<div class="stamp-overlay" id="voucherDetailOverlay">
+  <div class="stamp-card" style="max-width:480px;text-align:right;max-height:85vh;overflow-y:auto;">
+    <div id="voucherDetailBody"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn-ghost" id="printVoucherBtn" style="flex:1;">🖨 طباعة / PDF</button>
+      <button class="btn-ghost stamp-close" id="closeVoucherDetail" style="flex:1;">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<div class="stamp-overlay" id="requestDetailOverlay">
+  <div class="stamp-card" style="max-width:480px;text-align:right;max-height:85vh;overflow-y:auto;">
+    <div id="requestDetailBody"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn-ghost stamp-close" id="closeRequestDetail" style="flex:1;">إغلاق</button>
+    </div>
+  </div>
+</div>
 
 <div class="stamp-overlay" id="newVoucherOverlay">
   <div class="stamp-card" style="max-width:380px;">
@@ -1478,11 +1525,6 @@ document.getElementById('appAlertCloseBtn').addEventListener('click', ()=>{
 })();
 
 function setConn(state, text){
-  const dot = document.getElementById('connDot');
-  const label = document.getElementById('saveStatus');
-  dot.className = 'conn-dot' + (state ? ' '+state : '');
-  label.textContent = text;
-
   const pDot = document.getElementById('profileDbDot');
   const pText = document.getElementById('profileDbText');
   const pRow = document.getElementById('profileDbStatus');
@@ -1492,6 +1534,26 @@ function setConn(state, text){
     pRow.className = 'profile-session' + (state==='ok' ? ' online' : (state==='err' ? ' offline' : ''));
   }
 }
+
+let dbActivityIdleTimer = null;
+function setDbActivity(state){
+  const el = document.getElementById('dbActivity');
+  if(!el) return;
+  el.className = 'db-activity' + (state ? ' '+state : '');
+  el.title = state==='err' ? 'تعذر الاتصال — اضغط لإعادة المحاولة'
+    : state==='busy' ? 'جارٍ الإرسال إلى قاعدة البيانات...'
+    : 'متصل بقاعدة البيانات';
+  clearTimeout(dbActivityIdleTimer);
+  if(state==='ok'){
+    dbActivityIdleTimer = setTimeout(()=>{
+      if(el.classList.contains('ok')) setDbActivity('');
+    }, 1400);
+  }
+}
+document.getElementById('dbActivity').addEventListener('click', ()=>{
+  if(document.getElementById('dbActivity').classList.contains('err')) loadDB();
+});
+
 function showErr(prefix, error){
   alert(prefix + (error && error.message ? ('\n\nتفاصيل تقنية: ' + error.message) : ''));
 }
@@ -1707,6 +1769,7 @@ async function populateProfile(){
 
 async function loadDB(){
   setConn('', 'جارٍ التحميل...');
+  setDbActivity('busy');
   try{
     const [{ data: items, error: itemsErr }, { data: vouchers, error: vErr }, { data: requests, error: rErr }, { data: invoices, error: invErr }, { data: quality, error: qErr }, { data: workers, error: wErr }, { data: attendance, error: attErr }] = await Promise.all([
       sb.from('items').select('*').order('name'),
@@ -1775,11 +1838,12 @@ async function loadDB(){
     }));
 
     setConn('ok', 'متصل بقاعدة البيانات');
+    setDbActivity('ok');
     renderAll();
   }catch(e){
     console.error(e);
     setConn('err', 'تعذر الاتصال — اضغط لإعادة المحاولة');
-    document.getElementById('saveStatus').onclick = loadDB;
+    setDbActivity('err');
   }
 }
 
@@ -1913,25 +1977,22 @@ function renderItemsTable(){
   tbody.innerHTML = list.map(i=>{
     const low = i.min>0 && i.balance<=i.min;
     return `<tr>
-      <td class="wrap-cell" title="${i.name}">${i.name}</td>
-      <td><span class="pill pill-store-${i.store}">${STORE_LABELS[i.store]}</span></td>
-      <td>${i.unit}</td>
-      <td class="mono mono-cell ${low?'low-flag':''}">${fmtNum(i.balance)}${low?' ⚠':''}</td>
-      <td class="mono mono-cell">${fmtNum(i.min)}</td>
-      <td>
-        <div style="display:flex;gap:5px;align-items:center;">
-          <input class="mono item-barcode-input" data-item-barcode="${i.id}" value="${i.barcode||''}" placeholder="بدون باركود" style="font-size:12px;padding:6px 8px;min-width:0;">
-          <button class="btn-ghost btn-sm" data-scan-item="${i.id}" title="مسح بالكاميرا" style="flex:0 0 auto;padding:6px 8px;">📷</button>
+      <td class="wrap-cell" data-label="الصنف" title="${i.name}">${i.name}</td>
+      <td class="wrap-cell" data-label="المخزن"><span class="pill pill-store-${i.store}">${STORE_LABELS[i.store]}</span></td>
+      <td data-label="الوحدة">${i.unit}</td>
+      <td class="mono mono-cell ${low?'low-flag':''}" data-label="الرصيد الحالي">${fmtNum(i.balance)}${low?' ⚠':''}</td>
+      <td class="mono mono-cell" data-label="الحد الأدنى">${fmtNum(i.min)}</td>
+      <td data-label="الباركود">
+        <input class="mono item-barcode-input" data-item-barcode="${i.id}" value="${i.barcode||''}" placeholder="لا يوجد باركود — اكتب أو امسح بالجهاز" style="font-size:12.5px;padding:8px 10px;width:100%;text-align:center;">
+      </td>
+      <td data-label="الصورة">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;">
+          ${i.photo ? `<img src="${i.photo}" alt="" data-view-item-photo="${i.photo}" style="width:30px;height:30px;object-fit:cover;border-radius:7px;border:1px solid var(--line-strong);cursor:pointer;flex-shrink:0;">` : ''}
+          <button class="btn-ghost btn-sm" data-photo-item="${i.id}" title="${i.photo ? 'استبدال الصورة' : 'إرفاق صورة'}" style="flex-shrink:0;padding:6px 9px;">${i.photo ? '🔄' : '📷'}</button>
+          ${i.photo ? `<button class="btn-danger-outline btn-sm" data-photo-remove="${i.id}" title="حذف الصورة" style="flex-shrink:0;">🗑</button>` : ''}
         </div>
       </td>
-      <td>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          ${i.photo ? `<img src="${i.photo}" alt="" data-view-item-photo="${i.photo}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;border:1px solid var(--line-strong);cursor:pointer;flex-shrink:0;">` : ''}
-          <button class="btn-ghost btn-sm" data-photo-item="${i.id}">${i.photo ? '🔄 استبدال' : '📷 إرفاق صورة'}</button>
-          ${i.photo ? `<button class="btn-danger-outline btn-sm" data-photo-remove="${i.id}">🗑</button>` : ''}
-        </div>
-      </td>
-      <td><button class="btn-danger-outline btn-sm" data-del="${i.id}">حذف</button></td>
+      <td data-label=""><button class="btn-danger-outline btn-sm" data-del="${i.id}">حذف</button></td>
     </tr>`;
   }).join('');
   tbody.querySelectorAll('[data-del]').forEach(btn=>{
@@ -1945,28 +2006,6 @@ function renderItemsTable(){
         await loadDB();
       }catch(e){ showErr('تعذر حذف الصنف.', e); }
       busy = false;
-    });
-  });
-  tbody.querySelectorAll('[data-scan-item]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const itemId = btn.dataset.scanItem;
-      openScanner(async (code)=>{
-        if(DB.items.some(x=> x.barcode===code && x.id!==itemId)){
-          document.getElementById('scannerStatus').textContent = '⚠ هذا الباركود مستخدم لصنف آخر بالفعل.';
-          return;
-        }
-        try{
-          const { error } = await sb.from('items').update({ barcode: code }).eq('id', itemId);
-          if(error) throw error;
-          document.getElementById('scannerStatus').textContent = '✓ تم ربط الباركود بنجاح';
-          await loadDB();
-          setTimeout(closeScanner, 700);
-        }catch(e){
-          document.getElementById('scannerStatus').textContent = e && e.code==='23505'
-            ? '⚠ هذا الباركود مستخدم لصنف آخر بالفعل.'
-            : 'تعذر حفظ الباركود.';
-        }
-      }, 'وجّه الكاميرا نحو باركود هذا الصنف...');
     });
   });
 
@@ -2090,14 +2129,6 @@ function closeScanner(){
   quickAddTableId = null;
 }
 document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
-
-document.getElementById('scanForNewItemBtn').addEventListener('click', ()=>{
-  openScanner((code)=>{
-    document.getElementById('newItemBarcode').value = code;
-    document.getElementById('scannerStatus').textContent = '✓ تم مسح: ' + code;
-    setTimeout(closeScanner, 700);
-  }, 'وجّه الكاميرا نحو الباركود...');
-});
 
 function storeOptionsHtml(selected){
   return Object.keys(STORE_SHORT).map(s=> `<option value="${s}" ${s===selected?'selected':''}>${STORE_SHORT[s]}</option>`).join('');
@@ -4153,6 +4184,106 @@ document.addEventListener('keydown', (e)=>{
     case 'w': switchToTab('workforce'); break;
   }
 });
+
+
+
+
+// 
+
+function Hacking(){
+  
+// disable F12, Ctrl+Shift+I/J, Ctrl+U, Ctrl+Shift+C to prevent dev tools
+
+document.onkeydown = function(e)
+    {
+        if(event.keyCode == 123)
+        {
+            return false;
+        }
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0))
+        {
+            return false;
+        }
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0))
+        {
+            return false;
+        }
+        if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))
+        {
+            return false;
+        }
+    if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0))
+    {
+      return false;
+    }
+    }
+
+
+        //<![CDATA[
+        var show_msg = '';
+        if (show_msg !== '0') {
+            var options = {view_src: "View Source is disabled!", inspect_elem: "Inspect Element is disabled!", right_click: "Right click is disabled!", copy_cut_paste_content: "Cut/Copy/Paste is disabled!", image_drop: "Image Drag-n-Drop is disabled!" }
+        } else {
+            var options = '';
+        }
+
+        function nocontextmenu(e) { return false; }
+        document.oncontextmenu = nocontextmenu;
+        document.ondragstart = function() { return false;}
+
+        document.onmousedown = function (event) {
+            event = (event || window.event);
+            if (event.keyCode === 123) {
+                if (show_msg !== '0') {show_toast('inspect_elem');}
+                return false;
+            }
+        }
+        document.onkeydown = function (event) {
+            event = (event || window.event);
+            //alert(event.keyCode);   return false;
+            if (event.keyCode === 123 ||
+                    event.ctrlKey && event.shiftKey && event.keyCode === 73 ||
+                    event.ctrlKey && event.shiftKey && event.keyCode === 75) {
+                if (show_msg !== '0') {show_toast('inspect_elem');}
+                return false;
+            }
+            if (event.ctrlKey && event.keyCode === 85) {
+                if (show_msg !== '0') {show_toast('view_src');}
+                return false;
+            }
+        }
+        function addMultiEventListener(element, eventNames, listener) {
+            var events = eventNames.split(' ');
+            for (var i = 0, iLen = events.length; i < iLen; i++) {
+                element.addEventListener(events[i], function (e) {
+                    e.preventDefault();
+                    if (show_msg !== '0') {
+                        show_toast(listener);
+                    }
+                });
+            }
+        }
+        addMultiEventListener(document, 'contextmenu', 'right_click');
+        addMultiEventListener(document, 'cut copy paste print', 'copy_cut_paste_content');
+        addMultiEventListener(document, 'drag drop', 'image_drop');
+        function show_toast(text) {
+            var x = document.getElementById("amm_drcfw_toast_msg");
+            x.innerHTML = eval('options.' + text);
+            x.className = "show";
+            setTimeout(function () {
+                x.className = x.className.replace("show", "")
+            }, 3000);
+        }
+    //]]>
+
+}
+
+
+document.getElementById('DeveloperMode').addEventListener('click', function () {
+  Hacking();
+  document.getElementById('DeveloperMode').disabled = true;
+});
+
 </script>
 </body>
 </html>
