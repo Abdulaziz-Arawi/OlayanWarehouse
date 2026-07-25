@@ -1335,6 +1335,7 @@
   <div class="view" id="view-items">
     <h2 class="section-title">إدارة الأصناف</h2>
     <p class="section-sub">أضف الأصناف الخاصة بكل مخزن وحدد الوحدة والحد الأدنى للتنبيه عند نقص المخزون.</p>
+    <div class="kpi-strip" id="itemsStatsStrip"></div>
 
     <div class="card">
       <div class="row">
@@ -1528,6 +1529,7 @@
   <div class="view" id="view-log">
     <h2 class="section-title">سجل السندات</h2>
     <p class="section-sub">كل سندات التوريد والصرف، مع إمكانية البحث برقم السند.</p>
+    <div class="kpi-strip" id="logStatsStrip"></div>
 
     <div class="toolbar">
       <div class="field">
@@ -1663,6 +1665,7 @@
   <div class="view" id="view-invoices">
     <h2 class="section-title">الأرشيف</h2>
     <p class="section-sub">احفظ رقم أي فاتورة مع صورة منها للرجوع لها بسهولة لاحقًا — أرشيف مستقل عن السندات.</p>
+    <div class="kpi-strip" id="invoicesStatsStrip"></div>
 
     <div class="card">
       <div class="row">
@@ -1745,6 +1748,7 @@
   <div class="view" id="view-quality">
     <h2 class="section-title">الجودة</h2>
     <p class="section-sub">وثّق حالة المخزن وطريقة التخزين بصورة وملاحظة — لمتابعة الجودة أول بأول.</p>
+    <div class="kpi-strip" id="qualityStatsStrip"></div>
 
     <div class="card">
       <div class="row">
@@ -1961,6 +1965,7 @@
   <div class="view" id="view-settings">
     <h2 class="section-title">الإعدادات</h2>
     <p class="section-sub">بياناتك محفوظة على قاعدة بيانات حقيقية سحابية، ومشتركة بين كل من يسجل دخول. تقدر من هنا تعيد أي جزء إلى وضعه الفارغ من جديد.</p>
+    <div class="kpi-strip" id="settingsStatsStrip"></div>
 
     <div class="card" style="border:1.5px solid var(--freezer);">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;color:var(--freezer);">🔒 إقفال الشهر الحالي</h3>
@@ -4472,6 +4477,11 @@ function renderAll(){
   renderClosePeriodSummary();
   refreshAllLineDatalists('inLinesTable');
   refreshAllLineDatalists('outLinesTable');
+  if(typeof renderItemsStats === 'function') renderItemsStats();
+  if(typeof renderQualityStats === 'function') renderQualityStats();
+  if(typeof renderInvoicesStats === 'function') renderInvoicesStats();
+  if(typeof renderSettingsStats === 'function') renderSettingsStats();
+  if(typeof renderLogStats === 'function') renderLogStats();
 }
 
 document.getElementById('inDate').value = todayStr();
@@ -6411,6 +6421,109 @@ function renderTopSuppliers(){
     }catch(e){ showErr('تعذر إنشاء ملف Excel.', e); }
   });
 })();
+
+/* ====== أشرطة إحصائية لصفحات: الأصناف، الجودة، الأرشيف، الإعدادات، سجل السندات ====== */
+
+function kpiTile(cls, ico, label, value, isCount){
+  const valHtml = isCount ? ('<div class="kpi-value" data-count="'+value+'">0</div>') : ('<div class="kpi-value" style="font-size:15px;">'+value+'</div>');
+  return '<div class="kpi-tile '+cls+'">'
+    + '<div class="kpi-head"><span class="kpi-ico">'+ico+'</span><span class="kpi-label">'+label+'</span></div>'
+    + valHtml
+    + '</div>';
+}
+
+function renderItemsStats(){
+  const el = document.getElementById('itemsStatsStrip');
+  if(!el || typeof DB === 'undefined') return;
+  const total = DB.items.length;
+  const low = DB.items.filter(function(i){ return i.min>0 && i.balance<=i.min; }).length;
+  const noMin = DB.items.filter(function(i){ return !i.min || i.min<=0; }).length;
+  const noBarcode = DB.items.filter(function(i){ return !i.barcode; }).length;
+  el.innerHTML =
+      kpiTile('kpi-items','📦','إجمالي الأصناف', total, true)
+    + kpiTile('kpi-low','⚠️','عند الحد الأدنى أو أقل', low, true)
+    + kpiTile('kpi-out','⚙️','بدون حد أدنى محدّد', noMin, true)
+    + kpiTile('kpi-in','🏷️','بدون باركود', noBarcode, true);
+  animateCounters(el);
+}
+
+function renderQualityStats(){
+  const el = document.getElementById('qualityStatsStrip');
+  if(!el || typeof DB === 'undefined') return;
+  const total = DB.quality.length;
+  const monthStr = currentMonthStr();
+  const thisMonth = DB.quality.filter(function(q){ return (q.date||'').slice(0,7)===monthStr; }).length;
+  let lastDate = null;
+  DB.quality.forEach(function(q){ if(q.date && (!lastDate || q.date>lastDate)) lastDate = q.date; });
+
+  const stores = ['freezer','pantry','cleaning'];
+  let worstStore = null, worstDays = -1;
+  stores.forEach(function(s){
+    let last = null;
+    DB.quality.forEach(function(q){ if(q.store===s && q.date && (!last || q.date>last)) last = q.date; });
+    let days;
+    if(!last){ days = Infinity; }
+    else{
+      const [ly,lm,ld] = last.split('-').map(Number);
+      const lastD = new Date(ly, lm-1, ld);
+      const today = new Date(); today.setHours(0,0,0,0);
+      days = Math.round((today - lastD) / 86400000);
+    }
+    if(days > worstDays){ worstDays = days; worstStore = s; }
+  });
+  const worstText = (worstDays===Infinity) ? 'لا يوجد فحص بعد' : (worstDays+' يوم — '+(STORE_LABELS[worstStore]||worstStore));
+
+  el.innerHTML =
+      kpiTile('kpi-items','📷','إجمالي التقييمات', total, true)
+    + kpiTile('kpi-in','🗓️','تقييمات هذا الشهر', thisMonth, true)
+    + kpiTile('kpi-out','⏱️','أطول فترة بدون فحص', worstText, false)
+    + kpiTile('kpi-low','📅','آخر تقييم مسجّل', lastDate?fmtDate(lastDate):'لا يوجد بعد', false);
+  animateCounters(el);
+}
+
+function renderInvoicesStats(){
+  const el = document.getElementById('invoicesStatsStrip');
+  if(!el || typeof DB === 'undefined') return;
+  const total = DB.invoices.length;
+  const supplier = DB.invoices.filter(function(v){ return v.docType==='supplier'; }).length;
+  const issue = DB.invoices.filter(function(v){ return v.docType==='issue'; }).length;
+  const purchase = DB.invoices.filter(function(v){ return v.docType==='purchase_request'; }).length;
+  el.innerHTML =
+      kpiTile('kpi-items','🗂️','إجمالي الفواتير المؤرشفة', total, true)
+    + kpiTile('kpi-in','📥','فواتير الموردين', supplier, true)
+    + kpiTile('kpi-out','📤','سندات الصرف', issue, true)
+    + kpiTile('kpi-low','📝','سندات طلب الشراء', purchase, true);
+  animateCounters(el);
+}
+
+function renderSettingsStats(){
+  const el = document.getElementById('settingsStatsStrip');
+  if(!el || typeof DB === 'undefined') return;
+  const totalItems = DB.items.length;
+  const openVouchers = DB.vouchers.filter(function(v){ return !v.closed; }).length;
+  const closedVouchers = DB.vouchers.filter(function(v){ return v.closed; }).length;
+  const totalInvoices = DB.invoices.length;
+  el.innerHTML =
+      kpiTile('kpi-items','📦','إجمالي الأصناف', totalItems, true)
+    + kpiTile('kpi-in','🧾','سندات مفتوحة (الشهر الحالي)', openVouchers, true)
+    + kpiTile('kpi-out','🔒','سندات مؤرشفة (مقفلة)', closedVouchers, true)
+    + kpiTile('kpi-low','🗂️','فواتير مؤرشفة', totalInvoices, true);
+  animateCounters(el);
+}
+
+function renderLogStats(){
+  const el = document.getElementById('logStatsStrip');
+  if(!el || typeof DB === 'undefined') return;
+  const openVouchers = DB.vouchers.filter(function(v){ return !v.closed; }).length;
+  const closedVouchers = DB.vouchers.filter(function(v){ return v.closed; }).length;
+  const monthStr = currentMonthStr();
+  const thisMonth = DB.vouchers.filter(function(v){ return (v.date||'').slice(0,7)===monthStr; }).length;
+  el.innerHTML =
+      kpiTile('kpi-in','🧾','سندات مفتوحة حاليًا', openVouchers, true)
+    + kpiTile('kpi-out','🔒','سندات مؤرشفة (مقفلة)', closedVouchers, true)
+    + kpiTile('kpi-items','🗓️','سندات هذا الشهر', thisMonth, true);
+  animateCounters(el);
+}
 
 </script>
 </body>
