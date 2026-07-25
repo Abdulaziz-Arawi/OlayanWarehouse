@@ -839,6 +839,90 @@
   .predicted-row .pr-name{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--ink);}
   .predicted-row .pr-days{font-family:var(--font-mono);font-weight:700;font-size:12.5px;color:var(--pantry);flex-shrink:0;}
 
+  /* مركز الإجراءات */
+  .action-row{
+    display:flex;align-items:center;gap:12px;
+    padding:11px 13px;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;
+    background:var(--paper);
+  }
+  .action-row:last-child{margin-bottom:0;}
+  .action-row .ar-ico{
+    width:34px;height:34px;border-radius:9px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:16px;
+    background:var(--pantry-soft);
+  }
+  .action-row.ar-danger .ar-ico{background:#F6DEDA;}
+  .action-row .ar-text{flex:1;font-size:13px;color:var(--ink);line-height:1.4;}
+  .action-row .ar-text b{font-family:var(--font-mono);color:var(--pantry);}
+  .action-row.ar-danger .ar-text b{color:var(--danger);}
+  .action-row .ar-btn{flex-shrink:0;}
+  .action-empty{
+    text-align:center;padding:16px;color:var(--stamp-in);font-family:var(--font-display);
+    font-weight:700;font-size:13.5px;
+  }
+
+  /* صف الأدوات السريعة: بحث فوري + ملاحظات */
+  .utility-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
+  @media (max-width:820px){ .utility-row{grid-template-columns:1fr;} }
+  .util-card{margin-bottom:0;}
+  #dashQuickSearchResults{margin-top:10px;max-height:220px;overflow-y:auto;}
+  .qsr-item{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:8px 10px;border-bottom:1px solid var(--line);font-size:13px;
+  }
+  .qsr-item:last-child{border-bottom:none;}
+  .qsr-item .qsr-name{font-weight:600;}
+  .qsr-item .qsr-bal{font-family:var(--font-mono);font-weight:700;flex-shrink:0;}
+  .qsr-item .qsr-bal.low{color:var(--danger);}
+  .qsr-empty{color:var(--ink-soft);font-size:12.5px;text-align:center;padding:10px 0;}
+  #dashStickyNote{resize:vertical;min-height:88px;}
+  .util-save-hint{font-size:11px;color:var(--stamp-in);margin-top:6px;height:14px;opacity:0;transition:opacity .3s ease;}
+  .util-save-hint.show{opacity:1;}
+
+  /* تحليلات الشهر */
+  .compare-strip{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px;}
+  .cmp-item{
+    flex:1;min-width:150px;background:var(--paper);border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;
+  }
+  .cmp-item .cmp-label{font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-bottom:5px;}
+  .cmp-item .cmp-value{font-family:var(--font-mono);font-weight:700;font-size:19px;color:var(--ink);}
+  .cmp-item .cmp-delta{font-family:var(--font-mono);font-size:12px;font-weight:700;margin-right:6px;}
+  .cmp-item .cmp-delta.up{color:var(--stamp-in);}
+  .cmp-item .cmp-delta.down{color:var(--danger);}
+  .cmp-item .cmp-delta.flat{color:var(--ink-soft);}
+
+  .month-chart-wrap{margin-bottom:20px;}
+  .mcw-label{font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-bottom:8px;}
+  .month-bar-chart{display:flex;align-items:flex-end;gap:14px;height:120px;padding:0 4px;}
+  .mbc-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;}
+  .mbc-bars{display:flex;align-items:flex-end;gap:3px;height:90px;}
+  .mbc-bar{width:11px;border-radius:3px 3px 0 0;transition:height .5s cubic-bezier(.2,.8,.25,1);}
+  .mbc-bar.mbc-in{background:var(--stamp-in);}
+  .mbc-bar.mbc-out{background:var(--stamp-out);}
+  .mbc-month{font-size:10.5px;color:var(--ink-soft);font-family:var(--font-mono);}
+  .mbc-legend{display:flex;gap:14px;font-size:11px;color:var(--ink-soft);margin-top:4px;}
+  .mbc-legend span{display:inline-flex;align-items:center;gap:5px;}
+  .mbc-legend i{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+  .analytics-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media (max-width:700px){ .analytics-cols{grid-template-columns:1fr;} }
+  .ac-title{font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;}
+  .top-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:7px 10px;border-bottom:1px solid var(--line);font-size:13px;
+  }
+  .top-row:last-child{border-bottom:none;}
+  .top-row .tr-rank{
+    width:20px;height:20px;border-radius:50%;background:var(--freezer-soft);color:var(--freezer);
+    display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700;flex-shrink:0;
+  }
+  .top-row{align-items:flex-start;}
+  .top-row .tr-rank{margin-top:1px;}
+  .top-row .tr-name{flex:1;font-weight:600;display:flex;flex-direction:column;gap:2px;}
+  .top-row .tr-breakdown{font-family:var(--font-mono);font-weight:500;font-size:11px;color:var(--ink-soft);}
+  .top-row .tr-val{font-family:var(--font-mono);font-weight:700;color:var(--ink-soft);flex-shrink:0;margin-top:1px;}
+
   @media (max-width:480px){
     .avatar-option{width:34px;height:34px;font-size:15px;}
   }
@@ -1180,8 +1264,49 @@
       </div>
     </div>
 
+    <!-- مركز الإجراءات: كل شي يحتاج انتباهك في مكان واحد -->
+    <div class="card action-center" id="actionCenterCard" style="display:none;">
+      <h2 class="section-title" style="font-size:16px;">📋 مركز الإجراءات</h2>
+      <div id="actionCenterList"></div>
+      <div class="action-empty" id="actionCenterEmpty" style="display:none;">✅ تمام، ما فيه أي إجراء معلّق حاليًا.</div>
+    </div>
+
     <div class="kpi-strip" id="dashKpis"></div>
     <div class="grid3" id="dashCards"></div>
+
+    <!-- صف أدوات سريعة: بحث فوري + ملاحظات شخصية -->
+    <div class="utility-row">
+      <div class="card util-card">
+        <h2 class="section-title" style="font-size:15px;">🔍 بحث سريع عن صنف</h2>
+        <input id="dashQuickSearch" placeholder="اكتب اسم الصنف..." autocomplete="off">
+        <div id="dashQuickSearchResults"></div>
+      </div>
+      <div class="card util-card">
+        <h2 class="section-title" style="font-size:15px;">📝 ملاحظاتي السريعة</h2>
+        <textarea id="dashStickyNote" rows="4" placeholder="اكتب أي تذكير شخصي هنا... يُحفظ تلقائيًا على هذا الجهاز فقط."></textarea>
+        <div class="util-save-hint" id="stickyNoteSaved"></div>
+      </div>
+    </div>
+
+    <!-- تحليلات الشهر -->
+    <div class="card" id="analyticsCard">
+      <h2 class="section-title" style="font-size:16px;">📊 تحليلات الشهر</h2>
+      <div class="compare-strip" id="compareStrip"></div>
+      <div class="month-chart-wrap">
+        <div class="mcw-label">حركة آخر 6 أشهر (وارد / صادر)</div>
+        <div id="monthlyChart"></div>
+      </div>
+      <div class="analytics-cols">
+        <div class="analytics-col">
+          <div class="ac-title">🔝 الأصناف الأكثر حركة هذا الشهر</div>
+          <div id="topItemsList"></div>
+        </div>
+        <div class="analytics-col">
+          <div class="ac-title">🚚 الموردون الأكثر تعاملاً هذا الشهر</div>
+          <div id="topSuppliersList"></div>
+        </div>
+      </div>
+    </div>
 
     <div class="card" id="predictedShortageCard" style="display:none;">
       <h2 class="section-title" style="font-size:16px;">🔮 أصناف يُتوقع نقصها قريبًا</h2>
@@ -1190,7 +1315,13 @@
     </div>
 
     <div class="card">
-      <h2 class="section-title" style="font-size:16px;">آخر السندات</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px;">
+        <h2 class="section-title" style="font-size:16px;margin:0;">آخر السندات</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-ghost btn-sm" id="dashLastVoucherBtn">↪ متابعة آخر سند</button>
+          <button class="btn-ghost btn-sm" id="dashExportTodayBtn">⬇ تصدير اليوم Excel</button>
+        </div>
+      </div>
       <div class="table-wrap">
         <table class="data" id="dashRecentTable">
           <thead><tr><th>رقم السند</th><th>النوع</th><th>المخزن</th><th>التاريخ</th><th>عدد الأصناف</th></tr></thead>
@@ -2229,6 +2360,7 @@ async function enterApp(){
   if(typeof applyPersonalization === 'function') applyPersonalization();
   if(typeof maybeShowWeeklySummary === 'function') maybeShowWeeklySummary();
   if(typeof maybeShowAnniversary === 'function') maybeShowAnniversary();
+  if(typeof reloadStickyNote === 'function') reloadStickyNote();
 }
 
 let currentRole = 'viewer';
@@ -3965,6 +4097,11 @@ function renderDashboard(){
   if(typeof renderHealthRing === 'function') renderHealthRing();
   if(typeof renderBusiestCard === 'function') renderBusiestCard();
   if(typeof renderPredictedShortages === 'function') renderPredictedShortages();
+  if(typeof renderActionCenter === 'function') renderActionCenter();
+  if(typeof renderCompareStrip === 'function') renderCompareStrip();
+  if(typeof renderMonthlyChart === 'function') renderMonthlyChart();
+  if(typeof renderTopItems === 'function') renderTopItems();
+  if(typeof renderTopSuppliers === 'function') renderTopSuppliers();
   // شريط المؤشرات العام (KPI)
   const kpiEl = document.getElementById('dashKpis');
   if(kpiEl){
@@ -6028,6 +6165,252 @@ function playStampSound(){
     osc.start(now); osc.stop(now + 0.25);
   }catch(e){}
 }
+
+/* ====== مركز الإجراءات: كل شي يحتاج انتباه أمين المستودع في مكان واحد ====== */
+function renderActionCenter(){
+  const card = document.getElementById('actionCenterCard');
+  const list = document.getElementById('actionCenterList');
+  const emptyEl = document.getElementById('actionCenterEmpty');
+  if(!card || !list) return;
+  if(typeof currentRole !== 'undefined' && currentRole !== 'admin'){ card.style.display = 'none'; return; }
+  if(typeof DB === 'undefined'){ card.style.display = 'none'; return; }
+
+  const rows = [];
+  const pendingReq = (DB.requests||[]).filter(function(r){ return r.status==='pending'; }).length;
+  if(pendingReq>0){
+    rows.push({ danger:false, ico:'📥', html:'<b>'+pendingReq+'</b> '+(pendingReq===1?'طلب صنف':'طلبات أصناف')+' بانتظار موافقتك', action:function(){ switchToTab('requests'); } });
+  }
+  const missingSigned = (DB.vouchers||[]).filter(function(v){ return !v.closed && !v.signedPhotoUrl; }).length;
+  if(missingSigned>0){
+    rows.push({ danger:false, ico:'🖊️', html:'<b>'+missingSigned+'</b> سند بدون صورة موقّعة بعد', action:function(){ switchToTab('log'); } });
+  }
+  const noMin = (DB.items||[]).filter(function(i){ return !i.min || i.min<=0; }).length;
+  if(noMin>0){
+    rows.push({ danger:false, ico:'⚙️', html:'<b>'+noMin+'</b> صنف بدون حد أدنى محدّد للتنبيه', action:function(){ switchToTab('items'); } });
+  }
+  const lowNow = (DB.items||[]).filter(function(i){ return i.min>0 && i.balance<=i.min; }).length;
+  if(lowNow>0){
+    rows.push({ danger:true, ico:'⚠️', html:'<b>'+lowNow+'</b> صنف عند الحد الأدنى أو أقل الآن', action:function(){ switchToTab('items'); } });
+  }
+
+  card.style.display = 'block';
+  if(rows.length===0){
+    list.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  list.innerHTML = rows.map(function(r,idx){
+    return '<div class="action-row'+(r.danger?' ar-danger':'')+'" data-idx="'+idx+'">'
+      + '<span class="ar-ico">'+r.ico+'</span>'
+      + '<span class="ar-text">'+r.html+'</span>'
+      + '<button class="btn-ghost btn-sm ar-btn">فتح</button>'
+      + '</div>';
+  }).join('');
+  list.querySelectorAll('.action-row').forEach(function(el, idx){
+    const btn = el.querySelector('.ar-btn');
+    if(btn) btn.addEventListener('click', function(){ rows[idx].action(); });
+  });
+}
+
+/* ====== بحث سريع عن صنف من الداشبورد ====== */
+function renderQuickSearchResults(query){
+  const results = document.getElementById('dashQuickSearchResults');
+  if(!results) return;
+  if(!query){ results.innerHTML = ''; return; }
+  const nq = normName(query);
+  const matches = (DB.items||[]).filter(function(i){ return normName(i.name).indexOf(nq) > -1; }).slice(0,8);
+  if(matches.length===0){ results.innerHTML = '<div class="qsr-empty">ما فيه صنف مطابق.</div>'; return; }
+  results.innerHTML = matches.map(function(i){
+    const low = i.min>0 && i.balance<=i.min;
+    return '<div class="qsr-item"><span class="qsr-name">'+escapeHtml(i.name)+' <span style="color:var(--ink-soft);font-size:11.5px;">('+(STORE_LABELS[i.store]||i.store)+')</span></span><span class="qsr-bal'+(low?' low':'')+'">'+fmtNum(i.balance)+' '+escapeHtml(i.unit||'')+'</span></div>';
+  }).join('');
+}
+(function(){
+  const input = document.getElementById('dashQuickSearch');
+  if(!input) return;
+  input.addEventListener('input', function(){ renderQuickSearchResults(input.value.trim()); });
+})();
+
+/* ====== ملاحظات سريعة شخصية (تُحفظ محليًا لكل مستخدم) ====== */
+function stickyNoteKey(){
+  const email = (typeof currentUserEmail !== 'undefined' && currentUserEmail) ? currentUserEmail : 'guest';
+  return 'stickyNote_' + email;
+}
+function reloadStickyNote(){
+  const ta = document.getElementById('dashStickyNote');
+  if(!ta) return;
+  try{ ta.value = localStorage.getItem(stickyNoteKey()) || ''; }catch(e){}
+}
+(function(){
+  const ta = document.getElementById('dashStickyNote');
+  const hint = document.getElementById('stickyNoteSaved');
+  if(!ta) return;
+  reloadStickyNote();
+  let saveTimer = null;
+  ta.addEventListener('input', function(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      try{ localStorage.setItem(stickyNoteKey(), ta.value); }catch(e){}
+      if(hint){
+        hint.textContent = '✓ تم الحفظ';
+        hint.classList.add('show');
+        clearTimeout(hint._t);
+        hint._t = setTimeout(function(){ hint.classList.remove('show'); }, 1500);
+      }
+    }, 500);
+  });
+})();
+
+/* ====== مقارنة الشهر الحالي بالشهر الماضي ====== */
+function computeMonthComparison(){
+  const cur = currentMonthStr();
+  const prev = shiftMonthStr(cur, -1);
+  const curList = vouchersInMonth(cur);
+  const prevList = vouchersInMonth(prev);
+  return {
+    curIn: curList.filter(function(v){return v.type==='in';}).length,
+    curOut: curList.filter(function(v){return v.type==='out';}).length,
+    prevIn: prevList.filter(function(v){return v.type==='in';}).length,
+    prevOut: prevList.filter(function(v){return v.type==='out';}).length
+  };
+}
+function deltaHtml(cur, prev){
+  if(prev===0){
+    if(cur===0) return '<span class="cmp-delta flat">— بدون تغيّر</span>';
+    return '<span class="cmp-delta up">▲ جديد</span>';
+  }
+  const pct = Math.round(((cur-prev)/prev)*100);
+  if(pct===0) return '<span class="cmp-delta flat">— بدون تغيّر</span>';
+  const cls = pct>0 ? 'up' : 'down';
+  const arrow = pct>0 ? '▲' : '▼';
+  return '<span class="cmp-delta '+cls+'">'+arrow+' '+Math.abs(pct)+'%</span>';
+}
+function renderCompareStrip(){
+  const el = document.getElementById('compareStrip');
+  if(!el || typeof DB === 'undefined') return;
+  const c = computeMonthComparison();
+  el.innerHTML =
+      '<div class="cmp-item"><div class="cmp-label">سندات التوريد هذا الشهر</div><div class="cmp-value">'+c.curIn+' '+deltaHtml(c.curIn,c.prevIn)+'</div></div>'
+    + '<div class="cmp-item"><div class="cmp-label">سندات الصرف هذا الشهر</div><div class="cmp-value">'+c.curOut+' '+deltaHtml(c.curOut,c.prevOut)+'</div></div>';
+}
+
+/* ====== رسم بياني شهري (آخر 6 أشهر) ====== */
+function computeMonthlyChartData(){
+  const months = [];
+  const cur = currentMonthStr();
+  for(let i=5;i>=0;i--){ months.push(shiftMonthStr(cur, -i)); }
+  return months.map(function(m){
+    const list = vouchersInMonth(m);
+    return { month:m, inCount: list.filter(function(v){return v.type==='in';}).length, outCount: list.filter(function(v){return v.type==='out';}).length };
+  });
+}
+function monthShortLabel(m){
+  const parts = m.split('-');
+  const names = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  return names[parseInt(parts[1],10)-1] || m;
+}
+function renderMonthlyChart(){
+  const el = document.getElementById('monthlyChart');
+  if(!el || typeof DB === 'undefined') return;
+  const data = computeMonthlyChartData();
+  const maxVal = Math.max.apply(null, data.map(function(d){return Math.max(d.inCount, d.outCount);}).concat([1]));
+  const barsHtml = data.map(function(d){
+    const inH = Math.max(2, Math.round((d.inCount/maxVal)*90));
+    const outH = Math.max(2, Math.round((d.outCount/maxVal)*90));
+    return '<div class="mbc-col">'
+      + '<div class="mbc-bars">'
+      + '<div class="mbc-bar mbc-in" style="height:'+inH+'px;" title="وارد: '+d.inCount+'"></div>'
+      + '<div class="mbc-bar mbc-out" style="height:'+outH+'px;" title="صادر: '+d.outCount+'"></div>'
+      + '</div>'
+      + '<div class="mbc-month">'+monthShortLabel(d.month)+'</div>'
+      + '</div>';
+  }).join('');
+  el.innerHTML = '<div class="month-bar-chart">'+barsHtml+'</div>'
+    + '<div class="mbc-legend"><span><i style="background:var(--stamp-in);"></i>وارد</span><span><i style="background:var(--stamp-out);"></i>صادر</span></div>';
+}
+
+/* ====== الأصناف الأكثر حركة هذا الشهر ====== */
+function computeTopItems(){
+  if(typeof DB === 'undefined') return [];
+  const monthStr = currentMonthStr();
+  const list = vouchersInMonth(monthStr);
+  const totals = {};
+  list.forEach(function(v){
+    v.lines.forEach(function(l){
+      const key = l.itemId || l.name;
+      if(!totals[key]) totals[key] = { name:l.name, qtyIn:0, qtyOut:0 };
+      if(v.type==='in') totals[key].qtyIn += l.qty; else totals[key].qtyOut += l.qty;
+    });
+  });
+  return Object.keys(totals).map(function(k){
+    const t = totals[k];
+    return { name:t.name, qtyIn:t.qtyIn, qtyOut:t.qtyOut, qty:t.qtyIn+t.qtyOut };
+  }).sort(function(a,b){ return b.qty - a.qty; }).slice(0,5);
+}
+function renderTopItems(){
+  const el = document.getElementById('topItemsList');
+  if(!el) return;
+  const top = computeTopItems();
+  if(top.length===0){ el.innerHTML = '<div class="qsr-empty">ما فيه حركة مسجّلة هذا الشهر بعد.</div>'; return; }
+  el.innerHTML = top.map(function(t,idx){
+    return '<div class="top-row"><span class="tr-rank">'+(idx+1)+'</span>'
+      + '<span class="tr-name">'+escapeHtml(t.name)+'<span class="tr-breakdown">توريد '+fmtNum(t.qtyIn)+' · صرف '+fmtNum(t.qtyOut)+'</span></span>'
+      + '<span class="tr-val" title="إجمالي الحركة (توريد + صرف)">'+fmtNum(t.qty)+'</span></div>';
+  }).join('');
+}
+
+/* ====== الموردون الأكثر تعاملاً هذا الشهر ====== */
+function computeTopSuppliers(){
+  if(typeof DB === 'undefined') return [];
+  const monthStr = currentMonthStr();
+  const list = vouchersInMonth(monthStr).filter(function(v){ return v.type==='in' && v.party; });
+  const totals = {};
+  list.forEach(function(v){
+    const key = v.party.trim();
+    if(!key) return;
+    totals[key] = (totals[key]||0) + 1;
+  });
+  return Object.keys(totals).map(function(k){ return { name:k, count:totals[k] }; }).sort(function(a,b){ return b.count - a.count; }).slice(0,5);
+}
+function renderTopSuppliers(){
+  const el = document.getElementById('topSuppliersList');
+  if(!el) return;
+  const top = computeTopSuppliers();
+  if(top.length===0){ el.innerHTML = '<div class="qsr-empty">ما فيه موردين مسجّلين هذا الشهر بعد.</div>'; return; }
+  el.innerHTML = top.map(function(t,idx){
+    return '<div class="top-row"><span class="tr-rank">'+(idx+1)+'</span><span class="tr-name">'+escapeHtml(t.name)+'</span><span class="tr-val">'+t.count+' سند</span></div>';
+  }).join('');
+}
+
+/* ====== اختصارات: متابعة آخر سند + تصدير حركة اليوم ====== */
+(function(){
+  const lastBtn = document.getElementById('dashLastVoucherBtn');
+  if(lastBtn) lastBtn.addEventListener('click', function(){
+    if(!DB.vouchers || DB.vouchers.length===0){ showAppAlert('ما فيه أي سندات مسجّلة بعد.'); return; }
+    openVoucherDetail(DB.vouchers[0].id);
+  });
+  const expBtn = document.getElementById('dashExportTodayBtn');
+  if(expBtn) expBtn.addEventListener('click', function(){
+    const todayS = todayStr();
+    const list = (DB.vouchers||[]).filter(function(v){ return v.date === todayS; });
+    if(list.length===0){ showAppAlert('ما فيه أي سندات مسجّلة اليوم لتصديرها.'); return; }
+    try{
+      const rows = [];
+      list.forEach(function(v){
+        v.lines.forEach(function(l){
+          rows.push({
+            'رقم السند': v.number, 'النوع': v.type==='in'?'توريد':'صرف', 'المخزن': STORE_LABELS[l.store]||l.store,
+            'الصنف': l.name, 'الكمية': l.qty, 'الوحدة': l.unit
+          });
+        });
+      });
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'حركة اليوم');
+      XLSX.writeFile(wb, 'حركة-اليوم-' + todayS + '.xlsx');
+    }catch(e){ showErr('تعذر إنشاء ملف Excel.', e); }
+  });
+})();
 
 </script>
 </body>
