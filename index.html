@@ -73,7 +73,9 @@
   .mtn-far{fill:var(--freezer);opacity:.09;transform:translate(var(--px,0px),var(--py,0px));}
   .mtn-mid{fill:var(--ink);opacity:.07;transform:translate(var(--mpx,0px),var(--mpy,0px));}
   .mtn-near{fill:var(--ink);opacity:.13;transform:translate(var(--npx,0px),var(--npy,0px));}
-  .mtn-cap{fill:#F5F8FA;opacity:.5;}
+  .mtn-cap{fill:#F5F8FA;opacity:.55;}
+  .mtn-cap-mid{opacity:.4;}
+  .mtn-cap-near{opacity:.6;}
   .bg-mountains polygon{transition:transform .4s ease-out;}
 
   /* سحب بيضاء هادئة تنجرف ببطء أعلى المشهد الجبلي — أعداد وخصائص عشوائية تُولَّد بجافاسكربت */
@@ -81,10 +83,12 @@
   .bg-cloud{
     position:absolute;left:0;width:150px;height:50px;background:#fff;border-radius:50px;
     --cloud-scale:1;animation-name:cloudDrift;animation-timing-function:linear;animation-iteration-count:infinite;
+    filter:blur(0.7px);
   }
   .bg-cloud::before, .bg-cloud::after{content:"";position:absolute;background:inherit;border-radius:50%;}
   .bg-cloud::before{width:70px;height:70px;top:-38px;left:20px;}
   .bg-cloud::after{width:90px;height:90px;top:-48px;left:70px;}
+  .bg-cloud > i{position:absolute;background:inherit;border-radius:50%;font-style:normal;width:56px;height:56px;top:-26px;left:100px;}
   @keyframes cloudDrift{
     0%{transform:translateX(-25vw) scale(var(--cloud-scale));}
     100%{transform:translateX(125vw) scale(var(--cloud-scale));}
@@ -156,14 +160,15 @@
     width:100%;max-width:1180px;margin:0 auto;
     padding:12px 18px 0;
   }
-  /* الشريط الغامق نفسه = بطاقة عائمة بنفس عرض التبويبات والكروت */
+  /* الشريط الغامق نفسه = بطاقة عائمة بنفس عرض التبويبات والكروت — بحافة ذهبية ونصف قطر زوايا موحّد مع باقي الكروت */
   .topbar-inner{
     position:relative;
     display:flex;align-items:center;justify-content:space-between;
     gap:14px;padding:14px 22px;
-    background:linear-gradient(180deg,#222C3A,#1B2430);
-    border-radius:16px;
-    box-shadow:0 8px 24px rgba(27,36,48,0.22);
+    background:linear-gradient(160deg,#2C2418 0%,#232B38 45%,#1B2430 100%);
+    border:1px solid rgba(216,178,110,0.32);
+    border-radius:14px;
+    box-shadow:0 8px 24px rgba(27,36,48,0.22), inset 0 1px 0 rgba(255,255,255,0.07);
   }
   /* شريط لوني رفيع بألوان المخازن أسفل الناف بار */
   .topbar-inner::after{
@@ -1273,18 +1278,28 @@
 
 <!-- خلفية مشهدية: جبال ثلجية على عدة طبقات عمق + تساقط ثلج ناعم — تلمّح لقسم "الفريزر" بأسلوب رسمي هادئ -->
 <div class="bg-scenery" aria-hidden="true">
-  <div class="bg-clouds" id="bgClouds"></div>
   <svg class="bg-mountains" viewBox="0 0 1440 320" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="mtnNearGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--freezer)" stop-opacity=".22"></stop>
+        <stop offset="100%" stop-color="var(--ink)" stop-opacity=".15"></stop>
+      </linearGradient>
+    </defs>
     <polygon class="mtn-far" points="0,320 0,190 120,140 260,200 400,120 560,190 700,150 860,210 1000,130 1160,195 1300,145 1440,200 1440,320"></polygon>
     <polygon class="mtn-mid" points="0,320 0,230 150,175 320,235 470,165 630,225 800,170 950,230 1120,175 1290,220 1440,180 1440,320"></polygon>
-    <polygon class="mtn-near" points="0,320 0,265 180,225 350,270 540,215 720,265 900,220 1080,270 1260,230 1440,260 1440,320"></polygon>
-    <polygon class="mtn-cap" points="120,140 150,158 90,158"></polygon>
-    <polygon class="mtn-cap" points="400,120 430,140 370,140"></polygon>
-    <polygon class="mtn-cap" points="700,150 728,168 672,168"></polygon>
-    <polygon class="mtn-cap" points="1000,130 1030,150 970,150"></polygon>
-    <polygon class="mtn-cap" points="1300,145 1328,163 1272,163"></polygon>
+    <polygon class="mtn-near" fill="url(#mtnNearGrad)" points="0,320 0,265 180,225 350,270 540,215 720,265 900,220 1080,270 1260,230 1440,260 1440,320"></polygon>
+    <polygon class="mtn-cap" points="120,140 152,160 88,160"></polygon>
+    <polygon class="mtn-cap" points="400,120 434,143 366,143"></polygon>
+    <polygon class="mtn-cap" points="700,150 730,171 670,171"></polygon>
+    <polygon class="mtn-cap" points="1000,130 1032,152 968,152"></polygon>
+    <polygon class="mtn-cap" points="1300,145 1330,166 1270,166"></polygon>
+    <polygon class="mtn-cap mtn-cap-mid" points="470,165 500,186 440,186"></polygon>
+    <polygon class="mtn-cap mtn-cap-mid" points="800,170 828,190 772,190"></polygon>
+    <polygon class="mtn-cap mtn-cap-near" points="540,215 566,234 514,234"></polygon>
+    <polygon class="mtn-cap mtn-cap-near" points="900,220 926,239 874,239"></polygon>
   </svg>
   <div class="snowfall" id="snowfall"></div>
+  <div class="bg-clouds" id="bgClouds"></div>
 </div>
 
 <div class="login-screen" id="loginScreen">
@@ -2617,6 +2632,7 @@ document.getElementById('appAlertCloseBtn').addEventListener('click', ()=>{
     cloud.style.animationDuration = duration.toFixed(1) + 's';
     cloud.style.animationDelay = delay.toFixed(1) + 's';
     cloud.style.animationName = reverse ? 'cloudDriftReverse' : 'cloudDrift';
+    cloud.appendChild(document.createElement('i'));
     frag.appendChild(cloud);
   }
   field.appendChild(frag);
