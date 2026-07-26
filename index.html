@@ -54,16 +54,99 @@
   }
   .app{max-width:1180px;margin:0 auto;padding:38px 18px 60px;position:relative;z-index:1;}
 
-  .bg-orbs{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;transition:transform .35s ease-out;will-change:transform;}
-  .bg-orb{position:absolute;border-radius:50%;filter:blur(70px);will-change:transform;}
+  .bg-orbs{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+  .bg-orb{position:absolute;border-radius:50%;filter:blur(70px);will-change:transform;--px:0px;--py:0px;}
   .bg-orb.o1{width:400px;height:400px;background:var(--freezer);opacity:.16;top:-100px;right:-80px;animation:orbFloat 20s ease-in-out infinite;}
   .bg-orb.o2{width:340px;height:340px;background:var(--pantry);opacity:.15;bottom:-120px;left:-70px;animation:orbFloat 24s ease-in-out infinite reverse;animation-delay:-6s;}
   .bg-orb.o3{width:260px;height:260px;background:var(--cleaning);opacity:.13;top:45%;left:55%;animation:orbFloat 27s ease-in-out infinite;animation-delay:-14s;}
   .bg-orb.o4{width:180px;height:180px;background:var(--freezer);opacity:.10;top:65%;right:10%;animation:orbFloat 19s ease-in-out infinite reverse;animation-delay:-9s;}
+  /* الحركة الدائرية البطيئة (orbFloat) + إزاحة الفأرة التفاعلية (--px/--py) تشتغلان مع بعض عبر calc() بدون ما تتعارضان */
   @keyframes orbFloat{
-    0%,100%{transform:translate(0,0) scale(1);}
-    33%{transform:translate(26px,-22px) scale(1.06);}
-    66%{transform:translate(-18px,16px) scale(.96);}
+    0%,100%{transform:translate(var(--px),var(--py)) scale(1);}
+    33%{transform:translate(calc(var(--px) + 26px),calc(var(--py) - 22px)) scale(1.06);}
+    66%{transform:translate(calc(var(--px) - 18px),calc(var(--py) + 16px)) scale(.96);}
+  }
+
+  /* خلفية مشهدية: جبال ثلجية بعدة طبقات عمق + تساقط ثلج ناعم */
+  .bg-scenery{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .bg-mountains{position:absolute;bottom:0;left:0;width:100%;height:34vh;min-height:200px;max-height:320px;display:block;}
+  .mtn-far{fill:var(--freezer);opacity:.09;transform:translate(var(--px,0px),var(--py,0px));}
+  .mtn-mid{fill:var(--ink);opacity:.07;transform:translate(var(--mpx,0px),var(--mpy,0px));}
+  .mtn-near{fill:var(--ink);opacity:.13;transform:translate(var(--npx,0px),var(--npy,0px));}
+  .mtn-cap{fill:#F5F8FA;opacity:.5;}
+  .bg-mountains polygon{transition:transform .4s ease-out;}
+
+  /* سحب بيضاء هادئة تنجرف ببطء أعلى المشهد الجبلي — أعداد وخصائص عشوائية تُولَّد بجافاسكربت */
+  .bg-clouds{position:absolute;inset:0;overflow:hidden;}
+  .bg-cloud{
+    position:absolute;left:0;width:150px;height:50px;background:#fff;border-radius:50px;
+    --cloud-scale:1;animation-name:cloudDrift;animation-timing-function:linear;animation-iteration-count:infinite;
+  }
+  .bg-cloud::before, .bg-cloud::after{content:"";position:absolute;background:inherit;border-radius:50%;}
+  .bg-cloud::before{width:70px;height:70px;top:-38px;left:20px;}
+  .bg-cloud::after{width:90px;height:90px;top:-48px;left:70px;}
+  @keyframes cloudDrift{
+    0%{transform:translateX(-25vw) scale(var(--cloud-scale));}
+    100%{transform:translateX(125vw) scale(var(--cloud-scale));}
+  }
+  @keyframes cloudDriftReverse{
+    0%{transform:translateX(125vw) scale(var(--cloud-scale));}
+    100%{transform:translateX(-25vw) scale(var(--cloud-scale));}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .bg-cloud{display:none;}
+  }
+
+  .snowfall{position:absolute;inset:0;overflow:hidden;}
+  .snowflake{
+    position:absolute;top:-12px;border-radius:50%;background:#fff;
+    opacity:.5;animation-name:snowFall;animation-timing-function:linear;animation-iteration-count:infinite;
+  }
+  @keyframes snowFall{
+    0%{transform:translate(0,0);opacity:0;}
+    8%{opacity:.6;}
+    92%{opacity:.55;}
+    100%{transform:translate(var(--drift,20px),115vh);opacity:0;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .snowflake{animation:none;display:none;}
+    .bg-mountains polygon{transition:none;}
+  }
+  @media (max-width:700px){
+    .bg-mountains{height:22vh;min-height:140px;}
+  }
+
+  /* توهّج خفيف يتبع الفأرة — طبقة أجواء إضافية هادئة خلف المحتوى */
+  #cursorGlow{
+    position:fixed;top:0;left:0;width:480px;height:480px;margin:-240px 0 0 -240px;
+    background:radial-gradient(circle, rgba(47,111,143,0.09), rgba(168,99,30,0.05) 45%, transparent 70%);
+    border-radius:50%;pointer-events:none;z-index:0;opacity:0;
+    transition:opacity .5s ease;will-change:transform;
+  }
+
+  /* ظهور تدريجي للكروت عند دخولها الشاشة أثناء التمرير */
+  .card.scroll-pre{opacity:0;transform:translateY(18px);}
+  .card.scroll-in{animation:rise .6s cubic-bezier(.2,.8,.25,1) both;}
+
+  /* إمالة ثلاثية الأبعاد + لمعة تتبع الفأرة على كروت المخازن ولوحات المؤشرات */
+  .tilt-target{transition:transform .35s cubic-bezier(.2,.8,.25,1), box-shadow .28s ease;}
+  .tilt-glare{
+    position:absolute;inset:0;pointer-events:none;z-index:3;border-radius:inherit;
+    background:radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.35), transparent 55%);
+    opacity:0;transition:opacity .35s ease;
+  }
+  .tilt-target:hover .tilt-glare{opacity:1;}
+  .kpi-tile.tilt-target .tilt-glare{background:radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.55), transparent 55%);}
+
+  /* نطّة خفيفة للأيقونات عند المرور — لمسة حيوية بدون إخلال بالرسمية */
+  @keyframes iconPop{0%{transform:scale(1) rotate(0);}45%{transform:scale(1.2) rotate(-8deg);}100%{transform:scale(1) rotate(0);}}
+  .kpi-tile:hover .kpi-ico, .action-row:hover .ar-ico, .shortage-banner:hover .sb-ico, .busiest-card:hover .bc-ico{
+    animation:iconPop .45s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .tilt-target{transform:none !important;}
+    .tilt-glare{display:none;}
   }
 
   /* الناف بار: غلاف مثبّت محصور بنفس عرض المحتوى (بدون خلفية) */
@@ -429,8 +512,9 @@
     background:linear-gradient(120deg,transparent,rgba(255,255,255,0.35),transparent);
     transform:skewX(-18deg);transition:left .6s ease;pointer-events:none;
   }
-  .store-card:hover{transform:translateY(-6px) scale(1.015);box-shadow:0 16px 34px rgba(0,0,0,0.22);}
+  .store-card:hover{box-shadow:0 16px 34px rgba(0,0,0,0.22);}
   .store-card:hover::before{left:120%;}
+  .store-card:not(.tilt-target):hover{transform:translateY(-6px) scale(1.015);}
 
   button{position:relative;overflow:hidden;transition:background .15s ease, transform .12s ease, box-shadow .2s ease;}
   button:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(27,36,48,0.14);}
@@ -1072,7 +1156,8 @@
   .kpi-tile:nth-child(2){animation-delay:.10s;}
   .kpi-tile:nth-child(3){animation-delay:.16s;}
   .kpi-tile:nth-child(4){animation-delay:.22s;}
-  .kpi-tile:hover{transform:translateY(-4px);box-shadow:0 4px 10px rgba(27,36,48,0.07), 0 16px 34px rgba(27,36,48,0.12);}
+  .kpi-tile:hover{box-shadow:0 4px 10px rgba(27,36,48,0.07), 0 16px 34px rgba(27,36,48,0.12);}
+  .kpi-tile:not(.tilt-target):hover{transform:translateY(-4px);}
   .kpi-tile::before{
     content:"";position:absolute;top:0;right:0;bottom:0;width:4px;background:var(--accent,var(--freezer));
   }
@@ -1184,6 +1269,22 @@
   <span class="bg-orb o2"></span>
   <span class="bg-orb o3"></span>
   <span class="bg-orb o4"></span>
+</div>
+
+<!-- خلفية مشهدية: جبال ثلجية على عدة طبقات عمق + تساقط ثلج ناعم — تلمّح لقسم "الفريزر" بأسلوب رسمي هادئ -->
+<div class="bg-scenery" aria-hidden="true">
+  <div class="bg-clouds" id="bgClouds"></div>
+  <svg class="bg-mountains" viewBox="0 0 1440 320" preserveAspectRatio="none">
+    <polygon class="mtn-far" points="0,320 0,190 120,140 260,200 400,120 560,190 700,150 860,210 1000,130 1160,195 1300,145 1440,200 1440,320"></polygon>
+    <polygon class="mtn-mid" points="0,320 0,230 150,175 320,235 470,165 630,225 800,170 950,230 1120,175 1290,220 1440,180 1440,320"></polygon>
+    <polygon class="mtn-near" points="0,320 0,265 180,225 350,270 540,215 720,265 900,220 1080,270 1260,230 1440,260 1440,320"></polygon>
+    <polygon class="mtn-cap" points="120,140 150,158 90,158"></polygon>
+    <polygon class="mtn-cap" points="400,120 430,140 370,140"></polygon>
+    <polygon class="mtn-cap" points="700,150 728,168 672,168"></polygon>
+    <polygon class="mtn-cap" points="1000,130 1030,150 970,150"></polygon>
+    <polygon class="mtn-cap" points="1300,145 1328,163 1272,163"></polygon>
+  </svg>
+  <div class="snowfall" id="snowfall"></div>
 </div>
 
 <div class="login-screen" id="loginScreen">
@@ -2390,11 +2491,193 @@ document.getElementById('appAlertCloseBtn').addEventListener('click', ()=>{
 (function initInteractiveBackground(){
   const bg = document.querySelector('.bg-orbs');
   if(!bg) return;
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const orbs = Array.from(bg.querySelectorAll('.bg-orb'));
+  // كل دائرة تتحرك بعمق مختلف (الأقرب تتحرك أكثر) — يعطي إحساس عمق حقيقي بدل حركة كتلة واحدة
+  const depths = [18, 26, 14, 10];
+  const mtnFar = document.querySelector('.mtn-far');
+  const mtnMid = document.querySelector('.mtn-mid');
+  const mtnNear = document.querySelector('.mtn-near');
+  let targetX = 0, targetY = 0, curX = 0, curY = 0;
   document.addEventListener('mousemove', (e)=>{
-    const x = (e.clientX / window.innerWidth - 0.5) * 24;
-    const y = (e.clientY / window.innerHeight - 0.5) * 24;
-    bg.style.transform = `translate(${x}px, ${y}px)`;
+    targetX = (e.clientX / window.innerWidth - 0.5);
+    targetY = (e.clientY / window.innerHeight - 0.5);
   });
+  function tick(){
+    curX += (targetX - curX) * 0.06;
+    curY += (targetY - curY) * 0.06;
+    if(!reduceMotion){
+      orbs.forEach(function(orb, i){
+        const d = depths[i % depths.length];
+        orb.style.setProperty('--px', (curX * d).toFixed(1) + 'px');
+        orb.style.setProperty('--py', (curY * d).toFixed(1) + 'px');
+      });
+      // طبقات الجبال تتحرك بمقدار أصغر بكثير (إحساس بعد المسافة) — كل طبقة أبطأ من اللي أمامها
+      if(mtnFar){ mtnFar.style.setProperty('--px', (curX*4).toFixed(1)+'px'); mtnFar.style.setProperty('--py', (curY*2).toFixed(1)+'px'); }
+      if(mtnMid){ mtnMid.style.setProperty('--mpx', (curX*7).toFixed(1)+'px'); mtnMid.style.setProperty('--mpy', (curY*3).toFixed(1)+'px'); }
+      if(mtnNear){ mtnNear.style.setProperty('--npx', (curX*11).toFixed(1)+'px'); mtnNear.style.setProperty('--npy', (curY*4).toFixed(1)+'px'); }
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // توهّج خفيف يتبع مؤشر الفأرة بنعومة — لمسة حياة إضافية بدون إخلال بالطابع الرسمي
+  if(!reduceMotion){
+    const glow = document.createElement('div');
+    glow.id = 'cursorGlow';
+    document.body.appendChild(glow);
+    let glowX = window.innerWidth/2, glowY = window.innerHeight/2;
+    let curGlowX = glowX, curGlowY = glowY;
+    document.addEventListener('mousemove', function(e){
+      glowX = e.clientX; glowY = e.clientY;
+      if(glow.style.opacity !== '1') glow.style.opacity = '1';
+    });
+    document.addEventListener('mouseleave', function(){ glow.style.opacity = '0'; });
+    function glowTick(){
+      curGlowX += (glowX - curGlowX) * 0.50;
+      curGlowY += (glowY - curGlowY) * 0.50;
+      glow.style.transform = 'translate(' + curGlowX.toFixed(1) + 'px, ' + curGlowY.toFixed(1) + 'px)';
+      requestAnimationFrame(glowTick);
+    }
+    requestAnimationFrame(glowTick);
+  }
+
+  // ظهور تدريجي للكروت عند دخولها الشاشة أثناء التمرير — لمسة احترافية خفيفة
+  if(!reduceMotion && 'IntersectionObserver' in window){
+    const io = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting){
+          entry.target.classList.add('scroll-in');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    function observeScrollCards(){
+      const vh = window.innerHeight;
+      document.querySelectorAll('.view.active .card:not(.scroll-in)').forEach(function(card){
+        const r = card.getBoundingClientRect();
+        // الكروت الظاهرة فوق الشاشة أصلًا (عند فتح التبويب) تاخذ أنيميشن التبويب العادي، وما تتكرر معها
+        if(r.top < vh && r.bottom > 0){ card.classList.add('scroll-in'); return; }
+        card.classList.add('scroll-pre');
+        io.observe(card);
+      });
+    }
+    observeScrollCards();
+    document.querySelectorAll('.tab').forEach(function(tab){
+      tab.addEventListener('click', function(){ setTimeout(observeScrollCards, 50); });
+    });
+  }
+})();
+
+(function initSnowfall(){
+  const field = document.getElementById('snowfall');
+  if(!field) return;
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduceMotion) return;
+  const COUNT = 90;
+  const frag = document.createDocumentFragment();
+  for(let i=0;i<COUNT;i++){
+    const flake = document.createElement('span');
+    flake.className = 'snowflake';
+    const size = 2 + Math.random()*3.5;
+    const left = Math.random()*100;
+    const duration = 14 + Math.random()*16;
+    const delay = -(Math.random()*duration);
+    const drift = (Math.random()*70 - 35).toFixed(0) + 'px';
+    flake.style.left = left.toFixed(2) + 'vw';
+    flake.style.width = size.toFixed(1) + 'px';
+    flake.style.height = size.toFixed(1) + 'px';
+    flake.style.animationDuration = duration.toFixed(1) + 's';
+    flake.style.animationDelay = delay.toFixed(1) + 's';
+    flake.style.setProperty('--drift', drift);
+    frag.appendChild(flake);
+  }
+  field.appendChild(frag);
+})();
+
+(function initClouds(){
+  const field = document.getElementById('bgClouds');
+  if(!field) return;
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduceMotion) return;
+  const COUNT = 9;
+  const frag = document.createDocumentFragment();
+  for(let i=0;i<COUNT;i++){
+    const cloud = document.createElement('span');
+    cloud.className = 'bg-cloud';
+    const scale = 0.5 + Math.random()*0.9;
+    const top = 2 + Math.random()*28;
+    const opacity = 0.2 + Math.random()*0.24;
+    const duration = 55 + Math.random()*70;
+    const delay = -(Math.random()*duration);
+    const reverse = Math.random() < 0.5;
+    cloud.style.top = top.toFixed(1) + '%';
+    cloud.style.opacity = opacity.toFixed(2);
+    cloud.style.setProperty('--cloud-scale', scale.toFixed(2));
+    cloud.style.animationDuration = duration.toFixed(1) + 's';
+    cloud.style.animationDelay = delay.toFixed(1) + 's';
+    cloud.style.animationName = reverse ? 'cloudDriftReverse' : 'cloudDrift';
+    frag.appendChild(cloud);
+  }
+  field.appendChild(frag);
+})();
+
+(function initMicroInteractions(){
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduceMotion) return;
+
+  // إمالة ثلاثية الأبعاد + لمعة تتبع الفأرة (كروت المخازن ولوحات المؤشرات فقط — عناصر بلا جداول داخلية)
+  function attachTilt(el){
+    if(el.dataset.tilt) return;
+    el.dataset.tilt = '1';
+    el.classList.add('tilt-target');
+    const glare = document.createElement('div');
+    glare.className = 'tilt-glare';
+    el.appendChild(glare);
+    el.addEventListener('mousemove', function(e){
+      const r = el.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;
+      const py = (e.clientY - r.top) / r.height;
+      const rx = (0.5 - py) * 8;
+      const ry = (px - 0.5) * 8;
+      el.style.transform = 'perspective(700px) rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg) translateY(-4px)';
+      glare.style.setProperty('--mx', (px*100).toFixed(1) + '%');
+      glare.style.setProperty('--my', (py*100).toFixed(1) + '%');
+    });
+    el.addEventListener('mouseleave', function(){ el.style.transform = ''; });
+  }
+
+  // جذب مغناطيسي خفيف لأزرار الإجراء الرئيسية
+  function attachMagnetic(btn){
+    if(btn.dataset.magnetic) return;
+    btn.dataset.magnetic = '1';
+    btn.addEventListener('mousemove', function(e){
+      const r = btn.getBoundingClientRect();
+      const mx = (e.clientX - r.left - r.width/2) * 0.18;
+      const my = (e.clientY - r.top - r.height/2) * 0.18;
+      btn.style.transform = 'translate(' + mx.toFixed(1) + 'px,' + my.toFixed(1) + 'px) translateY(-1px)';
+    });
+    btn.addEventListener('mouseleave', function(){ btn.style.transform = ''; });
+  }
+
+  function scan(root){
+    if(root.nodeType !== 1 && root !== document) return;
+    const base = root === document ? document : root;
+    if(root.nodeType === 1){
+      if(root.matches('.store-card,.kpi-tile') && !root.dataset.tilt) attachTilt(root);
+      else if(root.matches('.btn-primary,.btn-in,.btn-out') && !root.dataset.magnetic) attachMagnetic(root);
+    }
+    base.querySelectorAll('.store-card:not([data-tilt]), .kpi-tile:not([data-tilt])').forEach(attachTilt);
+    base.querySelectorAll('.btn-primary:not([data-magnetic]), .btn-in:not([data-magnetic]), .btn-out:not([data-magnetic])').forEach(attachMagnetic);
+  }
+  scan(document);
+
+  const mo = new MutationObserver(function(mutations){
+    mutations.forEach(function(m){
+      m.addedNodes.forEach(function(node){ scan(node); });
+    });
+  });
+  mo.observe(document.body, { childList:true, subtree:true });
 })();
 
 function setConn(state, text){
