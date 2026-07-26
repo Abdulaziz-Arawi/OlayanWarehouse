@@ -44,6 +44,7 @@
   html,body{margin:0;padding:0;}
   body{
     font-family:var(--font-body);
+    font-weight:500;
     background:var(--paper);
     color:var(--ink);
     background-image:
@@ -51,6 +52,9 @@
       radial-gradient(circle at 0% 100%, rgba(168,99,30,0.06), transparent 45%);
     min-height:100vh;
     position:relative;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    text-rendering:optimizeLegibility;
   }
   .app{max-width:1180px;margin:0 auto;padding:38px 18px 60px;position:relative;z-index:1;}
 
@@ -303,10 +307,10 @@
   .lines-table td{overflow:hidden;}
   .rm-line{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px;}
 
-  table.data{width:100%;border-collapse:collapse;font-size:13px;}
+  table.data{width:100%;border-collapse:collapse;font-size:13.5px;}
   table.data th{
     text-align:right;padding:11px 12px;background:var(--paper);
-    border-bottom:2px solid var(--line-strong);font-size:11.5px;color:var(--ink-soft);
+    border-bottom:2px solid var(--line-strong);font-size:12px;color:var(--ink-soft);
     font-weight:700;letter-spacing:.2px;text-transform:none;
     position:sticky;top:0;z-index:5;
   }
