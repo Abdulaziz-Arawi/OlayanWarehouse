@@ -226,6 +226,8 @@
   table.data tr:hover td{background:rgba(0,0,0,0.02);}
   .table-wrap{overflow-x:auto;max-height:520px;overflow-y:auto;border-radius:10px;border:1px solid var(--line);}
   .table-wrap table.data{table-layout:fixed;min-width:640px;}
+  /* كشف حركة صنف: 5 أعمدة بسيطة فقط، ما تحتاج العرض الأدنى العام (640px) المخصّص للجداول كثيرة الأعمدة */
+  .table-wrap table.data#ledgerTable{min-width:0;}
   .mono-cell{direction:ltr;unicode-bidi:isolate;text-align:right;}
 
   .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;font-family:var(--font-display);}
@@ -289,7 +291,7 @@
   .stamp-card p{margin:0 0 18px;color:var(--ink-soft);font-size:13px;}
   .stamp-card .stamp-close{width:100%;}
 
-  .ledger-balance{font-family:var(--font-mono);font-weight:600;}
+  .ledger-balance{font-family:var(--font-mono);font-weight:600;direction:ltr;unicode-bidi:isolate;text-align:right;}
   .note-hint{font-size:12px;color:var(--ink-soft);margin-top:-6px;margin-bottom:12px;}
   .photo-thumb{max-width:160px;max-height:160px;border-radius:8px;border:1px solid var(--line-strong);display:block;}
   .voucher-photo{max-width:100%;max-height:260px;width:auto;height:auto;object-fit:contain;border-radius:10px;border:1px solid var(--line);margin-top:10px;cursor:pointer;}
@@ -587,6 +589,29 @@
     }
     #itemsTable td:empty::before, #itemsTable td[data-label=""]::before{content:none;}
     #itemsTable td[data-label=""]{justify-content:flex-end;}
+
+    /* كشف حركة صنف: نفس أسلوب البطاقات المكدّسة على الجوال */
+    #ledgerTable{min-width:0;table-layout:auto;}
+    #ledgerTable colgroup{display:none;}
+    #ledgerTable thead{display:none;}
+    #ledgerTable tbody, #ledgerTable tr, #ledgerTable td{display:block;width:100%;}
+    #ledgerTable tr{
+      border:1px solid var(--line);border-radius:12px;
+      margin-bottom:12px;padding:10px 12px;background:var(--paper-card);
+    }
+    #ledgerTable td{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:9px 2px;border-bottom:1px solid var(--line);
+      white-space:normal;overflow:visible;text-overflow:clip;max-width:none;text-align:left;
+    }
+    #ledgerTable td:last-child{border-bottom:none;}
+    #ledgerTable td::before{
+      content:attr(data-label);flex-shrink:0;
+      font-family:var(--font-display);font-weight:700;font-size:11.5px;color:var(--ink-soft);
+    }
+    #ledgerTable td:empty::before, #ledgerTable td[data-label=""]::before{content:none;}
+    #ledgerTable td.empty-cell{justify-content:center;}
+    #ledgerTable td.empty-cell::before{content:none;}
   }
 
   @media (max-width:620px){
@@ -927,6 +952,37 @@
     .avatar-option{width:34px;height:34px;font-size:15px;}
   }
 
+  /* ============ كشف حركة صنف: رسم الرصيد + الاستهلاك + مقارنة الوارد/الصادر ============ */
+  .ledger-trend-svg{width:100%;height:auto;display:block;}
+  .ledger-trend-empty, .ledger-io-empty{text-align:center;color:var(--ink-soft);padding:26px 0;font-size:13px;}
+
+  .consumption-trend{text-align:center;padding:6px 4px 2px;}
+  .consumption-trend .ct-days{font-family:var(--font-mono);font-weight:700;font-size:26px;color:var(--ink);line-height:1;}
+  .consumption-trend .ct-label{font-size:12px;color:var(--ink-soft);margin-top:6px;}
+  .consumption-trend .ct-rate{font-size:11px;color:var(--ink-soft);margin-top:10px;font-family:var(--font-mono);border-top:1px dashed var(--line);padding-top:8px;}
+  .consumption-trend.ct-warn .ct-days{color:var(--danger);}
+  .consumption-trend.ct-ok .ct-days{color:var(--stamp-in);}
+  .consumption-trend.ct-flat .ct-days{color:var(--ink-soft);font-size:15px;}
+
+  .ledger-io-bar{display:flex;height:36px;border-radius:9px;overflow:hidden;border:1px solid var(--line);margin-bottom:10px;}
+  .ledger-io-seg{
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-mono);font-weight:700;font-size:12.5px;color:#fff;
+    white-space:nowrap;overflow:hidden;transition:width .6s cubic-bezier(.2,.8,.25,1);
+  }
+  .ledger-io-seg.io-in{background:var(--stamp-in);}
+  .ledger-io-seg.io-out{background:var(--stamp-out);}
+  .ledger-io-legend{display:flex;gap:16px;font-size:12px;color:var(--ink-soft);flex-wrap:wrap;}
+  .ledger-io-legend span{display:inline-flex;align-items:center;gap:6px;}
+  .ledger-io-legend i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+  /* تجميع شهري للجدول */
+  .ledger-month-row td{font-weight:700;background:var(--paper);}
+
+  @media (max-width:700px){
+    .mini-banner-row .card{flex:1 1 100% !important;}
+  }
+
   /* احتفال قصّاصات الورق (كونفيتي) بألوان الموقع — يظهر عند حفظ سند بنجاح */
   #confettiLayer{position:fixed;inset:0;z-index:610;pointer-events:none;overflow:hidden;}
   .confetti-piece{
@@ -1024,6 +1080,7 @@
   .kpi-tile .kpi-value{
     font-family:var(--font-mono);font-weight:600;font-size:30px;color:var(--ink);
     line-height:1;letter-spacing:-.5px;
+    direction:ltr;unicode-bidi:isolate;text-align:right;
   }
   .kpi-tile .kpi-value small{font-size:13px;color:var(--ink-soft);font-weight:500;margin-right:4px;}
   .kpi-tile.kpi-items{--accent:var(--ink);--accent-soft:var(--line);}
@@ -1810,25 +1867,74 @@
   <!-- LEDGER -->
   <div class="view" id="view-ledger">
     <h2 class="section-title">كشف حركة صنف</h2>
-    <p class="section-sub">اختر صنفًا لعرض كل حركات الوارد والصادر عليه والرصيد بعد كل حركة.</p>
+    <p class="section-sub">اختر صنفًا لعرض كل حركاته، تطوّر رصيده عبر الزمن، واتجاه استهلاكه — نظرة واحدة تناسب اتخاذ القرار.</p>
 
     <div class="toolbar">
-      <div class="field" style="min-width:260px;">
+      <div class="field" style="min-width:170px;">
+        <label>بحث عن صنف</label>
+        <input id="ledgerItemSearch" placeholder="اكتب اسم الصنف..." autocomplete="off">
+      </div>
+      <div class="field" style="min-width:230px;">
         <label>الصنف</label>
         <select id="ledgerItemSelect"></select>
+      </div>
+      <div class="field" style="min-width:140px;">
+        <label>الفترة</label>
+        <select id="ledgerPeriodSelect">
+          <option value="30">آخر 30 يوم</option>
+          <option value="90">آخر 90 يوم</option>
+          <option value="all" selected>كل الفترة</option>
+          <option value="custom">فترة مخصّصة...</option>
+        </select>
+      </div>
+      <div class="field" id="ledgerCustomFromWrap" style="display:none;">
+        <label>من تاريخ</label>
+        <input type="date" id="ledgerFromDate">
+      </div>
+      <div class="field" id="ledgerCustomToWrap" style="display:none;">
+        <label>إلى تاريخ</label>
+        <input type="date" id="ledgerToDate">
+      </div>
+      <div class="field" style="flex:0 0 auto;align-self:end;">
+        <button class="btn-ghost btn-sm" id="ledgerGroupToggle">📅 تجميع شهري</button>
+      </div>
+      <div class="field" style="flex:0 0 auto;align-self:end;">
+        <button class="btn-ghost" id="ledgerPrintBtn">🖨 طباعة / PDF</button>
       </div>
       <div class="field" style="flex:0 0 auto;align-self:end;">
         <button class="btn-ghost" id="exportLedgerExcelBtn">⬇ تصدير Excel</button>
       </div>
     </div>
 
+    <div class="kpi-strip" id="ledgerKpis"></div>
+
     <div class="card" id="ledgerSummary"></div>
 
-    <div class="table-wrap">
-      <table class="data" id="ledgerTable">
-        <thead><tr><th>التاريخ</th><th>رقم السند</th><th>النوع</th><th>الكمية</th><th>الرصيد بعد الحركة</th></tr></thead>
-        <tbody></tbody>
-      </table>
+    <div class="mini-banner-row">
+      <div class="card" style="flex:2;min-width:280px;margin-bottom:0;">
+        <h2 class="section-title" style="font-size:15px;">📈 تطوّر الرصيد عبر الزمن</h2>
+        <div id="ledgerTrendChart"></div>
+      </div>
+      <div class="card" style="flex:1;min-width:210px;margin-bottom:0;">
+        <h2 class="section-title" style="font-size:15px;">🔮 اتجاه الاستهلاك</h2>
+        <div id="ledgerConsumptionTrend"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title" style="font-size:15px;">⚖️ مقارنة الوارد بالصادر خلال الفترة المحدّدة</h2>
+      <div id="ledgerInOutCompare"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title" style="font-size:16px;" id="ledgerTableTitle">تفاصيل الحركات</h2>
+      <div class="table-wrap">
+        <table class="data" id="ledgerTable">
+          <colgroup><col style="width:20%"><col style="width:20%"><col style="width:16%"><col style="width:20%"><col style="width:24%"></colgroup>
+          <thead><tr><th>التاريخ</th><th>رقم السند</th><th>النوع</th><th>الكمية</th><th>الرصيد بعد الحركة</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -4211,22 +4317,246 @@ function getItemMovesWithBalance(id){
   return { it, rows };
 }
 
+(function(){
+  const search = document.getElementById('ledgerItemSearch');
+  if(!search) return;
+  search.addEventListener('input', function(){
+    const sel = document.getElementById('ledgerItemSelect');
+    const nq = normName(search.value.trim());
+    let firstVisible = null;
+    Array.from(sel.options).forEach(function(opt){
+      if(!opt.value){ return; }
+      const match = !nq || normName(opt.textContent).indexOf(nq) > -1;
+      opt.hidden = !match;
+      if(match && !firstVisible) firstVisible = opt;
+    });
+    if(nq && firstVisible && sel.selectedOptions[0] && sel.selectedOptions[0].hidden){
+      sel.value = firstVisible.value;
+      renderLedgerTable();
+    }
+  });
+})();
+
+(function(){
+  const periodSel = document.getElementById('ledgerPeriodSelect');
+  const fromWrap = document.getElementById('ledgerCustomFromWrap');
+  const toWrap = document.getElementById('ledgerCustomToWrap');
+  if(!periodSel) return;
+  periodSel.addEventListener('change', function(){
+    const isCustom = periodSel.value === 'custom';
+    fromWrap.style.display = isCustom ? 'block' : 'none';
+    toWrap.style.display = isCustom ? 'block' : 'none';
+    renderLedgerTable();
+  });
+  document.getElementById('ledgerFromDate').addEventListener('change', renderLedgerTable);
+  document.getElementById('ledgerToDate').addEventListener('change', renderLedgerTable);
+})();
+
+function computeLedgerPeriodBounds(){
+  const val = document.getElementById('ledgerPeriodSelect').value;
+  if(val==='all') return { from:null, to:null };
+  if(val==='custom'){
+    const from = document.getElementById('ledgerFromDate').value || null;
+    const to = document.getElementById('ledgerToDate').value || null;
+    return { from: from, to: to };
+  }
+  const days = parseInt(val, 10) || 30;
+  const d = new Date(); d.setDate(d.getDate() - days);
+  return { from: localDateStr(d), to: null };
+}
+function filterMovesByPeriod(moves, bounds){
+  return moves.filter(function(m){
+    if(bounds.from && m.date < bounds.from) return false;
+    if(bounds.to && m.date > bounds.to) return false;
+    return true;
+  });
+}
+function ledgerPeriodLabel(bounds){
+  const val = document.getElementById('ledgerPeriodSelect').value;
+  if(val==='30') return 'آخر 30 يوم';
+  if(val==='90') return 'آخر 90 يوم';
+  if(val==='custom') return (bounds.from?fmtDate(bounds.from):'البداية') + ' — ' + (bounds.to?fmtDate(bounds.to):'اليوم');
+  return 'كل الفترة المسجّلة';
+}
+
+let ledgerGroupedView = false;
+(function(){
+  const btn = document.getElementById('ledgerGroupToggle');
+  if(!btn) return;
+  btn.addEventListener('click', function(){
+    ledgerGroupedView = !ledgerGroupedView;
+    btn.classList.toggle('btn-in', ledgerGroupedView);
+    renderLedgerTable();
+  });
+})();
+function groupMovesByMonth(moves){
+  const groups = {};
+  const order = [];
+  moves.forEach(function(m){
+    const key = (m.date||'').slice(0,7);
+    if(!groups[key]){ groups[key] = { month:key, in:0, out:0, count:0, lastBalance:null }; order.push(key); }
+    if(m.type==='in') groups[key].in += m.qty; else groups[key].out += m.qty;
+    groups[key].count++;
+    groups[key].lastBalance = m.balanceAfter;
+  });
+  return order.sort().map(function(k){ return groups[k]; });
+}
+
+function renderLedgerKpis(moves){
+  const el = document.getElementById('ledgerKpis');
+  if(!el) return;
+  const totalIn = moves.filter(function(m){return m.type==='in';}).reduce(function(s,m){return s+m.qty;},0);
+  const totalOut = moves.filter(function(m){return m.type==='out';}).reduce(function(s,m){return s+m.qty;},0);
+  const net = totalIn - totalOut;
+  el.innerHTML =
+      kpiTile('kpi-in','📥','إجمالي الوارد', fmtNum(totalIn), false)
+    + kpiTile('kpi-out','📤','إجمالي الصادر', fmtNum(totalOut), false)
+    + kpiTile(net>=0?'kpi-items':'kpi-low','⚖️','صافي التغيّر', (net>=0?'+':'')+fmtNum(net), false)
+    + kpiTile('kpi-low','🧾','عدد الحركات', moves.length, true);
+  animateCounters(el);
+}
+
+function renderLedgerTrendChart(moves){
+  const el = document.getElementById('ledgerTrendChart');
+  if(!el) return;
+  if(moves.length===0){
+    el.innerHTML = '<div class="ledger-trend-empty">لا توجد حركات كافية لعرض الرسم البياني.</div>';
+    return;
+  }
+  const w = 560, h = 150, padL = 38, padR = 12, padT = 14, padB = 22;
+  const values = moves.map(function(m){ return m.balanceAfter; });
+  const maxV = Math.max.apply(null, values.concat([1]));
+  const minV = Math.min.apply(null, values.concat([0]));
+  const range = (maxV - minV) || 1;
+  const stepX = (w - padL - padR) / Math.max(1, moves.length - 1);
+  const points = values.map(function(v,i){
+    const x = padL + i*stepX;
+    const y = padT + (h - padT - padB) - ((v - minV)/range) * (h - padT - padB);
+    return { x:x, y:y };
+  });
+  const pathD = points.map(function(p,i){ return (i===0?'M':'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+  const areaD = pathD + ' L' + points[points.length-1].x.toFixed(1) + ',' + (h-padB) + ' L' + points[0].x.toFixed(1) + ',' + (h-padB) + ' Z';
+
+  const firstDate = fmtDate(moves[0].date);
+  const lastDate = fmtDate(moves[moves.length-1].date);
+  const midIdx = Math.floor(moves.length/2);
+  const midDate = fmtDate(moves[midIdx].date);
+
+  el.innerHTML =
+    '<svg class="ledger-trend-svg" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">'
+    + '<line x1="'+padL+'" y1="'+padT+'" x2="'+padL+'" y2="'+(h-padB)+'" stroke="var(--line)" stroke-width="1"/>'
+    + '<line x1="'+padL+'" y1="'+(h-padB)+'" x2="'+(w-padR)+'" y2="'+(h-padB)+'" stroke="var(--line)" stroke-width="1"/>'
+    + '<text x="4" y="'+(padT+4)+'" font-size="10" fill="var(--ink-soft)">'+fmtNum(maxV)+'</text>'
+    + '<text x="4" y="'+(h-padB)+'" font-size="10" fill="var(--ink-soft)">'+fmtNum(minV)+'</text>'
+    + '<path d="'+areaD+'" fill="var(--freezer-soft)" stroke="none"/>'
+    + '<path d="'+pathD+'" fill="none" stroke="var(--freezer)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>'
+    + points.map(function(p,i){ return (i===points.length-1) ? '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="var(--freezer)"/>' : ''; }).join('')
+    + '<text x="'+padL+'" y="'+(h-4)+'" font-size="10" fill="var(--ink-soft)" text-anchor="start">'+firstDate+'</text>'
+    + '<text x="'+((padL+w-padR)/2)+'" y="'+(h-4)+'" font-size="10" fill="var(--ink-soft)" text-anchor="middle">'+midDate+'</text>'
+    + '<text x="'+(w-padR)+'" y="'+(h-4)+'" font-size="10" fill="var(--ink-soft)" text-anchor="end">'+lastDate+'</text>'
+    + '</svg>';
+}
+
+function computeConsumptionTrend(it, fullMoves){
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
+  const cutoffStr = localDateStr(cutoff);
+  const recentOut = fullMoves.filter(function(m){ return m.type==='out' && m.date >= cutoffStr; });
+  const totalOut = recentOut.reduce(function(s,m){return s+m.qty;},0);
+  const avgPerDay = totalOut/30;
+  if(avgPerDay<=0) return { hasConsumption:false };
+  const daysLeft = it.balance>0 ? (it.balance/avgPerDay) : 0;
+  return { hasConsumption:true, avgPerDay:avgPerDay, daysLeft:daysLeft };
+}
+function renderConsumptionTrend(it, fullMoves){
+  const el = document.getElementById('ledgerConsumptionTrend');
+  if(!el) return;
+  const c = computeConsumptionTrend(it, fullMoves);
+  if(!c.hasConsumption){
+    el.innerHTML = '<div class="consumption-trend ct-flat"><div class="ct-days">— لا استهلاك حديث —</div>'
+      + '<div class="ct-label">لا يوجد صرف لهذا الصنف آخر 30 يوم</div></div>';
+    return;
+  }
+  const days = Math.round(c.daysLeft*10)/10;
+  const warn = days <= 7;
+  el.innerHTML = '<div class="consumption-trend '+(warn?'ct-warn':'ct-ok')+'">'
+    + '<div class="ct-days">~'+days+' يوم</div>'
+    + '<div class="ct-label">'+(warn?'⚠️ ':'')+'متوقع نفاذ الرصيد الحالي عند هذا المعدّل</div>'
+    + '<div class="ct-rate">معدّل الاستهلاك: '+fmtNum(Math.round(c.avgPerDay*100)/100)+' '+escapeHtml(it.unit||'')+' / يوم (آخر 30 يوم)</div>'
+    + '</div>';
+}
+
+function renderInOutCompare(moves){
+  const el = document.getElementById('ledgerInOutCompare');
+  if(!el) return;
+  const totalIn = moves.filter(function(m){return m.type==='in';}).reduce(function(s,m){return s+m.qty;},0);
+  const totalOut = moves.filter(function(m){return m.type==='out';}).reduce(function(s,m){return s+m.qty;},0);
+  const total = totalIn + totalOut;
+  if(total<=0){
+    el.innerHTML = '<div class="ledger-io-empty">لا توجد حركات في هذه الفترة.</div>';
+    return;
+  }
+  const inPct = Math.round((totalIn/total)*100);
+  const outPct = 100 - inPct;
+  el.innerHTML =
+      '<div class="ledger-io-bar">'
+    + (inPct>0 ? '<div class="ledger-io-seg io-in" style="width:'+inPct+'%;">'+(inPct>=12?inPct+'%':'')+'</div>' : '')
+    + (outPct>0 ? '<div class="ledger-io-seg io-out" style="width:'+outPct+'%;">'+(outPct>=12?outPct+'%':'')+'</div>' : '')
+    + '</div>'
+    + '<div class="ledger-io-legend">'
+    + '<span><i style="background:var(--stamp-in);"></i>وارد '+fmtNum(totalIn)+' ('+inPct+'%)</span>'
+    + '<span><i style="background:var(--stamp-out);"></i>صادر '+fmtNum(totalOut)+' ('+outPct+'%)</span>'
+    + '</div>';
+}
+
 function renderLedgerTable(){
   const id = document.getElementById('ledgerItemSelect').value;
   const { it, rows: moves } = getItemMovesWithBalance(id);
   const tbody = document.querySelector('#ledgerTable tbody');
   const summary = document.getElementById('ledgerSummary');
-  if(!it){ tbody.innerHTML=''; summary.innerHTML=''; return; }
+  if(!it){
+    tbody.innerHTML='';
+    summary.innerHTML='';
+    ['ledgerKpis','ledgerTrendChart','ledgerConsumptionTrend','ledgerInOutCompare'].forEach(function(cid){
+      const e = document.getElementById(cid); if(e) e.innerHTML='';
+    });
+    return;
+  }
 
-  const rows = moves.map(m=>`<tr>
-      <td>${fmtDate(m.date)}</td>
-      <td class="mono">${m.number}</td>
-      <td><span class="pill ${m.type==='in'?'pill-in':'pill-out'}">${m.type==='in'?'وارد':'صادر'}</span></td>
-      <td class="mono">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
-      <td class="ledger-balance">${fmtNum(m.balanceAfter)}</td>
+  const bounds = computeLedgerPeriodBounds();
+  const filteredMoves = filterMovesByPeriod(moves, bounds);
+  const periodLabel = ledgerPeriodLabel(bounds);
+
+  renderLedgerKpis(filteredMoves);
+  renderLedgerTrendChart(filteredMoves);
+  renderConsumptionTrend(it, moves);
+  renderInOutCompare(filteredMoves);
+
+  const titleEl = document.getElementById('ledgerTableTitle');
+  let rows;
+  if(ledgerGroupedView){
+    const groups = groupMovesByMonth(filteredMoves);
+    titleEl.textContent = 'تفاصيل الحركات — تجميع شهري (' + periodLabel + ')';
+    rows = groups.map(function(g){
+      const net = g.in - g.out;
+      return `<tr class="ledger-month-row">
+        <td colspan="2" data-label="الشهر">${monthShortLabel(g.month)} ${g.month.slice(0,4)} <span style="color:var(--ink-soft);font-weight:500;">(${g.count} حركة)</span></td>
+        <td class="mono" data-label="الوارد/الصادر">وارد ${fmtNum(g.in)} · صادر ${fmtNum(g.out)}</td>
+        <td class="mono mono-cell" data-label="صافي التغيّر">${net>=0?'+':''}${fmtNum(net)}</td>
+        <td class="ledger-balance" data-label="الرصيد بنهاية الشهر">${fmtNum(g.lastBalance)}</td>
+      </tr>`;
+    });
+  } else {
+    titleEl.textContent = 'تفاصيل الحركات (' + periodLabel + ')';
+    rows = filteredMoves.map(m=>`<tr>
+      <td data-label="التاريخ">${fmtDate(m.date)}</td>
+      <td class="mono" data-label="رقم السند">${m.number}</td>
+      <td data-label="النوع"><span class="pill ${m.type==='in'?'pill-in':'pill-out'}">${m.type==='in'?'وارد':'صادر'}</span></td>
+      <td class="mono mono-cell" data-label="الكمية">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
+      <td class="ledger-balance" data-label="الرصيد بعد الحركة">${fmtNum(m.balanceAfter)}</td>
     </tr>`);
+  }
 
-  tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5"><div class="empty-state"><div class="icon">📄</div>لا توجد حركات على هذا الصنف بعد.</div></td></tr>';
+  tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5" class="empty-cell"><div class="empty-state"><div class="icon">📄</div>لا توجد حركات في هذه الفترة.</div></td></tr>';
 
   const low = it.min>0 && it.balance<=it.min;
   summary.innerHTML = `
@@ -4234,18 +4564,95 @@ function renderLedgerTable(){
       <div><label>المخزن</label><span class="pill pill-store-${it.store}">${STORE_LABELS[it.store]}</span></div>
       <div><label>الوحدة</label><span>${it.unit}</span></div>
       <div><label>الرصيد الحالي</label><span class="ledger-balance ${low?'low-flag':''}">${fmtNum(it.balance)} ${low?'⚠ عند الحد الأدنى':''}</span></div>
-      <div><label>عدد الحركات</label><span class="mono">${moves.length}</span></div>
+      <div><label>الفترة المعروضة</label><span class="mono">${periodLabel}</span></div>
     </div>
   `;
 }
+
+document.getElementById('ledgerPrintBtn').addEventListener('click', ()=>{
+  const id = document.getElementById('ledgerItemSelect').value;
+  const { it, rows: moves } = getItemMovesWithBalance(id);
+  if(!it){ showAppAlert('اختر صنفًا أولاً.'); return; }
+  const printBounds = computeLedgerPeriodBounds();
+  const printMoves = filterMovesByPeriod(moves, printBounds);
+  const printTotalIn = printMoves.filter(m=>m.type==='in').reduce((s,m)=>s+m.qty,0);
+  const printTotalOut = printMoves.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0);
+  const area = document.getElementById('printArea');
+  area.innerHTML = `
+    <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:18px;">
+        <div>
+          <div style="font-weight:800;font-size:20px;">فنادق سليمان موسى العليان</div>
+          <div style="font-size:13px;color:#555;margin-top:2px;">كشف حركة صنف: ${escapeHtml(it.name)}</div>
+        </div>
+        <div style="text-align:left;">
+          <div style="font-size:12px;color:#555;">${ledgerPeriodLabel(printBounds)}</div>
+          <div style="font-size:12px;color:#555;">تاريخ الطباعة: ${fmtDate(todayStr())}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:22px;margin-bottom:16px;font-size:13px;flex-wrap:wrap;">
+        <div><b>المخزن:</b> ${STORE_LABELS[it.store]}</div>
+        <div><b>الوحدة:</b> ${escapeHtml(it.unit)}</div>
+        <div><b>الرصيد الحالي:</b> ${fmtNum(it.balance)}</div>
+        <div><b>إجمالي الوارد:</b> ${fmtNum(printTotalIn)}</div>
+        <div><b>إجمالي الصادر:</b> ${fmtNum(printTotalOut)}</div>
+        <div><b>صافي التغيّر:</b> ${(printTotalIn-printTotalOut)>=0?'+':''}${fmtNum(printTotalIn-printTotalOut)}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+        <thead>
+          <tr style="background:#EDE8DC;">
+            <th style="padding:7px 8px;text-align:right;border-bottom:2px solid #1B2430;">التاريخ</th>
+            <th style="padding:7px 8px;text-align:right;border-bottom:2px solid #1B2430;">رقم السند</th>
+            <th style="padding:7px 8px;text-align:right;border-bottom:2px solid #1B2430;">النوع</th>
+            <th style="padding:7px 8px;text-align:right;border-bottom:2px solid #1B2430;">الكمية</th>
+            <th style="padding:7px 8px;text-align:right;border-bottom:2px solid #1B2430;">الرصيد بعد الحركة</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${printMoves.map(m=>`<tr>
+            <td style="padding:6px 8px;border-bottom:1px solid #ddd;">${fmtDate(m.date)}</td>
+            <td style="padding:6px 8px;border-bottom:1px solid #ddd;">${m.number}</td>
+            <td style="padding:6px 8px;border-bottom:1px solid #ddd;">${m.type==='in'?'وارد':'صادر'}</td>
+            <td style="padding:6px 8px;border-bottom:1px solid #ddd;">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
+            <td style="padding:6px 8px;border-bottom:1px solid #ddd;">${fmtNum(m.balanceAfter)}</td>
+          </tr>`).join('') || '<tr><td colspan="5" style="padding:14px;text-align:center;color:#777;">لا توجد حركات في هذه الفترة.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `;
+  window.print();
+});
 
 document.getElementById('exportLedgerExcelBtn').addEventListener('click', ()=>{
   const id = document.getElementById('ledgerItemSelect').value;
   const { it, rows: moves } = getItemMovesWithBalance(id);
   if(!it){ showAppAlert('اختر صنفًا أولاً.'); return; }
-  if(moves.length===0){ showAppAlert('لا توجد حركات على هذا الصنف لتصديرها.'); return; }
+  const bounds = computeLedgerPeriodBounds();
+  const filteredMoves = filterMovesByPeriod(moves, bounds);
+  if(filteredMoves.length===0){ showAppAlert('لا توجد حركات في هذه الفترة لتصديرها.'); return; }
 
-  const rows = moves.map(m=>({
+  const totalIn = filteredMoves.filter(m=>m.type==='in').reduce((s,m)=>s+m.qty,0);
+  const totalOut = filteredMoves.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0);
+  const c = computeConsumptionTrend(it, moves);
+  const consumptionText = c.hasConsumption
+    ? ('متوقع نفاذ الرصيد خلال ~' + (Math.round(c.daysLeft*10)/10) + ' يوم (بمعدّل ' + (Math.round(c.avgPerDay*100)/100) + ' ' + (it.unit||'') + '/يوم آخر 30 يوم)')
+    : 'لا يوجد استهلاك حديث (آخر 30 يوم) لهذا الصنف';
+
+  const summaryRows = [{
+    'اسم الصنف': it.name,
+    'المخزن': STORE_LABELS[it.store] || it.store,
+    'الوحدة': it.unit,
+    'الرصيد الحالي': it.balance,
+    'الحد الأدنى للتنبيه': it.min || 0,
+    'الفترة المعروضة': ledgerPeriodLabel(bounds),
+    'إجمالي الوارد': totalIn,
+    'إجمالي الصادر': totalOut,
+    'صافي التغيّر': totalIn - totalOut,
+    'عدد الحركات': filteredMoves.length,
+    'اتجاه الاستهلاك': consumptionText,
+    'تاريخ التصدير': todayStr()
+  }];
+  const rows = filteredMoves.map(m=>({
     'التاريخ': m.date,
     'رقم السند': m.number,
     'النوع': m.type==='in' ? 'وارد' : 'صادر',
@@ -4255,7 +4662,13 @@ document.getElementById('exportLedgerExcelBtn').addEventListener('click', ()=>{
 
   try{
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'كشف الحركة');
+    wb.Workbook = { Views: [{ RTL: true }] };
+    const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
+    wsSummary['!cols'] = [ {wch:22},{wch:18},{wch:10},{wch:14},{wch:16},{wch:22},{wch:14},{wch:14},{wch:14},{wch:12},{wch:46},{wch:14} ];
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'ملخص');
+    const wsDetail = XLSX.utils.json_to_sheet(rows);
+    wsDetail['!cols'] = [ {wch:12},{wch:16},{wch:10},{wch:12},{wch:18} ];
+    XLSX.utils.book_append_sheet(wb, wsDetail, 'كشف الحركة');
     XLSX.writeFile(wb, 'كشف-حركة-' + it.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g,'_') + '-' + todayStr() + '.xlsx');
   }catch(e){
     showErr('تعذر إنشاء ملف Excel.', e);
