@@ -2944,12 +2944,52 @@ async function populateProfile(){
   });
 })();
 
+const GEO_GATE_KEY = 'geoGateOk';
+async function checkGeoGate(){
+  const cached = sessionStorage.getItem(GEO_GATE_KEY);
+  if(cached === '1') return true;
+  if(cached === '0') return false;
+  try{
+    const ctrl = new AbortController();
+    const t = setTimeout(()=> ctrl.abort(), 6000);
+    const res = await fetch('https://ipapi.co/json/', { signal: ctrl.signal });
+    clearTimeout(t);
+    const d = await res.json();
+    if(d && d.error) throw new Error(d.reason || 'geo error');
+    const city = (d.city||'');
+    const region = (d.region||'') + ' ' + (d.region_code||'');
+    const country = (d.country_name||'') + ' ' + (d.country_code||'');
+    const isMecca = /mecca|makkah/i.test(city) || /mecca|makkah/i.test(region);
+    const isSaudi = /saudi/i.test(country) || /\bSA\b/.test(country);
+    const ok = isMecca && isSaudi;
+    sessionStorage.setItem(GEO_GATE_KEY, ok ? '1' : '0');
+    return ok;
+  }catch(e){
+    console.warn('تعذّر التحقق من الموقع الجغرافي عبر IP؛ سيتم السماح بالدخول افتراضيًا لتفادي تعطيل الموظفين بسبب عطل بخدمة خارجية.', e);
+    return true;
+  }
+}
+function showGeoBlocked(){
+  const loader = document.getElementById('bootLoader');
+  loader.classList.remove('hide');
+  loader.innerHTML = '<div class="boot-loader-inner" style="max-width:320px;padding:0 20px;">'
+    + '<div style="font-size:40px;margin-bottom:14px;">🚫</div>'
+    + '<div class="boot-brand">غير متاح من موقعك الحالي</div>'
+    + '<p class="boot-text" style="font-family:var(--font-body);font-size:13px;line-height:1.8;">هذا النظام مخصص للاستخدام داخل مكة المكرمة فقط.<br>إذا كنت تعتقد أن هذا خطأ، تواصل مع إدارة النظام.</p>'
+    + '</div>';
+}
+
 (async function checkExistingSession(){
   const { data } = await sb.auth.getSession();
   if(data && data.session){
     await enterApp();
-  } else {
+    return;
+  }
+  const allowed = await checkGeoGate();
+  if(allowed){
     hideBootLoader();
+  } else {
+    showGeoBlocked();
   }
 })();
 
@@ -3164,13 +3204,13 @@ function renderItemsTable(){
   tbody.innerHTML = list.map(i=>{
     const low = i.min>0 && i.balance<=i.min;
     return `<tr>
-      <td class="wrap-cell" data-label="الصنف" title="${i.name}">${i.name}</td>
+      <td class="wrap-cell" data-label="الصنف" title="${escapeHtml(i.name)}">${escapeHtml(i.name)}</td>
       <td class="wrap-cell" data-label="المخزن"><span class="pill pill-store-${i.store}">${STORE_LABELS[i.store]}</span></td>
       <td data-label="الوحدة">${i.unit}</td>
       <td class="mono mono-cell ${low?'low-flag':''}" data-label="الرصيد الحالي">${fmtNum(i.balance)}${low?' ⚠':''}</td>
       <td class="mono mono-cell" data-label="الحد الأدنى">${fmtNum(i.min)}</td>
       <td data-label="الباركود">
-        <input class="mono item-barcode-input" data-item-barcode="${i.id}" value="${i.barcode||''}" placeholder="لا يوجد باركود" style="font-size:12.5px;padding:8px 10px;width:100%;text-align:center;">
+        <input class="mono item-barcode-input" data-item-barcode="${i.id}" value="${escapeHtml(i.barcode||'')}" placeholder="لا يوجد باركود" style="font-size:12.5px;padding:8px 10px;width:100%;text-align:center;">
       </td>
       <td data-label="الصورة">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;">
@@ -3344,7 +3384,7 @@ function addVoucherLineRow(tableId){
 
   function refreshDatalist(){
     const dl = tr.querySelector('datalist');
-    dl.innerHTML = getItemsByStore(storeSel.value).map(i=> `<option value="${i.name}">`).join('');
+    dl.innerHTML = getItemsByStore(storeSel.value).map(i=> `<option value="${escapeHtml(i.name)}">`).join('');
   }
   function tryAutoUnit(){
     const it = findItemByStoreName(storeSel.value, nameInput.value);
@@ -3360,7 +3400,7 @@ function refreshAllLineDatalists(tableId){
   document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>{
     const store = tr.querySelector('.line-store').value;
     const dl = tr.querySelector('datalist');
-    if(dl) dl.innerHTML = getItemsByStore(store).map(i=> `<option value="${i.name}">`).join('');
+    if(dl) dl.innerHTML = getItemsByStore(store).map(i=> `<option value="${escapeHtml(i.name)}">`).join('');
   });
 }
 
@@ -3759,7 +3799,7 @@ function fillLogSection(tableId, list, type, period){
       <td data-label="الحالة">${v.closed ? '<span class="pill" style="background:var(--freezer-soft);color:var(--freezer);">🔒 مقفل</span>' : '<span class="pill pill-in">مفتوح</span>'}</td>
       <td data-label="المخزن">${storePillsHtml(voucherStoreList(v))}</td>
       <td data-label="التاريخ">${fmtDate(v.date)}</td>
-      <td data-label="${partyLabel}">${v.party||'-'}</td>
+      <td data-label="${partyLabel}">${v.party?escapeHtml(v.party):'-'}</td>
       <td class="mono" data-label="عدد الأصناف">${v.lines.length}</td>
       <td data-label=""><button class="btn-ghost btn-sm" data-view-v="${v.id}">عرض</button></td>
     </tr>
@@ -3782,7 +3822,7 @@ function openVoucherDetail(id){
     </div>
     ${v.closed ? `<div style="background:var(--freezer-soft);color:var(--freezer);border-radius:9px;padding:8px 12px;font-size:12.5px;font-weight:700;margin-bottom:10px;">🔒 سند مقفل (مؤرشف) — لا يمكن تعديله أو حذفه.</div>` : ''}
     <p style="margin:4px 0;font-size:13px;"><b>التاريخ:</b> ${fmtDate(v.date)}</p>
-    <p style="margin:4px 0;font-size:13px;"><b>${v.type==='in'?'المورد':'الجهة المستلمة'}:</b> ${v.party||'-'}</p>
+    <p style="margin:4px 0;font-size:13px;"><b>${v.type==='in'?'المورد':'الجهة المستلمة'}:</b> ${v.party?escapeHtml(v.party):'-'}</p>
     ${v.notes?`<p style="margin:4px 0;font-size:13px;"><b>ملاحظات:</b> ${v.notes}</p>`:''}
     <table class="lines-table" style="margin-top:10px;">
       <thead><tr><th>المخزن</th><th>الصنف</th><th>الكمية</th><th>الوحدة</th></tr></thead>
@@ -3859,7 +3899,7 @@ function printVoucher(v){
           <div style="font-size:12px;color:#555;">${fmtDate(v.date)}</div>
         </div>
       </div>
-      <p style="margin:6px 0;font-size:14px;"><b>${v.type==='in'?'المورد':'الجهة المستلمة'}:</b> ${v.party||'-'}</p>
+      <p style="margin:6px 0;font-size:14px;"><b>${v.type==='in'?'المورد':'الجهة المستلمة'}:</b> ${v.party?escapeHtml(v.party):'-'}</p>
       ${v.notes?`<p style="margin:6px 0;font-size:14px;"><b>ملاحظات:</b> ${v.notes}</p>`:''}
       <table style="width:100%;border-collapse:collapse;margin-top:16px;font-size:13px;">
         <thead>
@@ -3948,7 +3988,7 @@ function itemOptionsHtml(){
     if(!its.length) return '';
     return `<optgroup label="${STORE_LABELS[s]}">` + its.map(i=>{
       const low = i.min>0 && i.balance<=i.min;
-      return `<option value="${i.id}">${i.name} — متوفر: ${fmtNum(i.balance)} ${i.unit}${low?' ⚠':''}</option>`;
+      return `<option value="${i.id}">${escapeHtml(i.name)} — متوفر: ${fmtNum(i.balance)} ${escapeHtml(i.unit)}${low?' ⚠':''}</option>`;
     }).join('') + `</optgroup>`;
   }).join('');
 }
@@ -4044,7 +4084,7 @@ function renderMyRequestsTable(){
   tbody.innerHTML = mine.map(r=>{
     const statusClass = r.status==='fulfilled' ? 'pill-in' : (r.status==='rejected' ? 'pill-out' : 'pill-pending');
     const statusText = r.status==='fulfilled' ? 'تم الصرف' : (r.status==='rejected' ? 'مرفوض' : 'قيد الانتظار');
-    const itemsSummary = r.lines.map(l=> l.name+' ('+fmtNum(l.qty)+')').join('، ');
+    const itemsSummary = r.lines.map(l=> escapeHtml(l.name)+' ('+fmtNum(l.qty)+')').join('، ');
     return `<tr>
       <td class="mono mono-cell">${r.number}</td>
       <td class="wrap-cell" title="${itemsSummary}">${itemsSummary}</td>
@@ -4068,7 +4108,7 @@ function renderIncomingRequestsTable(){
   tbody.innerHTML = list.map(r=>{
     const statusClass = r.status==='fulfilled' ? 'pill-in' : (r.status==='rejected' ? 'pill-out' : 'pill-pending');
     const statusText = r.status==='fulfilled' ? 'تم الصرف' : (r.status==='rejected' ? 'مرفوض' : 'قيد الانتظار');
-    const itemsSummary = r.lines.map(l=> l.name+' ('+fmtNum(l.qty)+')').join('، ');
+    const itemsSummary = r.lines.map(l=> escapeHtml(l.name)+' ('+fmtNum(l.qty)+')').join('، ');
     const actions = r.status==='pending'
       ? `<button class="btn-in btn-sm" data-fulfill="${r.id}">تحويل لسند صرف</button> <button class="btn-danger-outline btn-sm" data-reject="${r.id}">رفض</button>`
       : `<button class="btn-ghost btn-sm" data-view-req="${r.id}">عرض</button>`;
@@ -4604,7 +4644,7 @@ function renderLedgerSelect(){
     document.getElementById('ledgerSummary').innerHTML = '';
     return;
   }
-  sel.innerHTML = DB.items.map(i=>`<option value="${i.id}" ${i.id===current?'selected':''}>${i.name} — ${STORE_LABELS[i.store]}</option>`).join('');
+  sel.innerHTML = DB.items.map(i=>`<option value="${i.id}" ${i.id===current?'selected':''}>${escapeHtml(i.name)} — ${STORE_LABELS[i.store]}</option>`).join('');
   renderLedgerTable();
 }
 
