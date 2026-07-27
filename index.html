@@ -11,7 +11,7 @@
 <style>
   :root{
     --ink:#1B2430;
-    --ink-soft:#4B5563;
+    --ink-soft:#333B46;
     --paper:#EDE8DC;
     --paper-card:#FAF8F2;
     --line:#D9D2C0;
@@ -44,7 +44,7 @@
   html,body{margin:0;padding:0;}
   body{
     font-family:var(--font-body);
-    font-weight:500;
+    font-weight:700;
     background:var(--paper);
     color:var(--ink);
     background-image:
@@ -307,14 +307,14 @@
   .lines-table td{overflow:hidden;}
   .rm-line{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px;}
 
-  table.data{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.data{width:100%;border-collapse:collapse;font-size:14.5px;}
   table.data th{
     text-align:right;padding:11px 12px;background:var(--paper);
-    border-bottom:2px solid var(--line-strong);font-size:12px;color:var(--ink-soft);
-    font-weight:700;letter-spacing:.2px;text-transform:none;
+    border-bottom:2px solid var(--line-strong);font-size:12.5px;color:var(--ink-soft);
+    font-weight:800;letter-spacing:.2px;text-transform:none;
     position:sticky;top:0;z-index:5;
   }
-  table.data td{padding:11px 12px;border-bottom:1px solid var(--line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;line-height:1.4;}
+  table.data td{padding:11px 12px;border-bottom:1px solid var(--line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;line-height:1.4;font-weight:700;color:var(--ink);}
   table.data td.wrap-cell{white-space:normal;text-overflow:clip;max-width:none;}
   table.data tr:hover td{background:rgba(0,0,0,0.02);}
   .table-wrap{overflow-x:auto;max-height:520px;overflow-y:auto;border-radius:10px;border:1px solid var(--line);}
