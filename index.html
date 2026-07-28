@@ -320,7 +320,7 @@
   .table-wrap{overflow-x:auto;max-height:520px;overflow-y:auto;border-radius:10px;border:1px solid var(--line);}
   .table-wrap table.data{table-layout:fixed;min-width:640px;}
   /* كشف حركة صنف: 5 أعمدة بسيطة فقط، ما تحتاج العرض الأدنى العام (640px) المخصّص للجداول كثيرة الأعمدة */
-  .table-wrap table.data#ledgerTable{min-width:0;}
+  .table-wrap table.data#ledgerTable, .table-wrap table.data.ledger-item-table{min-width:0;}
   .mono-cell{direction:ltr;unicode-bidi:isolate;text-align:right;}
 
   .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;font-family:var(--font-display);}
@@ -689,27 +689,29 @@
     #itemsTable td[data-label=""]{justify-content:flex-end;}
 
     /* كشف حركة صنف: نفس أسلوب البطاقات المكدّسة على الجوال */
-    #ledgerTable{min-width:0;table-layout:auto;}
-    #ledgerTable colgroup{display:none;}
-    #ledgerTable thead{display:none;}
-    #ledgerTable tbody, #ledgerTable tr, #ledgerTable td{display:block;width:100%;}
-    #ledgerTable tr{
+    #ledgerTable, .ledger-item-table{min-width:0;table-layout:auto;}
+    #ledgerTable colgroup, .ledger-item-table colgroup{display:none;}
+    #ledgerTable thead, .ledger-item-table thead{display:none;}
+    #ledgerTable tbody, #ledgerTable tr, #ledgerTable td,
+    .ledger-item-table tbody, .ledger-item-table tr, .ledger-item-table td{display:block;width:100%;}
+    #ledgerTable tr, .ledger-item-table tr{
       border:1px solid var(--line);border-radius:12px;
       margin-bottom:12px;padding:10px 12px;background:var(--paper-card);
     }
-    #ledgerTable td{
+    #ledgerTable td, .ledger-item-table td{
       display:flex;align-items:center;justify-content:space-between;gap:10px;
       padding:9px 2px;border-bottom:1px solid var(--line);
       white-space:normal;overflow:visible;text-overflow:clip;max-width:none;text-align:left;
     }
-    #ledgerTable td:last-child{border-bottom:none;}
-    #ledgerTable td::before{
+    #ledgerTable td:last-child, .ledger-item-table td:last-child{border-bottom:none;}
+    #ledgerTable td::before, .ledger-item-table td::before{
       content:attr(data-label);flex-shrink:0;
       font-family:var(--font-display);font-weight:700;font-size:11.5px;color:var(--ink-soft);
     }
-    #ledgerTable td:empty::before, #ledgerTable td[data-label=""]::before{content:none;}
-    #ledgerTable td.empty-cell{justify-content:center;}
-    #ledgerTable td.empty-cell::before{content:none;}
+    #ledgerTable td:empty::before, #ledgerTable td[data-label=""]::before,
+    .ledger-item-table td:empty::before, .ledger-item-table td[data-label=""]::before{content:none;}
+    #ledgerTable td.empty-cell, .ledger-item-table td.empty-cell{justify-content:center;}
+    #ledgerTable td.empty-cell::before, .ledger-item-table td.empty-cell::before{content:none;}
   }
 
   @media (max-width:620px){
@@ -1364,7 +1366,7 @@
               </div>
             </div>
             <div class="profile-item" id="pmDashboard"><span class="ico">🏠</span>لوحة التحكم</div>
-            <div class="profile-item" id="pmLedger"><span class="ico">📊</span>كشف حركة صنف</div>
+            <div class="profile-item" id="pmLedger"><span class="ico">📊</span>الحركه اليوميه</div>
             <div class="profile-item" id="pmLog"><span class="ico">📑</span>سجل السندات</div>
             <div class="profile-sep"></div>
             <div class="profile-item" id="pmSettings" data-admin-only="1"><span class="ico">⚙️</span>الإعدادات</div>
@@ -1390,7 +1392,7 @@
     <div class="tab" data-view="requests" data-admin-only="1">الطلبات الواردة</div>
     <div class="tab" data-view="myrequests" data-requester-only="1" style="display:none;">طلباتي</div>
     <div class="tab" data-view="log">سجل السندات</div>
-    <div class="tab" data-view="ledger">كشف حركة صنف</div>
+    <div class="tab" data-view="ledger">الحركه اليوميه</div>
     <div class="tab" data-view="reports">تقارير شهرية</div>
     <div class="tab" data-view="invoices" data-admin-only="1">الأرشيف</div>
     <div class="tab" data-view="quality" data-admin-only="1">الجودة</div>
@@ -1992,8 +1994,8 @@
 
   <!-- LEDGER -->
   <div class="view" id="view-ledger">
-    <h2 class="section-title">كشف حركة صنف</h2>
-    <p class="section-sub">اختر صنفًا لعرض كل حركاته، تطوّر رصيده عبر الزمن، واتجاه استهلاكه — نظرة واحدة تناسب اتخاذ القرار.</p>
+    <h2 class="section-title">الحركه اليوميه</h2>
+    <p class="section-sub">اختر صنفًا لعرض كل حركاته، تطوّر رصيده عبر الزمن، واتجاه استهلاكه — أو اختر "كل الأصناف" لعرض كشف شامل لحركة المخزن كله: كل صنف كيف تحرّك ولمين راح.</p>
 
     <div class="toolbar">
       <div class="field" style="min-width:170px;">
@@ -2054,13 +2056,14 @@
 
     <div class="card">
       <h2 class="section-title" style="font-size:16px;" id="ledgerTableTitle">تفاصيل الحركات</h2>
-      <div class="table-wrap">
+      <div class="table-wrap" id="ledgerSingleWrap">
         <table class="data" id="ledgerTable">
-          <colgroup><col style="width:20%"><col style="width:20%"><col style="width:16%"><col style="width:20%"><col style="width:24%"></colgroup>
-          <thead><tr><th>التاريخ</th><th>رقم السند</th><th>النوع</th><th>الكمية</th><th>الرصيد بعد الحركة</th></tr></thead>
+          <colgroup id="ledgerColgroup"><col style="width:20%"><col style="width:20%"><col style="width:16%"><col style="width:20%"><col style="width:24%"></colgroup>
+          <thead id="ledgerThead"><tr><th>التاريخ</th><th>رقم السند</th><th>النوع</th><th>الكمية</th><th>الرصيد بعد الحركة</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
+      <div id="ledgerGroupedByItem" style="display:none;"></div>
     </div>
   </div>
 
@@ -4644,7 +4647,9 @@ function renderLedgerSelect(){
     document.getElementById('ledgerSummary').innerHTML = '';
     return;
   }
-  sel.innerHTML = DB.items.map(i=>`<option value="${i.id}" ${i.id===current?'selected':''}>${escapeHtml(i.name)} — ${STORE_LABELS[i.store]}</option>`).join('');
+  sel.innerHTML = '<option value="__ALL__">📋 كل الأصناف — كشف شامل</option>'
+    + DB.items.map(i=>`<option value="${i.id}" ${i.id===current?'selected':''}>${escapeHtml(i.name)} — ${STORE_LABELS[i.store]}</option>`).join('');
+  if(current) sel.value = current;
   renderLedgerTable();
 }
 
@@ -4666,6 +4671,22 @@ function getItemMovesWithBalance(id){
   return { it, rows };
 }
 
+function getAllMovesFlat(){
+  const moves = [];
+  DB.vouchers.forEach(v=>{
+    v.lines.forEach(l=>{
+      moves.push({
+        date: v.date, number: v.number, type: v.type, qty: l.qty, createdAt: v.createdAt,
+        itemId: l.itemId, itemName: l.name || '(صنف محذوف)',
+        store: l.store || null, unit: l.unit || '',
+        party: v.party || ''
+      });
+    });
+  });
+  moves.sort((a,b)=> b.createdAt - a.createdAt);
+  return moves;
+}
+
 (function(){
   const search = document.getElementById('ledgerItemSearch');
   if(!search) return;
@@ -4674,7 +4695,7 @@ function getItemMovesWithBalance(id){
     const nq = normName(search.value.trim());
     let firstVisible = null;
     Array.from(sel.options).forEach(function(opt){
-      if(!opt.value){ return; }
+      if(!opt.value || opt.value==='__ALL__'){ return; }
       const match = !nq || normName(opt.textContent).indexOf(nq) > -1;
       opt.hidden = !match;
       if(match && !firstVisible) firstVisible = opt;
@@ -4857,8 +4878,115 @@ function renderInOutCompare(moves){
     + '</div>';
 }
 
+function setLedgerTableMode(isAll){
+  const singleWrap = document.getElementById('ledgerSingleWrap');
+  const groupedWrap = document.getElementById('ledgerGroupedByItem');
+  if(singleWrap) singleWrap.style.display = isAll ? 'none' : '';
+  if(groupedWrap) groupedWrap.style.display = isAll ? '' : 'none';
+}
+
+function renderAllItemsLedgerTable(){
+  setLedgerTableMode(true);
+  const summary = document.getElementById('ledgerSummary');
+  const titleEl = document.getElementById('ledgerTableTitle');
+  const groupBtn = document.getElementById('ledgerGroupToggle');
+  if(groupBtn) groupBtn.style.display = 'none';
+
+  const allMoves = getAllMovesFlat();
+  const bounds = computeLedgerPeriodBounds();
+  const filteredMoves = filterMovesByPeriod(allMoves, bounds);
+  const periodLabel = ledgerPeriodLabel(bounds);
+
+  renderLedgerKpis(filteredMoves);
+
+  const trendEl = document.getElementById('ledgerTrendChart');
+  if(trendEl) trendEl.innerHTML = '<div class="ledger-trend-empty">رسم الرصيد متاح فقط عند اختيار صنف محدّد بالأعلى — كل صنف بالأسفل له جدول وتقدير استهلاك خاص فيه.</div>';
+  const consEl = document.getElementById('ledgerConsumptionTrend');
+  if(consEl) consEl.innerHTML = '<div class="consumption-trend ct-flat"><div class="ct-days">—</div><div class="ct-label">تقدير الاستهلاك موجود مع كل صنف على حدة بالأسفل</div></div>';
+  renderInOutCompare(filteredMoves);
+
+  titleEl.textContent = 'كل حركات المخزن — مقسّمة لكل صنف (' + periodLabel + ')';
+
+  // نجمع الأصناف اللي لها حركة بالفترة المحدّدة، ونبني لكل واحد كشفه الكامل (رصيد بعد كل حركة) بنفس منطق كشف الصنف المفرد
+  const activeIds = new Set(filteredMoves.map(m=>m.itemId));
+  const groupedEl = document.getElementById('ledgerGroupedByItem');
+  if(activeIds.size===0){
+    groupedEl.innerHTML = '<div class="empty-state"><div class="icon">📄</div>لا توجد حركات في هذه الفترة.</div>';
+    const distinctItems0 = 0;
+    summary.innerHTML = `
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+        <div><label>عدد الأصناف المتحركة</label><span class="mono">${distinctItems0}</span></div>
+        <div><label>إجمالي عدد الحركات</label><span class="mono">0</span></div>
+        <div><label>الفترة المعروضة</label><span class="mono">${periodLabel}</span></div>
+      </div>
+    `;
+    return;
+  }
+
+  const blocks = DB.items
+    .filter(it=> activeIds.has(it.id))
+    .map(it=>{
+      const full = getItemMovesWithBalance(it.id).rows;
+      const periodRows = filterMovesByPeriod(full, bounds);
+      const c = computeConsumptionTrend(it, full);
+      const totalIn = periodRows.filter(m=>m.type==='in').reduce((s,m)=>s+m.qty,0);
+      const totalOut = periodRows.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0);
+      const low = it.min>0 && it.balance<=it.min;
+      const consumptionHtml = c.hasConsumption
+        ? '📉 معدّل الاستهلاك: <b>' + fmtNum(Math.round(c.avgPerDay*100)/100) + ' ' + escapeHtml(it.unit||'') + ' / يوم</b> (آخر 30 يوم)'
+          + (c.daysLeft ? ' — متوقع نفاذ الرصيد خلال <b>~' + (Math.round(c.daysLeft*10)/10) + ' يوم</b>' + (c.daysLeft<=7?' ⚠️':'') : '')
+        : '📉 لا يوجد استهلاك حديث لهذا الصنف (آخر 30 يوم)';
+      const rowsHtml = periodRows.map(m=>`<tr>
+        <td data-label="التاريخ">${fmtDate(m.date)}</td>
+        <td data-label="النوع"><span class="pill ${m.type==='in'?'pill-in':'pill-out'}">${m.type==='in'?'وارد':'صادر'}</span></td>
+        <td class="mono mono-cell" data-label="الكمية">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
+        <td class="ledger-balance" data-label="الرصيد بعد الحركة">${fmtNum(m.balanceAfter)}</td>
+        <td class="wrap-cell" data-label="الجهة">${m.party ? escapeHtml(m.party) : '-'}</td>
+        <td class="mono" data-label="رقم السند">${m.number}</td>
+      </tr>`).join('') || '<tr><td colspan="6" class="empty-cell"><div class="empty-state"><div class="icon">📄</div>لا توجد حركات في هذه الفترة.</div></td></tr>';
+
+      return `<div class="card ledger-item-block">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <h3 style="margin:0;font-size:15px;">${escapeHtml(it.name)}</h3>
+            <span class="pill pill-store-${it.store}">${STORE_LABELS[it.store]}</span>
+            ${low ? '<span class="pill pill-out">⚠ عند الحد الأدنى</span>' : ''}
+          </div>
+          <div style="font-size:12.5px;color:var(--ink-soft);display:flex;gap:14px;flex-wrap:wrap;">
+            <span>الرصيد الحالي: <b class="mono-cell" style="color:var(--ink);">${fmtNum(it.balance)} ${escapeHtml(it.unit)}</b></span>
+            <span>وارد الفترة: <b class="mono-cell" style="color:var(--stamp-in);">${fmtNum(totalIn)}</b></span>
+            <span>صادر الفترة: <b class="mono-cell" style="color:var(--stamp-out);">${fmtNum(totalOut)}</b></span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;">${consumptionHtml}</div>
+        <div class="table-wrap" style="max-height:none;">
+          <table class="data ledger-item-table">
+            <colgroup><col style="width:14%"><col style="width:12%"><col style="width:14%"><col style="width:16%"><col style="width:26%"><col style="width:18%"></colgroup>
+            <thead><tr><th>التاريخ</th><th>النوع</th><th>الكمية</th><th>الرصيد بعد الحركة</th><th>الجهة</th><th>رقم السند</th></tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      </div>`;
+    });
+
+  groupedEl.innerHTML = blocks.join('');
+
+  const distinctItems = activeIds.size;
+  summary.innerHTML = `
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+      <div><label>عدد الأصناف المتحركة</label><span class="mono">${distinctItems}</span></div>
+      <div><label>إجمالي عدد الحركات</label><span class="mono">${filteredMoves.length}</span></div>
+      <div><label>الفترة المعروضة</label><span class="mono">${periodLabel}</span></div>
+    </div>
+  `;
+}
+
 function renderLedgerTable(){
   const id = document.getElementById('ledgerItemSelect').value;
+  if(id === '__ALL__'){ renderAllItemsLedgerTable(); return; }
+  const groupBtn = document.getElementById('ledgerGroupToggle');
+  if(groupBtn) groupBtn.style.display = '';
+  setLedgerTableMode(false);
   const { it, rows: moves } = getItemMovesWithBalance(id);
   const tbody = document.querySelector('#ledgerTable tbody');
   const summary = document.getElementById('ledgerSummary');
@@ -4918,8 +5046,64 @@ function renderLedgerTable(){
   `;
 }
 
+function printAllItemsLedger(){
+  const allMoves = getAllMovesFlat();
+  const printBounds = computeLedgerPeriodBounds();
+  const printMoves = filterMovesByPeriod(allMoves, printBounds);
+  const printTotalIn = printMoves.filter(m=>m.type==='in').reduce((s,m)=>s+m.qty,0);
+  const printTotalOut = printMoves.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0);
+  const distinctItems = new Set(printMoves.map(m=>m.itemId)).size;
+  const area = document.getElementById('printArea');
+  area.innerHTML = `
+    <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:18px;">
+        <div>
+          <div style="font-weight:800;font-size:20px;">فنادق سليمان موسى العليان</div>
+          <div style="font-size:13px;color:#555;margin-top:2px;">كشف شامل لحركة كل الأصناف</div>
+        </div>
+        <div style="text-align:left;">
+          <div style="font-size:12px;color:#555;">${ledgerPeriodLabel(printBounds)}</div>
+          <div style="font-size:12px;color:#555;">تاريخ الطباعة: ${fmtDate(todayStr())}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:22px;margin-bottom:16px;font-size:13px;flex-wrap:wrap;">
+        <div><b>عدد الأصناف المتحركة:</b> ${distinctItems}</div>
+        <div><b>إجمالي الوارد:</b> ${fmtNum(printTotalIn)}</div>
+        <div><b>إجمالي الصادر:</b> ${fmtNum(printTotalOut)}</div>
+        <div><b>عدد الحركات:</b> ${printMoves.length}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:#EDE8DC;">
+            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">التاريخ</th>
+            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">الصنف</th>
+            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">المخزن</th>
+            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">النوع</th>
+            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">الكمية</th>
+            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">الجهة</th>
+            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">رقم السند</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${printMoves.map(m=>`<tr>
+            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${fmtDate(m.date)}</td>
+            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${escapeHtml(m.itemName)}</td>
+            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${m.store ? STORE_LABELS[m.store] : '-'}</td>
+            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${m.type==='in'?'وارد':'صادر'}</td>
+            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
+            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${m.party ? escapeHtml(m.party) : '-'}</td>
+            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${m.number}</td>
+          </tr>`).join('') || '<tr><td colspan="7" style="padding:14px;text-align:center;color:#777;">لا توجد حركات في هذه الفترة.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `;
+  window.print();
+}
+
 document.getElementById('ledgerPrintBtn').addEventListener('click', ()=>{
   const id = document.getElementById('ledgerItemSelect').value;
+  if(id === '__ALL__'){ printAllItemsLedger(); return; }
   const { it, rows: moves } = getItemMovesWithBalance(id);
   if(!it){ showAppAlert('اختر صنفًا أولاً.'); return; }
   const printBounds = computeLedgerPeriodBounds();
@@ -4932,7 +5116,7 @@ document.getElementById('ledgerPrintBtn').addEventListener('click', ()=>{
       <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:18px;">
         <div>
           <div style="font-weight:800;font-size:20px;">فنادق سليمان موسى العليان</div>
-          <div style="font-size:13px;color:#555;margin-top:2px;">كشف حركة صنف: ${escapeHtml(it.name)}</div>
+          <div style="font-size:13px;color:#555;margin-top:2px;">الحركه اليوميه لصنف: ${escapeHtml(it.name)}</div>
         </div>
         <div style="text-align:left;">
           <div style="font-size:12px;color:#555;">${ledgerPeriodLabel(printBounds)}</div>
@@ -4972,8 +5156,54 @@ document.getElementById('ledgerPrintBtn').addEventListener('click', ()=>{
   window.print();
 });
 
+function exportAllItemsLedgerExcel(){
+  const allMoves = getAllMovesFlat();
+  const bounds = computeLedgerPeriodBounds();
+  const filteredMoves = filterMovesByPeriod(allMoves, bounds);
+  if(filteredMoves.length===0){ showAppAlert('لا توجد حركات في هذه الفترة لتصديرها.'); return; }
+
+  const totalIn = filteredMoves.filter(m=>m.type==='in').reduce((s,m)=>s+m.qty,0);
+  const totalOut = filteredMoves.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0);
+  const distinctItems = new Set(filteredMoves.map(m=>m.itemId)).size;
+
+  const summaryRows = [{
+    'الفترة المعروضة': ledgerPeriodLabel(bounds),
+    'عدد الأصناف المتحركة': distinctItems,
+    'إجمالي الوارد': totalIn,
+    'إجمالي الصادر': totalOut,
+    'صافي التغيّر': totalIn - totalOut,
+    'عدد الحركات': filteredMoves.length,
+    'تاريخ التصدير': todayStr()
+  }];
+  const rows = filteredMoves.map(m=>({
+    'التاريخ': m.date,
+    'الصنف': m.itemName,
+    'المخزن': m.store ? (STORE_LABELS[m.store]||m.store) : '',
+    'النوع': m.type==='in' ? 'وارد' : 'صادر',
+    'الكمية': m.type==='in' ? m.qty : -m.qty,
+    'الوحدة': m.unit,
+    'الجهة': m.party,
+    'رقم السند': m.number
+  }));
+
+  try{
+    const wb = XLSX.utils.book_new();
+    wb.Workbook = { Views: [{ RTL: true }] };
+    const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
+    wsSummary['!cols'] = [ {wch:22},{wch:20},{wch:14},{wch:14},{wch:14},{wch:12},{wch:14} ];
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'ملخص');
+    const wsDetail = XLSX.utils.json_to_sheet(rows);
+    wsDetail['!cols'] = [ {wch:12},{wch:24},{wch:14},{wch:10},{wch:10},{wch:10},{wch:20},{wch:14} ];
+    XLSX.utils.book_append_sheet(wb, wsDetail, 'كل الحركات');
+    XLSX.writeFile(wb, 'كشف-حركة-كل-الأصناف-' + todayStr() + '.xlsx');
+  }catch(e){
+    showErr('تعذر إنشاء ملف Excel.', e);
+  }
+}
+
 document.getElementById('exportLedgerExcelBtn').addEventListener('click', ()=>{
   const id = document.getElementById('ledgerItemSelect').value;
+  if(id === '__ALL__'){ exportAllItemsLedgerExcel(); return; }
   const { it, rows: moves } = getItemMovesWithBalance(id);
   if(!it){ showAppAlert('اختر صنفًا أولاً.'); return; }
   const bounds = computeLedgerPeriodBounds();
@@ -5704,7 +5934,7 @@ function openShortcutsHelp(){
     ['i', 'سند توريد (وارد) مباشرة'],
     ['o', 'سند صرف (صادر) مباشرة'],
     ['s', 'سجل السندات'],
-    ['l', 'كشف حركة صنف'],
+    ['l', 'الحركه اليوميه'],
     ['r', 'تقارير شهرية']
   ];
   if(document.querySelector('.tab[data-view="tickets"]')) rows.push(['t','بلاغات الصيانة']);
@@ -6177,7 +6407,7 @@ if(devModeBtn){
         item('📦', 'من تبويب <b>الأصناف</b> أضف أصناف كل مخزن وحدّد الوحدة والحد الأدنى للتنبيه.'),
         item('➕', 'اضغط <kbd>n</kbd> أو زر <b>سند جديد</b> لتسجيل سند توريد (وارد) أو صرف (صادر).'),
         item('📑', '<b>سجل السندات</b> يفصل فواتير التوريد عن سندات الصرف في قسمين منفصلين.'),
-        item('📊', '<b>كشف حركة صنف</b> يوريك كل حركات صنف معيّن ورصيده تاريخيًا.'),
+        item('📊', '<b>الحركه اليوميه</b> يوريك كل حركات صنف معيّن ورصيده تاريخيًا.'),
         item('📥', '<b>الطلبات الواردة</b> فيها طلبات الأصناف اللي يرسلها الموظفون لتوافق عليها.'),
         item('🗓️', '<b>تقارير شهرية</b> و<b>الأرشيف</b> لمراجعة أي شهر سابق بعد إقفاله.')
       ].concat(commonItems());
