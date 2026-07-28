@@ -82,17 +82,27 @@
   .mtn-cap-near{opacity:.6;}
   .bg-mountains polygon{transition:transform .4s ease-out;}
 
+  /* غلاف توهّج أفقي خفيف خلف الجبال — يعطي عمق جوّي إضافي بدون المساس بألوان الجبال نفسها */
+  .bg-horizon-glow{
+    position:absolute;left:0;right:0;bottom:0;height:36vh;max-height:320px;pointer-events:none;
+    background:radial-gradient(ellipse 65% 100% at 50% 100%, rgba(47,111,143,0.11), transparent 72%);
+  }
+
   /* سحب بيضاء هادئة تنجرف ببطء أعلى المشهد الجبلي — أعداد وخصائص عشوائية تُولَّد بجافاسكربت */
   .bg-clouds{position:absolute;inset:0;overflow:hidden;}
   .bg-cloud{
-    position:absolute;left:0;width:150px;height:50px;background:#fff;border-radius:50px;
+    position:absolute;left:0;width:170px;height:48px;border-radius:50px;
+    background:linear-gradient(180deg,#ffffff 0%,#EEF2F6 100%);
     --cloud-scale:1;animation-name:cloudDrift;animation-timing-function:linear;animation-iteration-count:infinite;
-    filter:blur(0.7px);
+    filter:blur(1.1px);
+    box-shadow:0 10px 22px rgba(27,36,48,0.05);
   }
   .bg-cloud::before, .bg-cloud::after{content:"";position:absolute;background:inherit;border-radius:50%;}
-  .bg-cloud::before{width:70px;height:70px;top:-38px;left:20px;}
-  .bg-cloud::after{width:90px;height:90px;top:-48px;left:70px;}
-  .bg-cloud > i{position:absolute;background:inherit;border-radius:50%;font-style:normal;width:56px;height:56px;top:-26px;left:100px;}
+  .bg-cloud::before{width:80px;height:80px;top:-42px;left:12px;}
+  .bg-cloud::after{width:98px;height:98px;top:-56px;left:62px;}
+  .bg-cloud > i{position:absolute;background:inherit;border-radius:50%;font-style:normal;}
+  .bg-cloud > i.lobe1{width:60px;height:60px;top:-26px;left:122px;}
+  .bg-cloud > i.lobe2{width:42px;height:42px;top:-12px;left:-10px;}
   @keyframes cloudDrift{
     0%{transform:translateX(-25vw) scale(var(--cloud-scale));}
     100%{transform:translateX(125vw) scale(var(--cloud-scale));}
@@ -414,20 +424,48 @@
   .shortcut-row kbd{font-family:var(--font-mono);font-size:11.5px;background:var(--paper);padding:2px 9px;border-radius:6px;border:1px solid var(--line-strong);}
 
   .boot-loader{
-    position:fixed;inset:0;z-index:500;background:var(--ink);
+    position:fixed;inset:0;z-index:500;
+    background:linear-gradient(160deg, rgba(44,36,24,0.82) 0%, rgba(35,44,56,0.82) 45%, rgba(27,36,48,0.86) 100%);
+    backdrop-filter:blur(3px) saturate(1.1);-webkit-backdrop-filter:blur(3px) saturate(1.1);
     display:flex;align-items:center;justify-content:center;
     transition:opacity .4s ease, visibility .4s ease;
   }
+  /* شاشة الدخول تبقى مخفية لحد ما شاشة التحميل تختفي — عشان ما تلمح من خلف الشفافية الجديدة */
+  .login-screen{visibility:hidden;}
+  .boot-loader.hide ~ .login-screen{visibility:visible;}
   .boot-loader.hide{opacity:0;visibility:hidden;pointer-events:none;}
   .boot-loader-inner{text-align:center;}
-  .boot-ring{
-    width:60px;height:60px;border-radius:50%;margin:0 auto 18px;
-    border:4px solid rgba(255,255,255,0.15);border-top-color:#fff;
+  .boot-mark{
+    position:relative;width:64px;height:64px;border-radius:16px;margin:0 auto 22px;
+    background:linear-gradient(160deg,#2C3B4E,var(--ink) 70%);
+    border:1.5px solid rgba(216,178,110,0.55);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:800;color:#E8C776;font-size:17px;letter-spacing:1px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.10), 0 6px 18px rgba(0,0,0,0.35);
+    animation:bootGlow 1.8s ease-in-out infinite;
+  }
+  .boot-mark::before{
+    content:"";position:absolute;inset:-7px;border-radius:20px;
+    border:2px solid transparent;border-top-color:#E8C776;border-left-color:rgba(216,178,110,0.4);
     animation:bootSpin .9s linear infinite;
   }
   @keyframes bootSpin{to{transform:rotate(360deg);}}
+  @keyframes bootGlow{
+    0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,0.10), 0 6px 18px rgba(0,0,0,0.35), 0 0 0 0 rgba(216,178,110,0.28);}
+    50%{box-shadow:inset 0 1px 0 rgba(255,255,255,0.10), 0 6px 18px rgba(0,0,0,0.35), 0 0 0 9px rgba(216,178,110,0);}
+  }
   .boot-brand{font-family:var(--font-display);font-weight:800;color:#fff;font-size:14px;letter-spacing:2px;margin-bottom:6px;}
-  .boot-text{color:#C7CDD6;font-size:12px;font-family:var(--font-mono);}
+  .boot-text{color:#C7CDD6;font-size:12.5px;font-family:var(--font-mono);max-width:280px;margin:0 auto;line-height:1.7;}
+  .boot-dots{display:flex;gap:6px;justify-content:center;margin-top:14px;}
+  .boot-dots span{width:6px;height:6px;border-radius:50%;background:#E8C776;opacity:.3;animation:bootDotPulse 1.2s ease-in-out infinite;}
+  .boot-dots span:nth-child(2){animation-delay:.2s;}
+  .boot-dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes bootDotPulse{0%,80%,100%{opacity:.25;transform:scale(.8);}40%{opacity:1;transform:scale(1.2);}}
+  @media (prefers-reduced-motion: reduce){
+    .boot-mark{animation:none;}
+    .boot-mark::before{animation:none;border-top-color:rgba(216,178,110,0.55);border-left-color:rgba(216,178,110,0.55);}
+    .boot-dots span{animation:none;opacity:.6;}
+  }
 
   ::-webkit-scrollbar{width:9px;height:9px;}
   ::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:6px;}
@@ -1269,9 +1307,9 @@
 
 <div class="boot-loader" id="bootLoader">
   <div class="boot-loader-inner">
-    <div class="boot-ring"></div>
-    <div class="boot-brand">ABZ</div>
+    <div class="boot-mark">ABZ</div>
     <p class="boot-text" id="bootText">جارٍ التحميل...</p>
+    <div class="boot-dots"><span></span><span></span><span></span></div>
   </div>
 </div>
 
@@ -1284,6 +1322,7 @@
 
 <!-- خلفية مشهدية: جبال ثلجية على عدة طبقات عمق + تساقط ثلج ناعم — تلمّح لقسم "الفريزر" بأسلوب رسمي هادئ -->
 <div class="bg-scenery" aria-hidden="true">
+  <div class="bg-horizon-glow"></div>
   <svg class="bg-mountains" viewBox="0 0 1440 320" preserveAspectRatio="none">
     <defs>
       <linearGradient id="mtnNearGrad" x1="0" y1="0" x2="0" y2="1">
@@ -2639,7 +2678,10 @@ document.getElementById('appAlertCloseBtn').addEventListener('click', ()=>{
     cloud.style.animationDuration = duration.toFixed(1) + 's';
     cloud.style.animationDelay = delay.toFixed(1) + 's';
     cloud.style.animationName = reverse ? 'cloudDriftReverse' : 'cloudDrift';
-    cloud.appendChild(document.createElement('i'));
+    const lobe1 = document.createElement('i'); lobe1.className = 'lobe1';
+    const lobe2 = document.createElement('i'); lobe2.className = 'lobe2';
+    cloud.appendChild(lobe1);
+    cloud.appendChild(lobe2);
     frag.appendChild(cloud);
   }
   field.appendChild(frag);
