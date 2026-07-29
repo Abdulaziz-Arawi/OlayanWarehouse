@@ -213,7 +213,7 @@
   .topbar .status.save-failed{color:#F0A99E;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
 
   .tabs{
-    display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;
+    display:flex;gap:4px;flex-wrap:wrap;justify-content:center;
     background:var(--paper-card);
     border:1px solid var(--line);
     border-radius:14px;
@@ -222,8 +222,8 @@
     position:relative;z-index:1;
   }
   .tab{
-    flex:1;min-width:0;white-space:nowrap;text-align:center;
-    padding:10px 6px;border-radius:10px;
+    flex:0 0 auto;min-width:88px;white-space:nowrap;text-align:center;
+    padding:10px 14px;border-radius:10px;
     font-family:var(--font-display);font-weight:700;font-size:12.5px;
     color:var(--ink-soft);cursor:pointer;user-select:none;
     border:1px solid transparent;
