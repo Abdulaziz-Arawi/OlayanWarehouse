@@ -345,6 +345,11 @@
   .pill-store-cleaning{background:var(--cleaning-soft);color:var(--cleaning);}
   .mono{font-family:var(--font-mono);}
   .low-flag{color:var(--warn);font-weight:700;}
+  .inv-variance{font-family:var(--font-mono);font-weight:700;direction:ltr;unicode-bidi:isolate;text-align:right;display:inline-block;}
+  .inv-variance.zero{color:var(--ink-soft);}
+  .inv-variance.pos{color:var(--stamp-in);}
+  .inv-variance.neg{color:var(--danger);}
+  .inv-counted-input{width:100%;padding:8px 10px;font-family:var(--font-mono);text-align:center;}
   .neg-flag{color:var(--danger);font-weight:700;}
 
   .empty-state{
@@ -1433,6 +1438,7 @@
     <div class="tab" data-view="log">سجل السندات</div>
     <div class="tab" data-view="ledger">الحركه اليوميه</div>
     <div class="tab" data-view="reports">تقارير شهرية</div>
+    <div class="tab" data-view="inventory" data-admin-only="1">الجرد</div>
     <div class="tab" data-view="invoices" data-admin-only="1">الأرشيف</div>
     <div class="tab" data-view="quality" data-admin-only="1">الجودة</div>
     <div class="tab" data-view="workforce" data-admin-only="1">تحضير العمال</div>
@@ -2235,6 +2241,65 @@
     </div>
   </div>
 
+  <!-- INVENTORY COUNT (الجرد) -->
+  <div class="view" id="view-inventory">
+    <h2 class="section-title">الجرد</h2>
+    <p class="section-sub">قارن الرصيد المسجّل بالنظام مع الكمية الفعلية بالمخزن، وثّق أي فروقات، وحدّث الأرصدة عند الحاجة.</p>
+
+    <div class="kpi-strip" id="inventoryStatsStrip"></div>
+
+    <div class="card">
+      <h2 class="section-title" style="font-size:15px;">بدء جرد جديد</h2>
+      <div class="toolbar">
+        <div class="field">
+          <label>تاريخ الجرد</label>
+          <input type="date" id="invCountDate">
+        </div>
+        <div class="field">
+          <label>المخزن</label>
+          <select id="invCountStore">
+            <option value="all">كل المخازن</option>
+            <option value="freezer">الفريزر</option>
+            <option value="pantry">المواد الغذائية</option>
+            <option value="cleaning">أدوات النظافة</option>
+          </select>
+        </div>
+        <div class="field" style="flex:0 0 auto;align-self:end;">
+          <button class="btn-primary" id="startInventoryCountBtn">🧮 بدء الجرد</button>
+        </div>
+      </div>
+
+      <div id="inventoryCountArea" style="display:none;">
+        <div class="table-wrap">
+          <table class="data" id="inventoryCountTable">
+            <colgroup><col style="width:24%"><col style="width:14%"><col style="width:12%"><col style="width:16%"><col style="width:16%"><col style="width:18%"></colgroup>
+            <thead><tr><th>الصنف</th><th>المخزن</th><th>الوحدة</th><th>الرصيد بالنظام</th><th>الكمية الفعلية</th><th>الفرق</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="field" style="margin-top:12px;">
+          <label>ملاحظات عامة (اختياري)</label>
+          <textarea id="invCountNotes" rows="2" placeholder="أي ملاحظات عن سبب الفروقات..."></textarea>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:10px;">
+          <button class="btn-in" id="saveInventoryCountBtn" style="flex:1;">💾 حفظ الجرد</button>
+          <button class="btn-ghost" id="cancelInventoryCountBtn" style="flex:1;">إلغاء</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title" style="font-size:15px;">سجل عمليات الجرد السابقة</h2>
+      <div class="table-wrap">
+        <table class="data" id="inventoryHistoryTable">
+          <colgroup><col style="width:16%"><col style="width:20%"><col style="width:14%"><col style="width:14%"><col style="width:18%"><col style="width:18%"></colgroup>
+          <thead><tr><th>التاريخ</th><th>المخزن</th><th>عدد الأصناف</th><th>الفروقات</th><th>الحالة</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- SETTINGS -->
   <div class="view" id="view-settings">
     <h2 class="section-title">الإعدادات</h2>
@@ -2322,11 +2387,58 @@
   </div>
 </div>
 
+<div class="stamp-overlay" id="editVoucherOverlay">
+  <div class="stamp-card" style="max-width:620px;text-align:right;max-height:88vh;overflow-y:auto;">
+    <h3 class="section-title" style="font-size:16px;">تعديل السند <span class="mono" id="editVoucherNumberLabel" style="color:var(--ink-soft);font-weight:500;"></span></h3>
+    <div class="row">
+      <div class="field">
+        <label>رقم السند</label>
+        <input id="editNumber">
+      </div>
+      <div class="field">
+        <label>التاريخ</label>
+        <input type="date" id="editDate">
+      </div>
+    </div>
+    <div class="field">
+      <label id="editPartyLabel">المورد / الجهة</label>
+      <input id="editParty">
+    </div>
+    <div class="field">
+      <label>ملاحظات</label>
+      <textarea id="editNotes" rows="2"></textarea>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="lines-table" id="editLinesTable" style="min-width:560px;">
+        <colgroup><col style="width:172px"><col><col style="width:100px"><col style="width:100px"><col style="width:40px"></colgroup>
+        <thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <button class="btn-ghost btn-sm" id="editAddLine">+ إضافة صنف</button>
+    <p class="note-hint">تعديل الكمية أو حذف/إضافة صنف يحدّث رصيد المخزون تلقائيًا ليعكس التصحيح.</p>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn-primary" id="editVoucherSave" style="flex:1;">💾 حفظ التعديل</button>
+      <button class="btn-ghost stamp-close" id="closeEditVoucher" style="flex:1;">إلغاء</button>
+    </div>
+  </div>
+</div>
+
 <div class="stamp-overlay" id="requestDetailOverlay">
   <div class="stamp-card" style="max-width:480px;text-align:right;max-height:85vh;overflow-y:auto;">
     <div id="requestDetailBody"></div>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn-ghost stamp-close" id="closeRequestDetail" style="flex:1;">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<div class="stamp-overlay" id="inventoryDetailOverlay">
+  <div class="stamp-card" style="max-width:620px;text-align:right;max-height:88vh;overflow-y:auto;">
+    <div id="inventoryDetailBody"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn-ghost" id="exportInventoryDetailExcelBtn" style="flex:1;">⬇ تصدير Excel</button>
+      <button class="btn-ghost stamp-close" id="closeInventoryDetail" style="flex:1;">إغلاق</button>
     </div>
   </div>
 </div>
@@ -2513,7 +2625,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const STORE_LABELS = { freezer:'فريزر المواد المجمدة', pantry:'مخزن المواد الغذائية', cleaning:'مخزن أدوات النظافة' };
 const STORE_SHORT = { freezer:'الفريزر', pantry:'المواد الغذائية', cleaning:'أدوات النظافة' };
 
-let DB = { items: [], vouchers: [], requests: [], invoices: [], quality: [], workers: [], attendance: [] };
+let DB = { items: [], vouchers: [], requests: [], invoices: [], quality: [], workers: [], attendance: [], inventoryCounts: [] };
 let busy = false;
 let currentUserEmail = null;
 let fulfillingRequestId = null;
@@ -3108,6 +3220,24 @@ async function loadDB(){
     DB.attendance = (attendance||[]).map(a=>({
       id:a.id, workerId:a.worker_id, date:a.attendance_date, status:a.status, createdAt:new Date(a.created_at).getTime()
     }));
+
+    // جدول الجرد اختياري — لو ما زال المستخدم ما شغّل SQL إنشاء الجداول، نتجاهل الخطأ بهدوء
+    // بدل ما نكسر تحميل بقية الموقع (لهذا معزول بمحاولة try/catch مستقلة عن بقية الجداول).
+    try{
+      const { data: invCounts, error: icErr } = await sb.from('inventory_counts').select('*, inventory_count_lines(*)').order('count_date', { ascending:false });
+      if(icErr) throw icErr;
+      DB.inventoryCounts = (invCounts||[]).map(c=>({
+        id:c.id, date:c.count_date, store:c.store||null, notes:c.notes, createdBy:c.created_by,
+        finalized: !!c.finalized, createdAt: new Date(c.created_at).getTime(),
+        lines: (c.inventory_count_lines||[]).map(l=>({
+          id:l.id, itemId:l.item_id, name:l.item_name, store:l.store, unit:l.unit,
+          systemQty:Number(l.system_qty), countedQty:Number(l.counted_qty), note:l.note
+        }))
+      }));
+    }catch(icEx){
+      console.warn('تعذر تحميل بيانات الجرد — تأكد إنك شغّلت SQL إنشاء جداول الجرد بلوحة تحكم Supabase.', icEx);
+      DB.inventoryCounts = DB.inventoryCounts || [];
+    }
 
     setConn('ok', 'متصل بقاعدة البيانات');
     setDbActivity('ok');
@@ -3855,6 +3985,7 @@ function fillLogSection(tableId, list, type, period){
 }
 
 let currentDetailVoucher = null;
+let editingVoucherId = null;
 function openVoucherDetail(id){
   const v = DB.vouchers.find(x=>x.id===id);
   if(!v) return;
@@ -3865,7 +3996,12 @@ function openVoucherDetail(id){
       <span class="pill ${v.type==='in'?'pill-in':'pill-out'}" style="font-size:13px;">${v.type==='in'?'سند توريد':'سند صرف'}</span>
       <span class="mono" style="font-weight:700;">${v.number}</span>
     </div>
-    ${v.closed ? `<div style="background:var(--freezer-soft);color:var(--freezer);border-radius:9px;padding:8px 12px;font-size:12.5px;font-weight:700;margin-bottom:10px;">🔒 سند مقفل (مؤرشف) — لا يمكن تعديله أو حذفه.</div>` : ''}
+    ${v.closed ? `<div style="background:var(--freezer-soft);color:var(--freezer);border-radius:9px;padding:8px 12px;font-size:12.5px;font-weight:700;margin-bottom:10px;">🔒 سند مقفل (مؤرشف) — لا يمكن تعديله أو حذفه.</div>` : `
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="btn-ghost btn-sm" id="editVoucherBtn" style="flex:1;">✏️ تعديل السند</button>
+      <button class="btn-danger-outline btn-sm" id="deleteVoucherBtn" style="flex:1;">🗑 حذف السند</button>
+    </div>
+    `}
     <p style="margin:4px 0;font-size:13px;"><b>التاريخ:</b> ${fmtDate(v.date)}</p>
     <p style="margin:4px 0;font-size:13px;"><b>${v.type==='in'?'المورد':'الجهة المستلمة'}:</b> ${v.party?escapeHtml(v.party):'-'}</p>
     ${v.notes?`<p style="margin:4px 0;font-size:13px;"><b>ملاحظات:</b> ${v.notes}</p>`:''}
@@ -3895,6 +4031,9 @@ function openVoucherDetail(id){
   document.getElementById('voucherDetailOverlay').classList.add('show');
   if(v.closed) return;
 
+  document.getElementById('editVoucherBtn').addEventListener('click', ()=> openEditVoucher(v));
+  document.getElementById('deleteVoucherBtn').addEventListener('click', ()=> deleteVoucherConfirm(v));
+
   const signedBtn = document.getElementById('signedPhotoUploadBtn');
   signedBtn.addEventListener('click', async ()=>{
     const input = document.getElementById('signedPhotoInput');
@@ -3915,6 +4054,159 @@ function openVoucherDetail(id){
     }
   });
 }
+
+function openEditVoucher(v){
+  if(busy) return;
+  if(v.closed){ showAppAlert('هذا السند مقفل ولا يمكن تعديله.'); return; }
+  editingVoucherId = v.id;
+  document.getElementById('editVoucherNumberLabel').textContent = '(' + v.number + ')';
+  document.getElementById('editNumber').value = v.number;
+  document.getElementById('editDate').value = v.date;
+  document.getElementById('editParty').value = v.party || '';
+  document.getElementById('editPartyLabel').textContent = v.type==='in' ? 'المورد' : 'الجهة المستلمة';
+  document.getElementById('editNotes').value = v.notes || '';
+
+  const tbody = document.querySelector('#editLinesTable tbody');
+  tbody.innerHTML = '';
+  v.lines.forEach(l=>{
+    addVoucherLineRow('editLinesTable');
+    const row = document.querySelector('#editLinesTable tbody tr:last-child');
+    const storeSel = row.querySelector('.line-store');
+    storeSel.value = l.store;
+    storeSel.dispatchEvent(new Event('change'));
+    row.querySelector('.line-name').value = l.name;
+    row.querySelector('.line-unit').value = l.unit;
+    row.querySelector('.line-qty').value = l.qty;
+  });
+
+  document.getElementById('voucherDetailOverlay').classList.remove('show');
+  document.getElementById('editVoucherOverlay').classList.add('show');
+}
+document.getElementById('editAddLine').addEventListener('click', ()=> addVoucherLineRow('editLinesTable'));
+document.getElementById('closeEditVoucher').addEventListener('click', ()=>{
+  document.getElementById('editVoucherOverlay').classList.remove('show');
+});
+
+document.getElementById('editVoucherSave').addEventListener('click', async ()=>{
+  if(busy) return;
+  const v = DB.vouchers.find(x=>x.id===editingVoucherId);
+  if(!v){ showAppAlert('تعذر إيجاد السند.'); return; }
+  if(v.closed){ showAppAlert('هذا السند مقفل ولا يمكن تعديله.'); return; }
+
+  const number = document.getElementById('editNumber').value.trim();
+  const date = document.getElementById('editDate').value || v.date;
+  const party = document.getElementById('editParty').value.trim();
+  const notes = document.getElementById('editNotes').value.trim();
+  const newLines = collectLines('editLinesTable');
+
+  if(!number){ showAppAlert('الرجاء إدخال رقم السند.'); return; }
+  if(newLines.length===0){ showAppAlert('أضف صنفًا واحدًا على الأقل مع كمية أكبر من صفر.'); return; }
+
+  const btn = document.getElementById('editVoucherSave');
+  busy = true; btn.disabled = true;
+  try{
+    if(number.toLowerCase() !== v.number.toLowerCase()){
+      const { data: dupCheck, error: dupErr } = await sb.from('vouchers').select('id').eq('type', v.type).ilike('number', number);
+      if(dupErr) throw dupErr;
+      if(dupCheck && dupCheck.some(d=> d.id !== v.id)){
+        showAppAlert('رقم السند "'+number+'" مستخدم مسبقًا لسند آخر من نفس النوع.');
+        busy=false; btn.disabled=false; return;
+      }
+    }
+
+    // نرجّع أثر بنود السند القديمة على أرصدة الأصناف أولاً (عكس تام لعملية الإنشاء)
+    for(const l of v.lines){
+      if(!l.itemId) continue;
+      const it = findItem(l.itemId);
+      if(!it) continue;
+      const reverted = Math.round((it.balance + (v.type==='in' ? -l.qty : l.qty)) * 100) / 100;
+      const { error: rErr } = await sb.from('items').update({ balance: reverted }).eq('id', it.id);
+      if(rErr) throw rErr;
+      it.balance = reverted;
+    }
+
+    // ثم نطبّق أثر البنود الجديدة من الصفر (بنفس منطق إنشاء سند جديد)
+    for(const l of newLines){
+      let it = findItemByStoreName(l.store, l.name);
+      if(!it){
+        const { data: created, error: cErr } = await sb.from('items').insert({ store:l.store, name:l.name, unit:l.unit||'وحدة', balance:0, min_qty:0 }).select().single();
+        if(cErr) throw cErr;
+        it = { id:created.id, store:created.store, name:created.name, unit:created.unit, balance:0, min:0 };
+        DB.items.push(it);
+      }
+      const applied = Math.round((it.balance + (v.type==='in' ? l.qty : -l.qty)) * 100) / 100;
+      const { error: uErr } = await sb.from('items').update({ balance: applied }).eq('id', it.id);
+      if(uErr) throw uErr;
+      it.balance = applied;
+      l._itemId = it.id;
+      l._unit = it.unit;
+    }
+
+    const { error: delErr } = await sb.from('voucher_lines').delete().eq('voucher_id', v.id);
+    if(delErr) throw delErr;
+    const linesPayload = newLines.map(l=>({
+      voucher_id: v.id, item_id:l._itemId, store:l.store, name:l.name, unit:l._unit, qty:l.qty
+    }));
+    const { error: insErr } = await sb.from('voucher_lines').insert(linesPayload);
+    if(insErr) throw insErr;
+
+    const { error: vErr } = await sb.from('vouchers').update({
+      number, voucher_date: date, party: party || null, notes: notes || null
+    }).eq('id', v.id);
+    if(vErr) throw vErr;
+
+    document.getElementById('editVoucherOverlay').classList.remove('show');
+    await loadDB();
+    showAppAlert('تم حفظ تعديلات السند وتحديث الأرصدة.');
+  }catch(e){
+    showErr('تعذر حفظ تعديل السند. لو تحدّث جزء من الأرصدة، راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
+    await loadDB();
+  }
+  busy = false; btn.disabled = false;
+});
+
+function deleteVoucherConfirm(v){
+  if(busy) return;
+  if(v.closed){ showAppAlert('هذا السند مقفل ولا يمكن حذفه.'); return; }
+  if(!confirm('سيتم حذف السند "'+v.number+'" نهائيًا وإرجاع أثره على أرصدة الأصناف. هذا الإجراء لا يمكن التراجع عنه. متابعة؟')) return;
+  deleteVoucherNow(v);
+}
+
+async function deleteVoucherNow(v){
+  if(busy) return;
+  busy = true;
+  try{
+    for(const l of v.lines){
+      if(!l.itemId) continue;
+      const it = findItem(l.itemId);
+      if(!it) continue;
+      const reverted = Math.round((it.balance + (v.type==='in' ? -l.qty : l.qty)) * 100) / 100;
+      const { error: rErr } = await sb.from('items').update({ balance: reverted }).eq('id', it.id);
+      if(rErr) throw rErr;
+      it.balance = reverted;
+    }
+
+    const linkedReq = DB.requests.find(r=> r.fulfilledVoucherId === v.id);
+    if(linkedReq){
+      const { error: reqErr } = await sb.from('material_requests').update({ status:'pending', fulfilled_voucher_id:null }).eq('id', linkedReq.id);
+      if(reqErr) throw reqErr;
+    }
+
+    const { error: lErr } = await sb.from('voucher_lines').delete().eq('voucher_id', v.id);
+    if(lErr) throw lErr;
+    const { error: vErr } = await sb.from('vouchers').delete().eq('id', v.id);
+    if(vErr) throw vErr;
+
+    document.getElementById('voucherDetailOverlay').classList.remove('show');
+    await loadDB();
+    showAppAlert('تم حذف السند وإرجاع أثره على الأرصدة.');
+  }catch(e){
+    showErr('تعذر حذف السند. لو تحدّث جزء من الأرصدة، راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
+    await loadDB();
+  }
+  busy = false;
+}
+
 document.getElementById('closeVoucherDetail').addEventListener('click', ()=>{
   document.getElementById('voucherDetailOverlay').classList.remove('show');
 });
@@ -4980,11 +5272,11 @@ function renderAllItemsLedgerTable(){
         : '📉 لا يوجد استهلاك حديث لهذا الصنف (آخر 30 يوم)';
       const rowsHtml = periodRows.map(m=>`<tr>
         <td data-label="التاريخ">${fmtDate(m.date)}</td>
+        <td class="mono" data-label="رقم السند">${m.number}</td>
         <td data-label="النوع"><span class="pill ${m.type==='in'?'pill-in':'pill-out'}">${m.type==='in'?'وارد':'صادر'}</span></td>
         <td class="mono mono-cell" data-label="الكمية">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
         <td class="ledger-balance" data-label="الرصيد بعد الحركة">${fmtNum(m.balanceAfter)}</td>
         <td class="wrap-cell" data-label="الجهة">${m.party ? escapeHtml(m.party) : '-'}</td>
-        <td class="mono" data-label="رقم السند">${m.number}</td>
       </tr>`).join('') || '<tr><td colspan="6" class="empty-cell"><div class="empty-state"><div class="icon">📄</div>لا توجد حركات في هذه الفترة.</div></td></tr>';
 
       return `<div class="card ledger-item-block">
@@ -5003,8 +5295,8 @@ function renderAllItemsLedgerTable(){
         <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;">${consumptionHtml}</div>
         <div class="table-wrap" style="max-height:none;">
           <table class="data ledger-item-table">
-            <colgroup><col style="width:14%"><col style="width:12%"><col style="width:14%"><col style="width:16%"><col style="width:26%"><col style="width:18%"></colgroup>
-            <thead><tr><th>التاريخ</th><th>النوع</th><th>الكمية</th><th>الرصيد بعد الحركة</th><th>الجهة</th><th>رقم السند</th></tr></thead>
+            <colgroup><col style="width:14%"><col style="width:18%"><col style="width:12%"><col style="width:14%"><col style="width:16%"><col style="width:26%"></colgroup>
+            <thead><tr><th>التاريخ</th><th>رقم السند</th><th>النوع</th><th>الكمية</th><th>الرصيد بعد الحركة</th><th>الجهة</th></tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>
         </div>
@@ -5516,6 +5808,8 @@ function renderAll(){
   if(typeof renderInvoicesStats === 'function') renderInvoicesStats();
   if(typeof renderSettingsStats === 'function') renderSettingsStats();
   if(typeof renderLogStats === 'function') renderLogStats();
+  if(typeof renderInventoryHistory === 'function') renderInventoryHistory();
+  if(typeof renderInventoryStats === 'function') renderInventoryStats();
 }
 
 document.getElementById('inDate').value = todayStr();
@@ -5859,6 +6153,235 @@ document.getElementById('exportAttendanceExcelBtn').addEventListener('click', ()
 
 function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ============ الجرد (Inventory Count) ============ */
+document.getElementById('invCountDate').value = todayStr();
+
+function invVarianceHtml(systemQty, countedQty){
+  const diff = Math.round((countedQty - systemQty) * 100) / 100;
+  const cls = diff===0 ? 'zero' : (diff>0 ? 'pos' : 'neg');
+  const sign = diff>0 ? '+' : '';
+  return '<span class="inv-variance '+cls+'">'+sign+fmtNum(diff)+'</span>';
+}
+
+document.getElementById('startInventoryCountBtn').addEventListener('click', ()=>{
+  const storeFilter = document.getElementById('invCountStore').value;
+  let items = DB.items.slice();
+  if(storeFilter !== 'all') items = items.filter(i=> i.store===storeFilter);
+  items.sort((a,b)=> (a.store+a.name).localeCompare(b.store+b.name, 'ar'));
+
+  if(items.length===0){ showAppAlert('لا توجد أصناف مطابقة لهذا المخزن.'); return; }
+
+  const tbody = document.querySelector('#inventoryCountTable tbody');
+  tbody.innerHTML = items.map(i=>`<tr data-item-id="${i.id}">
+    <td class="wrap-cell" data-label="الصنف">${escapeHtml(i.name)}</td>
+    <td data-label="المخزن"><span class="pill pill-store-${i.store}">${STORE_LABELS[i.store]}</span></td>
+    <td data-label="الوحدة">${escapeHtml(i.unit)}</td>
+    <td class="mono mono-cell" data-label="الرصيد بالنظام">${fmtNum(i.balance)}</td>
+    <td data-label="الكمية الفعلية"><input type="number" step="any" class="inv-counted-input" value="${i.balance}" data-system="${i.balance}"></td>
+    <td data-label="الفرق" class="inv-var-cell">${invVarianceHtml(i.balance, i.balance)}</td>
+  </tr>`).join('');
+
+  tbody.querySelectorAll('.inv-counted-input').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const system = parseFloat(inp.dataset.system) || 0;
+      const counted = parseFloat(inp.value);
+      const cell = inp.closest('tr').querySelector('.inv-var-cell');
+      cell.innerHTML = invVarianceHtml(system, isNaN(counted) ? system : counted);
+    });
+  });
+
+  document.getElementById('inventoryCountArea').style.display = 'block';
+  document.getElementById('inventoryCountArea').scrollIntoView({behavior:'smooth', block:'nearest'});
+});
+
+document.getElementById('cancelInventoryCountBtn').addEventListener('click', ()=>{
+  document.getElementById('inventoryCountArea').style.display = 'none';
+  document.querySelector('#inventoryCountTable tbody').innerHTML = '';
+  document.getElementById('invCountNotes').value = '';
+});
+
+document.getElementById('saveInventoryCountBtn').addEventListener('click', async ()=>{
+  if(busy) return;
+  const date = document.getElementById('invCountDate').value || todayStr();
+  const storeFilter = document.getElementById('invCountStore').value;
+  const notes = document.getElementById('invCountNotes').value.trim();
+
+  const rows = Array.from(document.querySelectorAll('#inventoryCountTable tbody tr')).map(tr=>{
+    const itemId = tr.dataset.itemId;
+    const it = findItem(itemId);
+    const input = tr.querySelector('.inv-counted-input');
+    const counted = parseFloat(input.value);
+    return {
+      itemId, name: it ? it.name : '', store: it ? it.store : '', unit: it ? it.unit : '',
+      systemQty: it ? it.balance : 0,
+      countedQty: isNaN(counted) ? (it ? it.balance : 0) : counted
+    };
+  });
+  if(rows.length===0){ showAppAlert('ابدأ الجرد أولاً قبل الحفظ.'); return; }
+
+  const btn = document.getElementById('saveInventoryCountBtn');
+  busy = true; btn.disabled = true;
+  try{
+    const { data: created, error: cErr } = await sb.from('inventory_counts')
+      .insert({ count_date: date, store: storeFilter==='all' ? null : storeFilter, notes: notes||null, created_by: currentUserEmail||null })
+      .select().single();
+    if(cErr) throw cErr;
+
+    const linesPayload = rows.map(r=>({
+      count_id: created.id, item_id: r.itemId, item_name: r.name, store: r.store, unit: r.unit,
+      system_qty: r.systemQty, counted_qty: r.countedQty
+    }));
+    const { error: lErr } = await sb.from('inventory_count_lines').insert(linesPayload);
+    if(lErr) throw lErr;
+
+    const varianceCount = rows.filter(r=> Math.round((r.countedQty-r.systemQty)*100)/100 !== 0).length;
+    document.getElementById('inventoryCountArea').style.display = 'none';
+    document.querySelector('#inventoryCountTable tbody').innerHTML = '';
+    document.getElementById('invCountNotes').value = '';
+    await loadDB();
+    showAppAlert(varianceCount===0
+      ? 'تم حفظ الجرد — كل الأرصدة مطابقة، ما فيه أي فرق. 🎉'
+      : 'تم حفظ الجرد. فيه '+varianceCount+' صنف بينهم فرق عن رصيد النظام — افتح "عرض" من سجل الجرد لمراجعتها وتطبيق التعديل على الأرصدة.');
+  }catch(e){
+    showErr('تعذر حفظ الجرد. تأكد إنك شغّلت SQL إنشاء جداول الجرد بلوحة تحكم Supabase.', e);
+  }
+  busy = false; btn.disabled = false;
+});
+
+function renderInventoryHistory(){
+  const tbody = document.querySelector('#inventoryHistoryTable tbody');
+  if(!tbody) return;
+  const list = DB.inventoryCounts.slice().sort((a,b)=> b.createdAt - a.createdAt);
+  if(list.length===0){
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">🧮</div>ما فيه عمليات جرد مسجّلة بعد.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(c=>{
+    const varianceCount = c.lines.filter(l=> Math.round((l.countedQty-l.systemQty)*100)/100 !== 0).length;
+    return `<tr>
+      <td data-label="التاريخ">${fmtDate(c.date)}</td>
+      <td data-label="المخزن">${c.store ? `<span class="pill pill-store-${c.store}">${STORE_LABELS[c.store]}</span>` : 'كل المخازن'}</td>
+      <td class="mono mono-cell" data-label="عدد الأصناف">${c.lines.length}</td>
+      <td class="mono mono-cell" data-label="الفروقات">${varianceCount}</td>
+      <td data-label="الحالة">${c.finalized ? '<span class="pill pill-in">✅ مطبّق على الأرصدة</span>' : '<span class="pill pill-pending">لم يُطبّق بعد</span>'}</td>
+      <td data-label=""><button class="btn-ghost btn-sm" data-view-count="${c.id}">عرض</button></td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('[data-view-count]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openInventoryDetail(btn.dataset.viewCount));
+  });
+}
+
+let currentInventoryDetail = null;
+function openInventoryDetail(id){
+  const c = DB.inventoryCounts.find(x=>x.id===id);
+  if(!c) return;
+  currentInventoryDetail = c;
+  const varianceLines = c.lines.filter(l=> Math.round((l.countedQty-l.systemQty)*100)/100 !== 0);
+  const body = document.getElementById('inventoryDetailBody');
+  body.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span class="pill ${c.finalized?'pill-in':'pill-pending'}" style="font-size:13px;">${c.finalized?'✅ مطبّق على الأرصدة':'لم يُطبّق بعد'}</span>
+      <span class="mono" style="font-weight:700;">${fmtDate(c.date)}</span>
+    </div>
+    <p style="margin:4px 0;font-size:13px;"><b>المخزن:</b> ${c.store ? STORE_LABELS[c.store] : 'كل المخازن'}</p>
+    ${c.notes ? `<p style="margin:4px 0;font-size:13px;"><b>ملاحظات:</b> ${escapeHtml(c.notes)}</p>` : ''}
+    <table class="lines-table" style="margin-top:10px;">
+      <thead><tr><th>الصنف</th><th>المخزن</th><th>بالنظام</th><th>الفعلي</th><th>الفرق</th></tr></thead>
+      <tbody>
+        ${c.lines.map(l=>`<tr>
+          <td>${escapeHtml(l.name)}</td>
+          <td><span class="pill pill-store-${l.store}">${STORE_LABELS[l.store]||'-'}</span></td>
+          <td class="mono">${fmtNum(l.systemQty)}</td>
+          <td class="mono">${fmtNum(l.countedQty)}</td>
+          <td>${invVarianceHtml(l.systemQty, l.countedQty)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${!c.finalized && varianceLines.length>0 ? `
+    <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px;">
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 8px;">فيه ${varianceLines.length} صنف بينهم فرق عن رصيد النظام. تقدر تحدّث أرصدة المخزون لتطابق الجرد الفعلي.</p>
+      <button class="btn-in" id="applyInventoryAdjustBtn" style="width:100%;">✅ تطبيق التعديلات على الأرصدة</button>
+    </div>
+    ` : ''}
+  `;
+  document.getElementById('inventoryDetailOverlay').classList.add('show');
+
+  const applyBtn = document.getElementById('applyInventoryAdjustBtn');
+  if(applyBtn){
+    applyBtn.addEventListener('click', ()=> applyInventoryAdjustments(c));
+  }
+}
+document.getElementById('closeInventoryDetail').addEventListener('click', ()=>{
+  document.getElementById('inventoryDetailOverlay').classList.remove('show');
+});
+
+async function applyInventoryAdjustments(c){
+  if(busy) return;
+  const varianceLines = c.lines.filter(l=> Math.round((l.countedQty-l.systemQty)*100)/100 !== 0);
+  if(!confirm('سيتم تحديث رصيد '+varianceLines.length+' صنف ليطابق الكمية الفعلية المجرودة. هذا التحديث مباشر على الأرصدة ولا يُنشئ سند حركة. متابعة؟')) return;
+
+  busy = true;
+  try{
+    for(const l of varianceLines){
+      if(!l.itemId) continue;
+      const it = findItem(l.itemId);
+      if(!it) continue;
+      const { error: uErr } = await sb.from('items').update({ balance: l.countedQty }).eq('id', it.id);
+      if(uErr) throw uErr;
+      it.balance = l.countedQty;
+    }
+    const { error: fErr } = await sb.from('inventory_counts').update({ finalized:true }).eq('id', c.id);
+    if(fErr) throw fErr;
+
+    document.getElementById('inventoryDetailOverlay').classList.remove('show');
+    await loadDB();
+    showAppAlert('تم تحديث الأرصدة لتطابق الجرد الفعلي.');
+  }catch(e){
+    showErr('تعذر تطبيق التعديلات. لو تحدّث جزء من الأرصدة، راجع الأصناف قبل ما تعيد المحاولة.', e);
+    await loadDB();
+  }
+  busy = false;
+}
+
+document.getElementById('exportInventoryDetailExcelBtn').addEventListener('click', ()=>{
+  const c = currentInventoryDetail;
+  if(!c){ showAppAlert('افتح تفاصيل جرد أولاً.'); return; }
+  const rows = c.lines.map(l=>({
+    'الصنف': l.name,
+    'المخزن': STORE_LABELS[l.store] || l.store,
+    'الوحدة': l.unit,
+    'الرصيد بالنظام': l.systemQty,
+    'الكمية الفعلية': l.countedQty,
+    'الفرق': Math.round((l.countedQty-l.systemQty)*100)/100
+  }));
+  try{
+    const wb = XLSX.utils.book_new();
+    wb.Workbook = { Views: [{ RTL: true }] };
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [ {wch:24},{wch:16},{wch:10},{wch:14},{wch:14},{wch:10} ];
+    XLSX.utils.book_append_sheet(wb, ws, 'الجرد');
+    XLSX.writeFile(wb, 'جرد-' + fmtDate(c.date).replace(/\//g,'-') + '.xlsx');
+  }catch(e){ showErr('تعذر إنشاء ملف Excel.', e); }
+});
+
+function renderInventoryStats(){
+  const el = document.getElementById('inventoryStatsStrip');
+  if(!el) return;
+  const list = DB.inventoryCounts;
+  const total = list.length;
+  const last = list.slice().sort((a,b)=> b.createdAt - a.createdAt)[0];
+  const lastDate = last ? fmtDate(last.date) : '—';
+  const lastVariance = last ? last.lines.filter(l=> Math.round((l.countedQty-l.systemQty)*100)/100 !== 0).length : 0;
+  const notFinalized = list.filter(c=> !c.finalized && c.lines.some(l=> Math.round((l.countedQty-l.systemQty)*100)/100 !== 0)).length;
+  el.innerHTML =
+      kpiTile('kpi-items','🧮','عدد عمليات الجرد', total, true)
+    + kpiTile('kpi-items','📅','آخر جرد', lastDate, false)
+    + kpiTile(lastVariance>0?'kpi-low':'kpi-in','⚖️','فروقات آخر جرد', lastVariance, true)
+    + kpiTile(notFinalized>0?'kpi-low':'kpi-in','⏳','جرد بانتظار التطبيق', notFinalized, true);
+  animateCounters(el);
 }
 
 document.getElementById('newVoucherBtn').addEventListener('click', ()=>{
