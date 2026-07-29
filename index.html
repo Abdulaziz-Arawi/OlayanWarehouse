@@ -345,6 +345,14 @@
   .pill-store-cleaning{background:var(--cleaning-soft);color:var(--cleaning);}
   .mono{font-family:var(--font-mono);}
   .low-flag{color:var(--warn);font-weight:700;}
+  .newsection-spinner{
+    width:56px;height:56px;border-radius:50%;
+    border:4px solid var(--line);border-top-color:var(--pantry);
+    animation:bootSpin .9s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .newsection-spinner{animation:none;}
+  }
   .inv-variance{font-family:var(--font-mono);font-weight:700;direction:ltr;unicode-bidi:isolate;text-align:right;display:inline-block;}
   .inv-variance.zero{color:var(--ink-soft);}
   .inv-variance.pos{color:var(--stamp-in);}
@@ -1442,6 +1450,7 @@
     <div class="tab" data-view="invoices" data-admin-only="1">الأرشيف</div>
     <div class="tab" data-view="quality" data-admin-only="1">الجودة</div>
     <div class="tab" data-view="workforce" data-admin-only="1">تحضير العمال</div>
+    <div class="tab" data-view="newsection" data-admin-only="1">قسم جديد</div>
     <div class="tab" data-view="settings" data-admin-only="1">الإعدادات</div>
   </div>
 
@@ -2297,6 +2306,17 @@
           <tbody></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- NEW SECTION (placeholder) -->
+  <div class="view" id="view-newsection">
+    <h2 class="section-title">قسم جديد</h2>
+    <p class="section-sub">هذا القسم قيد التحضير.</p>
+    <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 20px;text-align:center;">
+      <div class="newsection-spinner"></div>
+      <p style="margin-top:20px;font-family:var(--font-display);font-weight:800;color:var(--ink);font-size:15px;">جارٍ التحضير...</p>
+      <p style="margin-top:6px;color:var(--ink-soft);font-size:12.5px;">هذا القسم لسا قيد الإعداد.</p>
     </div>
   </div>
 
@@ -3174,7 +3194,8 @@ async function loadDB(){
     DB.items = (items||[]).map(i=>({
       id:i.id, store:i.store, name:i.name, unit:i.unit,
       balance:Number(i.balance), min:Number(i.min_qty), barcode:i.barcode || null,
-      photo:i.photo_path || null
+      photo:i.photo_path || null,
+      price: Number(i.unit_price || 0)
     }));
     DB.vouchers = (vouchers||[]).map(v=>({
       id:v.id, type:v.type, number:v.number, date:v.voucher_date,
