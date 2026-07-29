@@ -1449,8 +1449,8 @@
     <div class="tab" data-view="inventory" data-admin-only="1">الجرد</div>
     <div class="tab" data-view="invoices" data-admin-only="1">الأرشيف</div>
     <div class="tab" data-view="quality" data-admin-only="1">الجودة</div>
+    <div class="tab" data-view="newsection" data-admin-only="1">المشتريات</div>
     <div class="tab" data-view="workforce" data-admin-only="1">تحضير العمال</div>
-    <div class="tab" data-view="newsection" data-admin-only="1">قسم جديد</div>
     <div class="tab" data-view="settings" data-admin-only="1">الإعدادات</div>
   </div>
 
@@ -2311,12 +2311,14 @@
 
   <!-- NEW SECTION (placeholder) -->
   <div class="view" id="view-newsection">
-    <h2 class="section-title">قسم جديد</h2>
-    <p class="section-sub">هذا القسم قيد التحضير.</p>
+    <h2 class="section-title">المشتريات</h2>
+    <p class="section-sub">قسم إدارة المشتريات — قيد التحضير حاليًا.</p>
+
     <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 20px;text-align:center;">
-      <div class="newsection-spinner"></div>
-      <p style="margin-top:20px;font-family:var(--font-display);font-weight:800;color:var(--ink);font-size:15px;">جارٍ التحضير...</p>
-      <p style="margin-top:6px;color:var(--ink-soft);font-size:12.5px;">هذا القسم لسا قيد الإعداد.</p>
+      <div class="boot-mark" style="position:relative;margin:0 auto 22px;">ABZ</div>
+      <h3 style="font-family:var(--font-display);font-weight:800;font-size:16px;margin:0 0 8px;">🚧 جاري التحضير</h3>
+      <p style="color:var(--ink-soft);font-size:13px;max-width:340px;margin:0 auto;line-height:1.8;">إحنا شغالين على قسم المشتريات حاليًا، وبيكون متاح قريبًا إن شاء الله.</p>
+      <div class="boot-dots" style="margin-top:18px;"><span></span><span></span><span></span></div>
     </div>
   </div>
 
@@ -3310,6 +3312,15 @@ function findItemByBarcode(code){
   return DB.items.find(i=> i.barcode && i.barcode===code);
 }
 
+// تحديث ذرّي لرصيد صنف عبر دالة قاعدة بيانات (increment_item_balance) بدل قراءة الرصيد
+// محليًا ثم حسابه وكتابته — يمنع تعارض الأرصدة (Lost Update) لو موظفين سجّلوا سندات
+// بنفس اللحظة على نفس الصنف. تتطلب تشغيل ملف SQL المرفق مرة واحدة بلوحة تحكم Supabase.
+async function incrementItemBalance(itemId, delta){
+  const { data, error } = await sb.rpc('increment_item_balance', { p_item_id: itemId, p_delta: delta });
+  if(error) throw error;
+  return Math.round(Number(data) * 100) / 100;
+}
+
 document.getElementById('addItemBtn').addEventListener('click', async ()=>{
   if(busy) return;
   const store = document.getElementById('newItemStore').value;
@@ -3402,7 +3413,7 @@ function renderItemsTable(){
     return `<tr>
       <td class="wrap-cell" data-label="الصنف" title="${escapeHtml(i.name)}">${escapeHtml(i.name)}</td>
       <td class="wrap-cell" data-label="المخزن"><span class="pill pill-store-${i.store}">${STORE_LABELS[i.store]}</span></td>
-      <td data-label="الوحدة">${i.unit}</td>
+      <td data-label="الوحدة">${escapeHtml(i.unit)}</td>
       <td class="mono mono-cell ${low?'low-flag':''}" data-label="الرصيد الحالي">${fmtNum(i.balance)}${low?' ⚠':''}</td>
       <td class="mono mono-cell" data-label="الحد الأدنى">${fmtNum(i.min)}</td>
       <td data-label="الباركود">
@@ -3803,6 +3814,7 @@ document.getElementById('inSubmit').addEventListener('click', async ()=>{
 
   const btn = document.getElementById('inSubmit');
   busy = true; btn.disabled = true;
+  const appliedDeltas = [];
   try{
     const { data: dupCheck, error: dupErr } = await sb.from('vouchers').select('id').eq('type','in').ilike('number', number);
     if(dupErr) throw dupErr;
@@ -3818,9 +3830,8 @@ document.getElementById('inSubmit').addEventListener('click', async ()=>{
         DB.items.push(it);
       }
       const wasLow = it.min > 0 && it.balance <= it.min;
-      const newBalance = Math.round((it.balance + l.qty)*100)/100;
-      const { error: uErr } = await sb.from('items').update({ balance:newBalance }).eq('id', it.id);
-      if(uErr) throw uErr;
+      const newBalance = await incrementItemBalance(it.id, l.qty);
+      appliedDeltas.push({ itemId: it.id, delta: l.qty });
       it.balance = newBalance;
       l._itemId = it.id;
       l._unit = it.unit;
@@ -3857,7 +3868,20 @@ document.getElementById('inSubmit').addEventListener('click', async ()=>{
     }
     showStamp('in', number, 'تم حفظ سند التوريد', stampSub);
   }catch(e){
-    showErr('تعذر حفظ سند التوريد. لو تحدّث جزء من الأرصدة، راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
+    let revertOk = true;
+    for(const d of appliedDeltas.slice().reverse()){
+      try{
+        const reverted = await incrementItemBalance(d.itemId, -d.delta);
+        const it = findItem(d.itemId); if(it) it.balance = reverted;
+      }catch(revertErr){ revertOk = false; console.error('تعذر التراجع التلقائي عن رصيد بعد فشل حفظ سند التوريد', revertErr); }
+    }
+    if(e && e.code === '23505'){
+      showAppAlert('رقم السند مستخدم مسبقًا بقاعدة البيانات، اختر رقمًا آخر.' + (revertOk ? '' : ' (تعذر التراجع الكامل عن تعديل الأرصدة تلقائيًا — راجع الأصناف قبل إعادة المحاولة.)'));
+    } else {
+      showErr(revertOk
+        ? 'تعذر حفظ سند التوريد. تم التراجع تلقائيًا عن أي تعديل مؤقت على الأرصدة.'
+        : 'تعذر حفظ سند التوريد، وتعذر أيضًا التراجع الكامل عن تعديل الأرصدة تلقائيًا. راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
+    }
     await loadDB();
   }
   busy = false; btn.disabled = false;
@@ -3872,12 +3896,28 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
   const rawLines = collectLines('outLinesTable');
   const warnEl = document.getElementById('outWarning');
   warnEl.style.display = 'none';
+  warnEl.innerHTML = '';
 
   if(!number){ showAppAlert('الرجاء إدخال رقم السند / الفاتورة.'); return; }
   if(rawLines.length===0){ showAppAlert('أضف صنفًا واحدًا على الأقل مع كمية أكبر من صفر.'); return; }
 
+  const shortages = [];
+  rawLines.forEach(l=>{
+    const it = findItemByStoreName(l.store, l.name);
+    if(it && l.qty > it.balance){
+      shortages.push({ name: it.name, unit: it.unit, available: it.balance, requested: l.qty });
+    }
+  });
+  if(shortages.length > 0){
+    warnEl.innerHTML = '⚠ الكمية المطلوبة أكبر من الرصيد المتوفر لهذه الأصناف — الرصيد بيصير سالب لو تابعت:<br>' +
+      shortages.map(s=> '• ' + escapeHtml(s.name) + ': متوفر ' + fmtNum(s.available) + ' ' + escapeHtml(s.unit) + ' — مطلوب ' + fmtNum(s.requested)).join('<br>');
+    warnEl.style.display = 'block';
+    if(!confirm('الكمية المطلوبة أكبر من الرصيد المتوفر لـ '+shortages.length+' صنف، وسيصبح رصيدها سالبًا لو تابعت. متابعة الصرف رغم النقص؟')) return;
+  }
+
   const btn = document.getElementById('outSubmit');
   busy = true; btn.disabled = true;
+  const appliedDeltas = [];
   try{
     const { data: dupCheck, error: dupErr } = await sb.from('vouchers').select('id').eq('type','out').ilike('number', number);
     if(dupErr) throw dupErr;
@@ -3886,9 +3926,8 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
     for(const l of rawLines){
       const it = findItemByStoreName(l.store, l.name);
       if(it){
-        const newBalance = Math.round((it.balance - l.qty)*100)/100;
-        const { error: uErr } = await sb.from('items').update({ balance:newBalance }).eq('id', it.id);
-        if(uErr) throw uErr;
+        const newBalance = await incrementItemBalance(it.id, -l.qty);
+        appliedDeltas.push({ itemId: it.id, delta: -l.qty });
         it.balance = newBalance;
         l._itemId = it.id;
         l._unit = it.unit;
@@ -3930,7 +3969,20 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
     const touchedStores = [...new Set(rawLines.map(l=>l.store))].map(s=>STORE_LABELS[s]).join('، ');
     showStamp('out', number, 'تم حفظ سند الصرف', 'تم خصم الكميات من: ' + touchedStores + '.');
   }catch(e){
-    showErr('تعذر حفظ سند الصرف. لو تحدّث جزء من الأرصدة، راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
+    let revertOk = true;
+    for(const d of appliedDeltas.slice().reverse()){
+      try{
+        const reverted = await incrementItemBalance(d.itemId, -d.delta);
+        const it = findItem(d.itemId); if(it) it.balance = reverted;
+      }catch(revertErr){ revertOk = false; console.error('تعذر التراجع التلقائي عن رصيد بعد فشل حفظ سند الصرف', revertErr); }
+    }
+    if(e && e.code === '23505'){
+      showAppAlert('رقم السند مستخدم مسبقًا بقاعدة البيانات، اختر رقمًا آخر.' + (revertOk ? '' : ' (تعذر التراجع الكامل عن تعديل الأرصدة تلقائيًا — راجع الأصناف قبل إعادة المحاولة.)'));
+    } else {
+      showErr(revertOk
+        ? 'تعذر حفظ سند الصرف. تم التراجع تلقائيًا عن أي تعديل مؤقت على الأرصدة.'
+        : 'تعذر حفظ سند الصرف، وتعذر أيضًا التراجع الكامل عن تعديل الأرصدة تلقائيًا. راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
+    }
     await loadDB();
   }
   busy = false; btn.disabled = false;
@@ -4025,11 +4077,11 @@ function openVoucherDetail(id){
     `}
     <p style="margin:4px 0;font-size:13px;"><b>التاريخ:</b> ${fmtDate(v.date)}</p>
     <p style="margin:4px 0;font-size:13px;"><b>${v.type==='in'?'المورد':'الجهة المستلمة'}:</b> ${v.party?escapeHtml(v.party):'-'}</p>
-    ${v.notes?`<p style="margin:4px 0;font-size:13px;"><b>ملاحظات:</b> ${v.notes}</p>`:''}
+    ${v.notes?`<p style="margin:4px 0;font-size:13px;"><b>ملاحظات:</b> ${escapeHtml(v.notes)}</p>`:''}
     <table class="lines-table" style="margin-top:10px;">
       <thead><tr><th>المخزن</th><th>الصنف</th><th>الكمية</th><th>الوحدة</th></tr></thead>
       <tbody>
-        ${v.lines.map(l=>`<tr><td><span class="pill pill-store-${l.store}">${STORE_LABELS[l.store]||'-'}</span></td><td>${l.name}</td><td class="mono">${fmtNum(l.qty)}</td><td>${l.unit}</td></tr>`).join('')}
+        ${v.lines.map(l=>`<tr><td><span class="pill pill-store-${l.store}">${STORE_LABELS[l.store]||'-'}</span></td><td>${escapeHtml(l.name)}</td><td class="mono">${fmtNum(l.qty)}</td><td>${escapeHtml(l.unit)}</td></tr>`).join('')}
       </tbody>
     </table>
     ${v.photoUrl ? `<img src="${v.photoUrl}" class="voucher-photo" onclick="window.open('${v.photoUrl}','_blank')" title="اضغط لعرض الصورة كاملة"><div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">اضغط على الصورة لعرضها بحجمها الكامل</div>` : ''}
@@ -4125,6 +4177,7 @@ document.getElementById('editVoucherSave').addEventListener('click', async ()=>{
 
   const btn = document.getElementById('editVoucherSave');
   busy = true; btn.disabled = true;
+  const appliedDeltas = [];
   try{
     if(number.toLowerCase() !== v.number.toLowerCase()){
       const { data: dupCheck, error: dupErr } = await sb.from('vouchers').select('id').eq('type', v.type).ilike('number', number);
@@ -4140,9 +4193,9 @@ document.getElementById('editVoucherSave').addEventListener('click', async ()=>{
       if(!l.itemId) continue;
       const it = findItem(l.itemId);
       if(!it) continue;
-      const reverted = Math.round((it.balance + (v.type==='in' ? -l.qty : l.qty)) * 100) / 100;
-      const { error: rErr } = await sb.from('items').update({ balance: reverted }).eq('id', it.id);
-      if(rErr) throw rErr;
+      const delta = (v.type==='in' ? -l.qty : l.qty);
+      const reverted = await incrementItemBalance(it.id, delta);
+      appliedDeltas.push({ itemId: it.id, delta });
       it.balance = reverted;
     }
 
@@ -4155,9 +4208,9 @@ document.getElementById('editVoucherSave').addEventListener('click', async ()=>{
         it = { id:created.id, store:created.store, name:created.name, unit:created.unit, balance:0, min:0 };
         DB.items.push(it);
       }
-      const applied = Math.round((it.balance + (v.type==='in' ? l.qty : -l.qty)) * 100) / 100;
-      const { error: uErr } = await sb.from('items').update({ balance: applied }).eq('id', it.id);
-      if(uErr) throw uErr;
+      const delta = (v.type==='in' ? l.qty : -l.qty);
+      const applied = await incrementItemBalance(it.id, delta);
+      appliedDeltas.push({ itemId: it.id, delta });
       it.balance = applied;
       l._itemId = it.id;
       l._unit = it.unit;
@@ -4180,7 +4233,20 @@ document.getElementById('editVoucherSave').addEventListener('click', async ()=>{
     await loadDB();
     showAppAlert('تم حفظ تعديلات السند وتحديث الأرصدة.');
   }catch(e){
-    showErr('تعذر حفظ تعديل السند. لو تحدّث جزء من الأرصدة، راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
+    let revertOk = true;
+    for(const d of appliedDeltas.slice().reverse()){
+      try{
+        const reverted = await incrementItemBalance(d.itemId, -d.delta);
+        const it = findItem(d.itemId); if(it) it.balance = reverted;
+      }catch(revertErr){ revertOk = false; console.error('تعذر التراجع التلقائي عن رصيد بعد فشل تعديل السند', revertErr); }
+    }
+    if(e && e.code === '23505'){
+      showAppAlert('رقم السند مستخدم مسبقًا بقاعدة البيانات، اختر رقمًا آخر.' + (revertOk ? '' : ' (تعذر التراجع الكامل عن تعديل الأرصدة تلقائيًا — راجع الأصناف قبل إعادة المحاولة.)'));
+    } else {
+      showErr(revertOk
+        ? 'تعذر حفظ تعديل السند. تم التراجع تلقائيًا عن أي تعديل مؤقت على الأرصدة.'
+        : 'تعذر حفظ تعديل السند، وتعذر أيضًا التراجع الكامل عن تعديل الأرصدة تلقائيًا. راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
+    }
     await loadDB();
   }
   busy = false; btn.disabled = false;
@@ -4196,14 +4262,15 @@ function deleteVoucherConfirm(v){
 async function deleteVoucherNow(v){
   if(busy) return;
   busy = true;
+  const appliedDeltas = [];
   try{
     for(const l of v.lines){
       if(!l.itemId) continue;
       const it = findItem(l.itemId);
       if(!it) continue;
-      const reverted = Math.round((it.balance + (v.type==='in' ? -l.qty : l.qty)) * 100) / 100;
-      const { error: rErr } = await sb.from('items').update({ balance: reverted }).eq('id', it.id);
-      if(rErr) throw rErr;
+      const delta = (v.type==='in' ? -l.qty : l.qty);
+      const reverted = await incrementItemBalance(it.id, delta);
+      appliedDeltas.push({ itemId: it.id, delta });
       it.balance = reverted;
     }
 
@@ -4222,7 +4289,16 @@ async function deleteVoucherNow(v){
     await loadDB();
     showAppAlert('تم حذف السند وإرجاع أثره على الأرصدة.');
   }catch(e){
-    showErr('تعذر حذف السند. لو تحدّث جزء من الأرصدة، راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
+    let revertOk = true;
+    for(const d of appliedDeltas.slice().reverse()){
+      try{
+        const reverted = await incrementItemBalance(d.itemId, -d.delta);
+        const it = findItem(d.itemId); if(it) it.balance = reverted;
+      }catch(revertErr){ revertOk = false; console.error('تعذر التراجع التلقائي عن رصيد بعد فشل حذف السند', revertErr); }
+    }
+    showErr(revertOk
+      ? 'تعذر حذف السند. تم التراجع تلقائيًا عن أي تعديل مؤقت على الأرصدة.'
+      : 'تعذر حذف السند، وتعذر أيضًا التراجع الكامل عن تعديل الأرصدة تلقائيًا. راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
     await loadDB();
   }
   busy = false;
@@ -4258,7 +4334,7 @@ function printVoucher(v){
         </div>
       </div>
       <p style="margin:6px 0;font-size:14px;"><b>${v.type==='in'?'المورد':'الجهة المستلمة'}:</b> ${v.party?escapeHtml(v.party):'-'}</p>
-      ${v.notes?`<p style="margin:6px 0;font-size:14px;"><b>ملاحظات:</b> ${v.notes}</p>`:''}
+      ${v.notes?`<p style="margin:6px 0;font-size:14px;"><b>ملاحظات:</b> ${escapeHtml(v.notes)}</p>`:''}
       <table style="width:100%;border-collapse:collapse;margin-top:16px;font-size:13px;">
         <thead>
           <tr style="background:#eee;">
@@ -4271,9 +4347,9 @@ function printVoucher(v){
         <tbody>
           ${v.lines.map(l=>`<tr>
             <td style="border:1px solid #ccc;padding:8px;">${STORE_LABELS[l.store]||'-'}</td>
-            <td style="border:1px solid #ccc;padding:8px;">${l.name}</td>
+            <td style="border:1px solid #ccc;padding:8px;">${escapeHtml(l.name)}</td>
             <td style="border:1px solid #ccc;padding:8px;font-family:monospace;">${fmtNum(l.qty)}</td>
-            <td style="border:1px solid #ccc;padding:8px;">${l.unit}</td>
+            <td style="border:1px solid #ccc;padding:8px;">${escapeHtml(l.unit)}</td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -4367,7 +4443,7 @@ function addRequestLineRow(){
     const it = findItem(sel.value);
     if(it){
       const low = it.min>0 && it.balance<=it.min;
-      unitCell.innerHTML = `${it.unit}<br><span class="mono" style="font-size:11px;color:${low?'var(--warn)':'var(--ink-soft)'};">متوفر: ${fmtNum(it.balance)}${low?' ⚠':''}</span>`;
+      unitCell.innerHTML = `${escapeHtml(it.unit)}<br><span class="mono" style="font-size:11px;color:${low?'var(--warn)':'var(--ink-soft)'};">متوفر: ${fmtNum(it.balance)}${low?' ⚠':''}</span>`;
     } else {
       unitCell.textContent = '-';
     }
@@ -4567,7 +4643,7 @@ function openRequestDetail(id){
     <table class="lines-table" style="margin-top:10px;">
       <thead><tr><th>المخزن</th><th>الصنف</th><th>الكمية</th><th>الوحدة</th></tr></thead>
       <tbody>
-        ${r.lines.map(l=>`<tr><td><span class="pill pill-store-${l.store}">${STORE_LABELS[l.store]||'-'}</span></td><td>${l.name}</td><td class="mono">${fmtNum(l.qty)}</td><td>${l.unit}</td></tr>`).join('')}
+        ${r.lines.map(l=>`<tr><td><span class="pill pill-store-${l.store}">${STORE_LABELS[l.store]||'-'}</span></td><td>${escapeHtml(l.name)}</td><td class="mono">${fmtNum(l.qty)}</td><td>${escapeHtml(l.unit)}</td></tr>`).join('')}
       </tbody>
     </table>
   `;
@@ -5394,7 +5470,7 @@ function renderLedgerTable(){
   summary.innerHTML = `
     <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;">
       <div><label>المخزن</label><span class="pill pill-store-${it.store}">${STORE_LABELS[it.store]}</span></div>
-      <div><label>الوحدة</label><span>${it.unit}</span></div>
+      <div><label>الوحدة</label><span>${escapeHtml(it.unit)}</span></div>
       <div><label>الرصيد الحالي</label><span class="ledger-balance ${low?'low-flag':''}">${fmtNum(it.balance)} ${low?'⚠ عند الحد الأدنى':''}</span></div>
       <div><label>الفترة المعروضة</label><span class="mono">${periodLabel}</span></div>
     </div>
@@ -5736,9 +5812,9 @@ function renderMonthlyReport(){
       const net = r.in - r.out;
       const endBal = r.itemId ? itemBalanceAtMonthEnd(r.itemId, monthStr) : null;
       return `<tr>
-        <td class="wrap-cell" title="${r.name}">${r.name}</td>
+        <td class="wrap-cell" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</td>
         <td class="wrap-cell" title="${STORE_LABELS[r.store]||r.store}"><span class="pill pill-store-${r.store}" style="white-space:nowrap;">${STORE_SHORT[r.store]||STORE_LABELS[r.store]||r.store}</span></td>
-        <td>${r.unit}</td>
+        <td>${escapeHtml(r.unit)}</td>
         <td class="mono mono-cell">${fmtNum(r.in)}</td>
         <td class="mono mono-cell">${fmtNum(r.out)}</td>
         <td class="mono mono-cell ${net<0?'neg-flag':''}">${net>=0?'+':''}${fmtNum(net)}</td>
@@ -6443,7 +6519,6 @@ function renderGlobalSearchResults(q){
   }
   const itemMatches = (DB.items||[]).filter(i=> i.name.toLowerCase().includes(q) || (i.barcode||'').toLowerCase().includes(q)).slice(0,8);
   const voucherMatches = (DB.vouchers||[]).filter(v=> v.number.toLowerCase().includes(q) || (v.party||'').toLowerCase().includes(q)).slice(0,8);
-  const ticketMatches = (DB.tickets||[]).filter(t=> t.number.toLowerCase().includes(q) || (t.title||'').toLowerCase().includes(q)).slice(0,8);
 
   let html = '';
   if(itemMatches.length){
@@ -6468,18 +6543,7 @@ function renderGlobalSearchResults(q){
         </div>
       </div>`).join('');
   }
-  if(ticketMatches.length){
-    html += '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:700;margin:10px 4px 6px;">بلاغات الصيانة</div>';
-    html += ticketMatches.map(t=> `
-      <div class="profile-item" data-goto-ticket="${t.id}">
-        <span class="ico">🛠️</span>
-        <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-          <div class="mono">${t.number}</div>
-          <div style="font-size:11px;color:var(--ink-soft);">${escapeHtml(t.title)}</div>
-        </div>
-      </div>`).join('');
-  }
-  if(!itemMatches.length && !voucherMatches.length && !ticketMatches.length){
+  if(!itemMatches.length && !voucherMatches.length){
     html = '<div class="empty-state" style="padding:24px;"><div class="icon">🔍</div>ما فيه نتائج مطابقة.</div>';
   }
   resEl.innerHTML = html;
@@ -6502,12 +6566,6 @@ function renderGlobalSearchResults(q){
       openVoucherDetail(el.dataset.gotoVoucher);
     });
   });
-  resEl.querySelectorAll('[data-goto-ticket]').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      document.getElementById('globalSearchOverlay').classList.remove('show');
-      if(switchToTab('tickets')) openTicketDetail(el.dataset.gotoTicket);
-    });
-  });
 }
 
 function openShortcutsHelp(){
@@ -6523,7 +6581,6 @@ function openShortcutsHelp(){
     ['l', 'الحركه اليوميه'],
     ['r', 'تقارير شهرية']
   ];
-  if(document.querySelector('.tab[data-view="tickets"]')) rows.push(['t','بلاغات الصيانة']);
   if(document.querySelector('.tab[data-view="workforce"]')) rows.push(['w','تحضير العمال']);
   rows.push(['e','الإعدادات']);
   rows.push(['Esc','إغلاق أي نافذة مفتوحة']);
@@ -6603,7 +6660,6 @@ document.addEventListener('keydown', (e)=>{
     case 's': switchToTab('log'); break;
     case 'l': switchToTab('ledger'); break;
     case 'r': switchToTab('reports'); break;
-    case 't': switchToTab('tickets'); break;
     case 'e': switchToTab('settings'); break;
     case 'w': switchToTab('workforce'); break;
   }
