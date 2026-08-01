@@ -1031,9 +1031,11 @@ document.getElementById('inSubmit').addEventListener('click', async ()=>{
   busy = true; btn.disabled = true;
   const appliedDeltas = [];
   try{
-    const { data: dupCheck, error: dupErr } = await sb.from('vouchers').select('id').eq('type','in').ilike('number', number);
+    let dupQueryIn = sb.from('vouchers').select('id').eq('type','in').ilike('number', number);
+    dupQueryIn = source ? dupQueryIn.ilike('party', source) : dupQueryIn.is('party', null);
+    const { data: dupCheck, error: dupErr } = await dupQueryIn;
     if(dupErr) throw dupErr;
-    if(dupCheck && dupCheck.length>0){ showAppAlert('رقم السند "'+number+'" مستخدم مسبقًا لسند توريد آخر.'); busy=false; btn.disabled=false; return; }
+    if(dupCheck && dupCheck.length>0){ showAppAlert('رقم السند "'+number+'" مستخدم مسبقًا لسند توريد آخر من نفس المورد.'); busy=false; btn.disabled=false; return; }
 
     const resolvedShortages = [];
     for(const l of rawLines){
@@ -1134,9 +1136,11 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
   busy = true; btn.disabled = true;
   const appliedDeltas = [];
   try{
-    const { data: dupCheck, error: dupErr } = await sb.from('vouchers').select('id').eq('type','out').ilike('number', number);
+    let dupQueryOut = sb.from('vouchers').select('id').eq('type','out').ilike('number', number);
+    dupQueryOut = dest ? dupQueryOut.ilike('party', dest) : dupQueryOut.is('party', null);
+    const { data: dupCheck, error: dupErr } = await dupQueryOut;
     if(dupErr) throw dupErr;
-    if(dupCheck && dupCheck.length>0){ showAppAlert('رقم السند "'+number+'" مستخدم مسبقًا لسند صرف آخر.'); busy=false; btn.disabled=false; return; }
+    if(dupCheck && dupCheck.length>0){ showAppAlert('رقم السند "'+number+'" مستخدم مسبقًا لسند صرف آخر لنفس الجهة.'); busy=false; btn.disabled=false; return; }
 
     for(const l of rawLines){
       const it = findItemByStoreName(l.store, l.name);
@@ -1394,11 +1398,13 @@ document.getElementById('editVoucherSave').addEventListener('click', async ()=>{
   busy = true; btn.disabled = true;
   const appliedDeltas = [];
   try{
-    if(number.toLowerCase() !== v.number.toLowerCase()){
-      const { data: dupCheck, error: dupErr } = await sb.from('vouchers').select('id').eq('type', v.type).ilike('number', number);
+    if(number.toLowerCase() !== v.number.toLowerCase() || party.toLowerCase() !== (v.party||'').toLowerCase()){
+      let dupQueryEdit = sb.from('vouchers').select('id').eq('type', v.type).ilike('number', number);
+      dupQueryEdit = party ? dupQueryEdit.ilike('party', party) : dupQueryEdit.is('party', null);
+      const { data: dupCheck, error: dupErr } = await dupQueryEdit;
       if(dupErr) throw dupErr;
       if(dupCheck && dupCheck.some(d=> d.id !== v.id)){
-        showAppAlert('رقم السند "'+number+'" مستخدم مسبقًا لسند آخر من نفس النوع.');
+        showAppAlert('رقم السند "'+number+'" مستخدم مسبقًا لسند آخر من نفس النوع ونفس الجهة.');
         busy=false; btn.disabled=false; return;
       }
     }
@@ -2317,6 +2323,31 @@ function getItemMovesWithBalance(id){
   return { it, rows };
 }
 
+// تجميع حركات كل الأصناف بمسحة واحدة على السندات بدل ما renderAllItemsLedgerTable
+// يعيد مسح كل السندات لكل صنف على حدة (كان يسبب تجميد فعلي على الجوال مع تراكم السجل بمرور الوقت)
+function getAllItemMovesGrouped(){
+  const byItem = new Map();
+  DB.vouchers.forEach(v=>{
+    v.lines.forEach(l=>{
+      if(!l.itemId) return;
+      if(!byItem.has(l.itemId)) byItem.set(l.itemId, []);
+      byItem.get(l.itemId).push({ date:v.date, number:v.number, type:v.type, qty:l.qty, createdAt:v.createdAt, party:v.party||'' });
+    });
+  });
+  const result = new Map();
+  byItem.forEach((moves, itemId)=>{
+    const it = findItem(itemId);
+    if(!it) return;
+    moves.sort((a,b)=> a.createdAt - b.createdAt);
+    let running = it.balance - moves.reduce((acc,m)=> acc + (m.type==='in'?m.qty:-m.qty), 0);
+    result.set(itemId, moves.map(m=>{
+      running += (m.type==='in' ? m.qty : -m.qty);
+      return { date:m.date, number:m.number, type:m.type, qty:m.qty, balanceAfter: running, party:m.party };
+    }));
+  });
+  return result;
+}
+
 function getAllMovesFlat(){
   const moves = [];
   DB.vouchers.forEach(v=>{
@@ -2569,10 +2600,11 @@ function renderAllItemsLedgerTable(){
     return;
   }
 
+  const groupedMoves = getAllItemMovesGrouped();
   const blocks = DB.items
     .filter(it=> activeIds.has(it.id))
     .map(it=>{
-      const full = getItemMovesWithBalance(it.id).rows;
+      const full = groupedMoves.get(it.id) || [];
       const periodRows = filterMovesByPeriod(full, bounds);
       const c = computeConsumptionTrend(it, full);
       const totalIn = periodRows.filter(m=>m.type==='in').reduce((s,m)=>s+m.qty,0);
@@ -3754,7 +3786,7 @@ function renderGlobalSearchResults(q){
         <span class="ico">${v.type==='in'?'<i class="fa-solid fa-inbox"></i>':'<i class="fa-solid fa-paper-plane"></i>'}</span>
         <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
           <div class="mono">${v.number}</div>
-          <div style="font-size:11px;color:var(--ink-soft);">${v.type==='in'?'سند توريد':'سند صرف'} · ${fmtDate(v.date)}</div>
+          <div style="font-size:11px;color:var(--ink-soft);">${v.type==='in'?'سند توريد':'سند صرف'} · ${fmtDate(v.date)}${v.party ? ' · '+escapeHtml(v.party) : ''}</div>
         </div>
       </div>`).join('');
   }
