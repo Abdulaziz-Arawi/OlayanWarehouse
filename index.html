@@ -191,6 +191,18 @@
     background:var(--ink-fixed);color:#fff;
     box-shadow:0 4px 10px rgba(27,36,48,0.25);
   }
+  /* تلميح تبويبات عائم — عنصر مستقل يتموضع بالجافاسكربت (position:fixed)، عشان يفلت من
+     overflow:hidden الموجود على .tab نفسه (تحته أصلًا تأثير خط الهوفر اللي يستخدم ::after) */
+  .tab-tooltip{
+    position:fixed;z-index:500;pointer-events:none;
+    background:var(--ink-fixed);color:#fff;
+    font-family:var(--font-body);font-weight:600;font-size:11.5px;line-height:1.45;
+    padding:8px 11px;border-radius:9px;text-align:center;
+    max-width:190px;box-shadow:0 8px 20px rgba(27,36,48,0.3);
+    opacity:0;transform:translate(-50%,-4px);
+    transition:opacity .15s ease, transform .15s ease;
+  }
+  .tab-tooltip.show{opacity:1;transform:translate(-50%,0);}
 
   .view{display:none;animation:fade .25s ease;}
   .view.active{display:block;}
@@ -708,30 +720,34 @@
     #itemsTable td:empty::before, #itemsTable td[data-label=""]::before{content:none;}
     #itemsTable td[data-label=""]{justify-content:flex-end;}
 
-    /* كشف حركة صنف: نفس أسلوب البطاقات المكدّسة على الجوال */
-    #ledgerTable, .ledger-item-table{min-width:0;table-layout:auto;}
-    #ledgerTable colgroup, .ledger-item-table colgroup{display:none;}
-    #ledgerTable thead, .ledger-item-table thead{display:none;}
+    /* كشف حركة صنف: نفس أسلوب البطاقات المكدّسة على الجوال
+       ملاحظة: .ledger-item-table لازم تُكتب table.data.ledger-item-table هنا (مو .ledger-item-table لحالها)
+       عشان تخصصها (specificity) يتغلّب على قاعدة "table.data td{max-width:0;overflow:hidden;...}" الأساسية
+       بالأعلى — لأنها بالأصل جدول بكلاس (يتكرر لكل صنف) مو id زي باقي الجداول، فكانت تخسر معركة
+       التخصص وتفضل max-width:0 مسيطرة حتى بالجوال (يخفي كل الأعمدة إلا اللي فيها كلاس wrap-cell) */
+    #ledgerTable, table.data.ledger-item-table{min-width:0;table-layout:auto;}
+    #ledgerTable colgroup, table.data.ledger-item-table colgroup{display:none;}
+    #ledgerTable thead, table.data.ledger-item-table thead{display:none;}
     #ledgerTable tbody, #ledgerTable tr, #ledgerTable td,
-    .ledger-item-table tbody, .ledger-item-table tr, .ledger-item-table td{display:block;width:100%;}
-    #ledgerTable tr, .ledger-item-table tr{
+    table.data.ledger-item-table tbody, table.data.ledger-item-table tr, table.data.ledger-item-table td{display:block;width:100%;}
+    #ledgerTable tr, table.data.ledger-item-table tr{
       border:1px solid var(--line);border-radius:12px;
       margin-bottom:12px;padding:10px 12px;background:var(--paper-card);
     }
-    #ledgerTable td, .ledger-item-table td{
+    #ledgerTable td, table.data.ledger-item-table td{
       display:flex;align-items:center;justify-content:space-between;gap:10px;
       padding:9px 2px;border-bottom:1px solid var(--line);
       white-space:normal;overflow:visible;text-overflow:clip;max-width:none;text-align:left;
     }
-    #ledgerTable td:last-child, .ledger-item-table td:last-child{border-bottom:none;}
-    #ledgerTable td::before, .ledger-item-table td::before{
+    #ledgerTable td:last-child, table.data.ledger-item-table td:last-child{border-bottom:none;}
+    #ledgerTable td::before, table.data.ledger-item-table td::before{
       content:attr(data-label);flex-shrink:0;
       font-family:var(--font-display);font-weight:700;font-size:11.5px;color:var(--ink-soft);
     }
     #ledgerTable td:empty::before, #ledgerTable td[data-label=""]::before,
-    .ledger-item-table td:empty::before, .ledger-item-table td[data-label=""]::before{content:none;}
-    #ledgerTable td.empty-cell, .ledger-item-table td.empty-cell{justify-content:center;}
-    #ledgerTable td.empty-cell::before, .ledger-item-table td.empty-cell::before{content:none;}
+    table.data.ledger-item-table td:empty::before, table.data.ledger-item-table td[data-label=""]::before{content:none;}
+    #ledgerTable td.empty-cell, table.data.ledger-item-table td.empty-cell{justify-content:center;}
+    #ledgerTable td.empty-cell::before, table.data.ledger-item-table td.empty-cell::before{content:none;}
   }
 
   @media (max-width:620px){
@@ -1379,18 +1395,18 @@
 
   <div class="tabs-row">
     <div class="tabs" id="tabs">
-      <div class="tab active" data-view="dashboard">لوحة التحكم</div>
-      <div class="tab" data-view="items" data-admin-only="1">الأصناف</div>
-      <div class="tab" data-view="requests" data-admin-only="1">الطلبات الواردة</div>
-      <div class="tab" data-view="myrequests" data-requester-only="1" style="display:none;">طلباتي</div>
-      <div class="tab" data-view="log">سجل السندات</div>
-      <div class="tab" data-view="ledger">الحركه اليوميه</div>
-      <div class="tab" data-view="reports">تقارير شهرية</div>
-      <div class="tab" data-view="inventory" data-admin-only="1">الجرد</div>
-      <div class="tab" data-view="invoices" data-admin-only="1">الأرشيف</div>
-      <div class="tab" data-view="quality" data-admin-only="1">الجودة</div>
-      <div class="tab" data-view="newsection" data-admin-only="1">المشتريات</div>
-      <div class="tab" data-view="workforce" data-admin-only="1">تحضير العمال</div>
+      <div class="tab active" data-view="dashboard" data-tooltip="نظرة عامة سريعة على كل المخزن">لوحة التحكم</div>
+      <div class="tab" data-view="items" data-admin-only="1" data-tooltip="قائمة الأصناف الأساسية بكل مخزن">الأصناف</div>
+      <div class="tab" data-view="requests" data-admin-only="1" data-tooltip="طلبات الموظفين — وافق أو ارفض">الطلبات الواردة</div>
+      <div class="tab" data-view="myrequests" data-requester-only="1" style="display:none;" data-tooltip="اطلب أصناف من المخزن وتابع حالتها">طلباتي</div>
+      <div class="tab" data-view="log" data-tooltip="عرض فقط — كل سندات التوريد والصرف">سجل السندات</div>
+      <div class="tab" data-view="ledger" data-tooltip="عرض فقط — حركة كل صنف عبر الزمن">الحركه اليوميه</div>
+      <div class="tab" data-view="reports" data-tooltip="عرض فقط — ملخص كل شهر">تقارير شهرية</div>
+      <div class="tab" data-view="inventory" data-admin-only="1" data-tooltip="عدّ فعلي للمخزون وتصحيح الفروقات">الجرد</div>
+      <div class="tab" data-view="invoices" data-admin-only="1" data-tooltip="توثيق صور فواتير — لا يغيّر أي رصيد">الأرشيف</div>
+      <div class="tab" data-view="quality" data-admin-only="1" data-tooltip="توثيق صور فحص الجودة — لا يغيّر أي رصيد">الجودة</div>
+      <div class="tab" data-view="newsection" data-admin-only="1" data-tooltip="قسم منفصل لإدارة طلبات الشراء">المشتريات</div>
+      <div class="tab" data-view="workforce" data-admin-only="1" data-tooltip="حضور وانصراف العمال — غير مرتبط بالمخزون">تحضير العمال</div>
     </div>
     <div class="tab settings-pin-btn" id="settingsPinBtn" data-view="settings" data-admin-only="1" title="الإعدادات" role="button" aria-label="الإعدادات"><i class="fa-solid fa-gear"></i></div>
   </div>
@@ -2584,6 +2600,9 @@
   </div>
 </div>
 
+<!-- تلميح التبويبات (يطلع فقط عند تمرير الماوس فوق تبويب فوقه data-tooltip) -->
+<div class="tab-tooltip" id="tabTooltip" role="tooltip"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
@@ -3096,6 +3115,32 @@ document.getElementById('tabs').addEventListener('click', (e)=>{
   switchToTab(tab.dataset.view);
 });
 document.getElementById('settingsPinBtn').addEventListener('click', ()=> switchToTab('settings'));
+
+(function(){
+  const tooltip = document.getElementById('tabTooltip');
+  const tabsBar = document.getElementById('tabs');
+  if(!tooltip || !tabsBar) return;
+  let hoverTimer = null;
+  function positionTooltip(tab){
+    const r = tab.getBoundingClientRect();
+    tooltip.textContent = tab.dataset.tooltip;
+    tooltip.style.left = (r.left + r.width/2) + 'px';
+    tooltip.style.top = (r.bottom + 10) + 'px';
+    tooltip.classList.add('show');
+  }
+  tabsBar.addEventListener('mouseover', function(e){
+    const tab = e.target.closest('.tab[data-tooltip]');
+    if(!tab || tab.style.display === 'none') return;
+    clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(()=> positionTooltip(tab), 120);
+  });
+  tabsBar.addEventListener('mouseout', function(e){
+    if(!e.target.closest('.tab[data-tooltip]')) return;
+    clearTimeout(hoverTimer);
+    tooltip.classList.remove('show');
+  });
+  tabsBar.addEventListener('click', ()=>{ clearTimeout(hoverTimer); tooltip.classList.remove('show'); });
+})();
 
 function getItemsByStore(store){
   return DB.items.filter(i=> store==='all' || i.store===store);
