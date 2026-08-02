@@ -468,9 +468,10 @@
 
   #printArea{display:none;}
   @media print{
+    @page{ margin:12mm 11mm; }
     body *{visibility:hidden;}
-    #printArea, #printArea *{visibility:visible;}
-    #printArea{display:block;position:absolute;top:0;right:0;left:0;padding:26px;}
+    #printArea, #printArea *{visibility:visible;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    #printArea{display:block;position:absolute;top:0;right:0;left:0;padding:6px;}
   }
 
   .login-screen{
@@ -1504,6 +1505,18 @@
       </div>
     </div>
 
+    <div class="card" id="lowBalanceCard">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px;">
+        <h2 class="section-title" style="font-size:16px;margin:0;"><i class="fa-solid fa-cart-shopping"></i> أصناف تحتاج طلب جديد</h2>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="margin-bottom:0;white-space:nowrap;font-size:12.5px;">الرصيد أقل من</label>
+          <input type="number" id="lowBalanceThreshold" min="0" step="any" value="8" style="width:80px;padding:6px 8px;">
+        </div>
+      </div>
+      <p class="section-sub" style="margin-bottom:12px;">مبنية مباشرة على الرصيد الحالي الفعلي لكل صنف (بغض النظر عن الحد الأدنى المحدّد له) — عشان تعرف بسرعة وش تطلب من جديد.</p>
+      <div id="lowBalanceList"></div>
+    </div>
+
     <div class="card" id="predictedShortageCard" style="display:none;">
       <h2 class="section-title" style="font-size:16px;"><i class="fa-solid fa-chart-line"></i> أصناف يُتوقع نقصها قريبًا</h2>
       <p class="section-sub" style="margin-bottom:12px;">تقدير تقريبي بناءً على معدّل الاستهلاك آخر 30 يوم — مو رصيدًا فعليًا تحت الحد الأدنى بعد، بس يستاهل انتباه.</p>
@@ -2254,6 +2267,9 @@
       </div>
     </div>
 
+    <!-- تحليل الفروقات المتكررة عبر كل عمليات الجرد التاريخية -->
+    <div class="card" id="varianceAnalysisCard"></div>
+
     <div class="card">
       <h2 class="section-title" style="font-size:15px;">سجل عمليات الجرد السابقة</h2>
       <div class="table-wrap">
@@ -2291,6 +2307,34 @@
       <div style="display:flex;gap:10px;">
         <button class="btn-ghost theme-choice-btn" id="themeDayBtn" type="button"><i class="fa-solid fa-sun"></i> نهار</button>
         <button class="btn-ghost theme-choice-btn" id="themeNightBtn" type="button"><i class="fa-solid fa-moon"></i> ليل</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;"><i class="fa-solid fa-clock-rotate-left"></i> سجل التدقيق</h3>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">سجل تلقائي لكل عملية مهمة (إنشاء/تعديل/حذف سند، إقفال شهر، وأزرار إعادة التعيين بالأسفل) — مين سواها، ومتى، ولماذا (لو انكتب سبب). يتحدّث كل ما تفتح هذا القسم.</p>
+      <div class="toolbar" style="margin-bottom:12px;">
+        <div class="field" style="min-width:170px;">
+          <label>نوع الإجراء</label>
+          <select id="auditFilterAction">
+            <option value="all">الكل</option>
+            <option value="voucher_create">إنشاء سند</option>
+            <option value="voucher_edit">تعديل سند</option>
+            <option value="voucher_delete">حذف سند</option>
+            <option value="period_close">إقفال شهر</option>
+            <option value="danger_action">إجراءات إعادة التعيين</option>
+          </select>
+        </div>
+        <div class="field" style="flex:0 0 auto;align-self:end;">
+          <button class="btn-ghost btn-sm" id="refreshAuditLogBtn"><i class="fa-solid fa-arrows-rotate"></i> تحديث</button>
+        </div>
+      </div>
+      <div class="table-wrap" style="max-height:420px;">
+        <table class="data" id="auditLogTable">
+          <colgroup><col style="width:16%"><col style="width:20%"><col style="width:24%"><col style="width:40%"></colgroup>
+          <thead><tr><th>الوقت</th><th>المستخدم</th><th>الإجراء</th><th>التفاصيل</th></tr></thead>
+          <tbody><tr><td colspan="4" class="empty-cell"><div class="empty-state"><div class="icon"><i class="fa-solid fa-clock-rotate-left"></i></div>يتحمّل السجل تلقائيًا...</div></td></tr></tbody>
+        </table>
       </div>
     </div>
 
@@ -2604,7 +2648,7 @@
 <div class="tab-tooltip" id="tabTooltip" role="tooltip"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 
@@ -2616,6 +2660,124 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const STORE_LABELS = { freezer:'فريزر المواد المجمدة', pantry:'مخزن المواد الغذائية', cleaning:'مخزن أدوات النظافة' };
 const STORE_SHORT = { freezer:'الفريزر', pantry:'المواد الغذائية', cleaning:'أدوات النظافة' };
+
+/* ============ نظام تصدير Excel منسّق بألوان هوية الموقع ============
+   يستخدم ExcelJS (بدل xlsx القديمة اللي ما تدعم التنسيق بنسختها المجانية).
+   downloadStyledExcel(sheets, filename) تبني ملف كامل بشعار + عناوين ملوّنة + تلوين حسب
+   النوع (وارد/صادر) أو الحالة، ويطلقه كتحميل مباشر بالمتصفح. */
+const EXCEL_COMPANY_NAME = 'فنادق سليمان موسى العليان';
+const XL = {
+  ink:'FF1B2430', paper:'FFEDE8DC', paperCard:'FFFAF8F2',
+  line:'FFD9D2C0', lineStrong:'FFC3BAA4',
+  in:'FF2E7D5B', inSoft:'FFE1EBDD',
+  out:'FFB23A2E', outSoft:'FFF6DEDA',
+  warn:'FFA8631E', warnSoft:'FFF2E4D3',
+  white:'FFFFFFFF', softText:'FF6B7280'
+};
+
+async function downloadStyledExcel(sheets, filename){
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = EXCEL_COMPANY_NAME;
+  workbook.created = new Date();
+
+  sheets.forEach(function(def){
+    const rows = def.rows || [];
+    const columns = def.columns || (rows.length ? Object.keys(rows[0]).map(function(k){
+      return { header:k, key:k, width: Math.max(10, Math.min(42, k.length + 6)) };
+    }) : []);
+    const colCount = columns.length || 1;
+    const safeName = (def.name || 'ورقة').replace(/[:\\/?*\[\]]/g,'').slice(0,31);
+
+    const ws = workbook.addWorksheet(safeName, { views:[{ rightToLeft:true }] });
+    ws.columns = columns.map(function(c){ return { key: c.header, width: c.width || 16 }; });
+
+    // بانر الشعار (صف مدمج فوق الجدول)
+    ws.mergeCells(1,1,1,colCount);
+    const titleCell = ws.getCell(1,1);
+    titleCell.value = EXCEL_COMPANY_NAME;
+    titleCell.font = { bold:true, size:14, name:'Arial', color:{argb:XL.ink} };
+    titleCell.alignment = { horizontal:'center', vertical:'middle' };
+    titleCell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:XL.paper} };
+    ws.getRow(1).height = 24;
+
+    ws.mergeCells(2,1,2,colCount);
+    const subCell = ws.getCell(2,1);
+    subCell.value = (def.subtitle || def.name || '') + '  —  تاريخ التصدير: ' + todayStr();
+    subCell.font = { size:10.5, name:'Arial', color:{argb:XL.softText} };
+    subCell.alignment = { horizontal:'center', vertical:'middle' };
+    ws.getRow(2).height = 18;
+
+    // صف العناوين
+    const headerRowIdx = 3;
+    const headerRow = ws.getRow(headerRowIdx);
+    columns.forEach(function(c, i){
+      const cell = headerRow.getCell(i+1);
+      cell.value = c.header;
+      const roleColor = def.headerRoles && def.headerRoles[c.header];
+      const fillColor = roleColor==='in' ? XL.in : roleColor==='out' ? XL.out : roleColor==='warn' ? XL.warn : XL.ink;
+      cell.font = { bold:true, color:{argb:XL.white}, size:11, name:'Arial' };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:fillColor} };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      cell.border = { top:{style:'thin',color:{argb:XL.lineStrong}}, bottom:{style:'thin',color:{argb:XL.lineStrong}}, left:{style:'thin',color:{argb:XL.lineStrong}}, right:{style:'thin',color:{argb:XL.lineStrong}} };
+    });
+    headerRow.height = 22;
+
+    // صفوف البيانات
+    rows.forEach(function(r, idx){
+      const row = ws.getRow(headerRowIdx + 1 + idx);
+      let tone = null;
+      if(def.rowRole){
+        const val = r[def.rowRole.column];
+        tone = def.rowRole.roles[val] || null;
+      } else if(def.rowToneFromColumn){
+        const v = Number(r[def.rowToneFromColumn]) || 0;
+        tone = v>0 ? 'in' : (v<0 ? 'out' : null);
+      }
+      const baseFill = tone==='in' ? XL.inSoft : tone==='out' ? XL.outSoft : tone==='warn' ? XL.warnSoft
+        : (idx % 2 === 1 ? XL.paperCard : null);
+      const toneTextColor = tone==='in' ? XL.in : tone==='out' ? XL.out : tone==='warn' ? XL.warn : null;
+
+      columns.forEach(function(c, i){
+        const cell = row.getCell(i+1);
+        const val = r[c.header];
+        cell.value = (typeof val === 'number') ? val : (val==null ? '' : val);
+        if(typeof val === 'number') cell.numFmt = '#,##0.##';
+        cell.alignment = { horizontal:'right', vertical:'middle', wrapText:false };
+        cell.border = { bottom:{style:'thin',color:{argb:XL.line}} };
+        if(baseFill) cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:baseFill} };
+        const emphasize = def.emphasizeColumns && def.emphasizeColumns.indexOf(c.header) > -1;
+        if(emphasize){
+          const numVal = Number(val);
+          const emphColor = !Number.isNaN(numVal) ? (numVal>0?XL.in:numVal<0?XL.out:null) : toneTextColor;
+          cell.font = { bold:true, color: emphColor ? {argb:emphColor} : undefined };
+        } else if(toneTextColor){
+          cell.font = { bold:true, color:{argb:toneTextColor} };
+        }
+      });
+    });
+
+    if(def.totalsRow && rows.length){
+      const row = ws.getRow(headerRowIdx + 1);
+      row.eachCell(function(cell){
+        cell.font = Object.assign({}, cell.font, { bold:true });
+        cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:XL.paperCard} };
+      });
+    }
+
+    if(rows.length > 3){
+      ws.autoFilter = { from:{row:headerRowIdx,column:1}, to:{row:headerRowIdx,column:colCount} };
+    }
+    ws.views = [{ rightToLeft:true, state:'frozen', ySplit: headerRowIdx }];
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
 
 let DB = { items: [], vouchers: [], requests: [], invoices: [], quality: [], workers: [], attendance: [], inventoryCounts: [] };
 let busy = false;
@@ -2778,6 +2940,7 @@ async function enterApp(){
   document.getElementById('appRoot').style.display = 'block';
   await applyRole();
   await populateProfile();
+  if(typeof reloadLowBalanceThreshold === 'function') reloadLowBalanceThreshold();
   await loadDB();
   hideBootLoader();
   maybeShowWelcome();
@@ -3106,6 +3269,7 @@ function switchToTab(view){
   document.getElementById('view-'+view).classList.add('active');
   if(view==='ledger') renderLedgerSelect();
   if(view==='reports' && typeof renderMonthlyReport==='function') renderMonthlyReport();
+  if(view==='settings' && typeof loadAuditLog==='function') loadAuditLog();
   return true;
 }
 
@@ -3223,7 +3387,7 @@ document.getElementById('addItemBtn').addEventListener('click', async ()=>{
 document.getElementById('itemsFilterStore').addEventListener('change', renderItemsTable);
 document.getElementById('itemsSearch').addEventListener('input', renderItemsTable);
 
-document.getElementById('exportItemsExcelBtn').addEventListener('click', ()=>{
+document.getElementById('exportItemsExcelBtn').addEventListener('click', async ()=>{
   const store = document.getElementById('itemsFilterStore').value;
   const q = document.getElementById('itemsSearch').value.trim().toLowerCase();
   let list = getItemsByStore(store);
@@ -3242,9 +3406,9 @@ document.getElementById('exportItemsExcelBtn').addEventListener('click', ()=>{
   }));
 
   try{
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'الأصناف');
-    XLSX.writeFile(wb, 'أصناف-' + todayStr() + '.xlsx');
+    await downloadStyledExcel([{
+      name:'الأصناف', rows, rowRole:{ column:'عند الحد الأدنى؟', roles:{ 'نعم':'warn' } }
+    }], 'أصناف-' + todayStr() + '.xlsx');
   }catch(e){
     showErr('تعذر إنشاء ملف Excel.', e);
   }
@@ -3715,6 +3879,7 @@ document.getElementById('inSubmit').addEventListener('click', async ()=>{
     document.getElementById('inPhotoPreview').innerHTML = '';
     await loadDB();
     const touchedStores = [...new Set(rawLines.map(l=>l.store))].map(s=>STORE_LABELS[s]).join('، ');
+    logAudit('voucher_create', voucher.id, number, 'سند توريد — ' + rawLines.length + ' صنف — المخازن: ' + touchedStores + (source ? (' — المورد: ' + source) : ''));
     let stampSub = 'تم تحديث الأرصدة في: ' + touchedStores + '.';
     if(resolvedShortages.length > 0){
       stampSub += ' <i class="fa-solid fa-champagne-glasses"></i> كذلك رجع "' + escapeHtml(resolvedShortages.join('، ')) + '" فوق الحد الأدنى!';
@@ -3823,6 +3988,7 @@ document.getElementById('outSubmit').addEventListener('click', async ()=>{
     document.getElementById('outPhotoPreview').innerHTML = '';
     await loadDB();
     const touchedStores = [...new Set(rawLines.map(l=>l.store))].map(s=>STORE_LABELS[s]).join('، ');
+    logAudit('voucher_create', voucher.id, number, 'سند صرف — ' + rawLines.length + ' صنف — المخازن: ' + touchedStores + (dest ? (' — الجهة: ' + dest) : ''));
     showStamp('out', number, 'تم حفظ سند الصرف', 'تم خصم الكميات من: ' + touchedStores + '.');
   }catch(e){
     let revertOk = true;
@@ -4087,6 +4253,13 @@ document.getElementById('editVoucherSave').addEventListener('click', async ()=>{
     }).eq('id', v.id);
     if(vErr) throw vErr;
 
+    const editChanges = [];
+    if(number.toLowerCase() !== v.number.toLowerCase()) editChanges.push('الرقم: '+v.number+' ← '+number);
+    if(date !== v.date) editChanges.push('التاريخ: '+fmtDate(v.date)+' ← '+fmtDate(date));
+    if((party||'') !== (v.party||'')) editChanges.push('الجهة: '+(v.party||'-')+' ← '+(party||'-'));
+    if(newLines.length !== v.lines.length) editChanges.push('عدد الأصناف: '+v.lines.length+' ← '+newLines.length);
+    logAudit('voucher_edit', v.id, number, editChanges.length ? editChanges.join(' | ') : 'تعديل بنود الكميات بدون تغيير بالحقول الأساسية');
+
     document.getElementById('editVoucherOverlay').classList.remove('show');
     await loadDB();
     showAppAlert('تم حفظ تعديلات السند وتحديث الأرصدة.');
@@ -4114,10 +4287,11 @@ function deleteVoucherConfirm(v){
   if(busy) return;
   if(v.closed){ showAppAlert('هذا السند مقفل ولا يمكن حذفه.'); return; }
   if(!confirm('سيتم حذف السند "'+v.number+'" نهائيًا وإرجاع أثره على أرصدة الأصناف. هذا الإجراء لا يمكن التراجع عنه. متابعة؟')) return;
-  deleteVoucherNow(v);
+  const reason = prompt('سبب الحذف (اختياري — يُسجّل بسجل التدقيق):') || '';
+  deleteVoucherNow(v, reason);
 }
 
-async function deleteVoucherNow(v){
+async function deleteVoucherNow(v, reason){
   if(busy) return;
   busy = true;
   const appliedDeltas = [];
@@ -4143,6 +4317,8 @@ async function deleteVoucherNow(v){
     const { error: vErr } = await sb.from('vouchers').delete().eq('id', v.id);
     if(vErr) throw vErr;
 
+    logAudit('voucher_delete', v.id, v.number, (v.type==='in'?'سند توريد':'سند صرف')+' — '+v.lines.length+' صنف — الجهة: '+(v.party||'-'), reason);
+
     document.getElementById('voucherDetailOverlay').classList.remove('show');
     await loadDB();
     showAppAlert('تم حذف السند وإرجاع أثره على الأرصدة.');
@@ -4166,6 +4342,67 @@ document.getElementById('closeVoucherDetail').addEventListener('click', ()=>{
   document.getElementById('voucherDetailOverlay').classList.remove('show');
 });
 
+/* شارة ملوّنة صغيرة لقوالب الطباعة — بنفس ألوان الهوية الحقيقية (وارد=أخضر، صادر=أحمر)
+   عشان تفرّق بصريًا بنفس أسلوب الموقع والإكسل، حتى لو المستخدم بالوضع الليلي وقت الطباعة */
+function printBadge(text, colorHex, bgHex){
+  return '<span style="display:inline-block;padding:3px 11px;border-radius:999px;font-size:11.5px;font-weight:700;background:'+bgHex+';color:'+colorHex+';">'+text+'</span>';
+}
+function printTypeBadge(type){
+  return type==='in' ? printBadge('وارد', '#2E7D5B', '#E1EBDD') : printBadge('صادر', '#B23A2E', '#F6DEDA');
+}
+
+/* ترويسة موحّدة لكل صفحات الطباعة — شعار + اسم الشركة + خط علوي بلون السند/التقرير + كتلة يمين اختيارية */
+function printLetterhead(subtitleHtml, rightBlockHtml, accentColor){
+  accentColor = accentColor || '#1B2430';
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid ${accentColor};padding-bottom:16px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="flex-shrink:0;width:44px;height:44px;border-radius:11px;background:linear-gradient(160deg,#2C3B4E,#1B2430 70%);display:flex;align-items:center;justify-content:center;font-family:Almarai,Arial,sans-serif;font-weight:800;color:#E8C776;font-size:14px;letter-spacing:.5px;">ABZ</div>
+        <div>
+          <div style="font-weight:800;font-size:19px;">فنادق سليمان موسى العليان</div>
+          <div style="font-size:11.5px;color:#8A8375;margin-top:1px;">سجل المخزن العليان الذهبي</div>
+          ${subtitleHtml ? `<div style="margin-top:8px;">${subtitleHtml}</div>` : ''}
+        </div>
+      </div>
+      <div style="text-align:left;flex-shrink:0;">${rightBlockHtml || ''}</div>
+    </div>
+  `;
+}
+/* تذييل موحّد: اسم الشركة + وقت الإنشاء الفعلي — يضفي طابع مستند رسمي */
+function printFooter(){
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('ar-SA', { hour:'2-digit', minute:'2-digit' });
+  return `
+    <div style="margin-top:30px;padding-top:10px;border-top:1px solid #E2DCCB;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:10.5px;color:#9A9488;">
+      <span>فنادق سليمان موسى العليان — سجل المخزن العليان الذهبي</span>
+      <span>تم إنشاء المستند: ${fmtDate(todayStr())} — ${timeStr}</span>
+    </div>
+  `;
+}
+/* بطاقة إحصائية صغيرة لملخصات الطباعة (بديل عن سطر نص مسطّح) */
+function printStatTile(label, value, colorHex){
+  return `
+    <div style="flex:1;min-width:118px;background:#FAF8F2;border:1px solid #E2DCCB;border-radius:9px;padding:9px 12px;">
+      <div style="font-size:10px;color:#9A9488;font-weight:700;margin-bottom:4px;">${label}</div>
+      <div style="font-family:monospace;font-weight:700;font-size:16px;color:${colorHex||'#1B2430'};">${value}</div>
+    </div>
+  `;
+}
+/* رأس جدول موحّد لكل جداول الطباعة (لون غامق ثابت + نص أبيض) */
+function printTh(text){
+  return '<th style="padding:8px 9px;text-align:right;background:#1B2430;color:#fff;font-size:11px;font-weight:700;">'+text+'</th>';
+}
+/* شارة مخزن ملوّنة لقوالب الطباعة — بنفس ألوان المخازن الفعلية بالموقع */
+const PRINT_STORE_COLORS = {
+  freezer: { c:'#2F6F8F', bg:'#DCEAF0' },
+  pantry: { c:'#A8631E', bg:'#F2E4D3' },
+  cleaning: { c:'#4C7A4C', bg:'#E1EBDD' }
+};
+function printStoreBadge(store){
+  const tone = PRINT_STORE_COLORS[store] || { c:'#1B2430', bg:'#EDE8DC' };
+  return printBadge(STORE_LABELS[store] || store || '-', tone.c, tone.bg);
+}
+
 function printVoucher(v){
   const area = document.getElementById('printArea');
 
@@ -4179,43 +4416,50 @@ function printVoucher(v){
     return;
   }
 
+  const typeColor = v.type==='in' ? '#2E7D5B' : '#B23A2E';
+  const typeSoft = v.type==='in' ? '#E1EBDD' : '#F6DEDA';
+  const partyLabel = v.type==='in' ? 'المورد' : 'الجهة المستلمة';
+  const totalQty = v.lines.reduce((s,l)=>s+Number(l.qty||0),0);
+
+  const letterhead = printLetterhead(
+    v.type==='in' ? printBadge('سند توريد (وارد)', typeColor, typeSoft) : printBadge('سند صرف (صادر)', typeColor, typeSoft),
+    `<div style="font-family:monospace;font-weight:700;font-size:20px;">${v.number}</div><div style="font-size:11.5px;color:#8A8375;margin-top:2px;">${fmtDate(v.date)}</div>`,
+    typeColor
+  );
+
+  const statTiles = `
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+      ${printStatTile(partyLabel, v.party?escapeHtml(v.party):'—')}
+      ${printStatTile('عدد الأصناف', v.lines.length)}
+      ${printStatTile('إجمالي الكمية', fmtNum(totalQty), typeColor)}
+      ${printStatTile('حالة السند', v.closed?'مقفل (مؤرشف)':'مفتوح')}
+    </div>
+    ${v.notes ? `<div style="background:#FAF8F2;border:1px solid #E2DCCB;border-radius:9px;padding:10px 13px;font-size:12.5px;margin-bottom:16px;"><b>ملاحظات:</b> ${escapeHtml(v.notes)}</div>` : ''}
+  `;
+
   area.innerHTML = `
     <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:18px;">
-        <div>
-          <div style="font-weight:800;font-size:20px;">فنادق سليمان موسى العليان</div>
-          <div style="font-size:13px;color:#555;margin-top:2px;">${v.type==='in'?'سند توريد (وارد)':'سند صرف (صادر)'}</div>
-        </div>
-        <div style="text-align:left;">
-          <div style="font-family:monospace;font-weight:700;font-size:19px;">${v.number}</div>
-          <div style="font-size:12px;color:#555;">${fmtDate(v.date)}</div>
-        </div>
-      </div>
-      <p style="margin:6px 0;font-size:14px;"><b>${v.type==='in'?'المورد':'الجهة المستلمة'}:</b> ${v.party?escapeHtml(v.party):'-'}</p>
-      ${v.notes?`<p style="margin:6px 0;font-size:14px;"><b>ملاحظات:</b> ${escapeHtml(v.notes)}</p>`:''}
-      <table style="width:100%;border-collapse:collapse;margin-top:16px;font-size:13px;">
+      ${letterhead}
+      ${statTiles}
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px;border:1px solid #E2DCCB;">
         <thead>
-          <tr style="background:#eee;">
-            <th style="border:1px solid #ccc;padding:8px;text-align:right;">المخزن</th>
-            <th style="border:1px solid #ccc;padding:8px;text-align:right;">الصنف</th>
-            <th style="border:1px solid #ccc;padding:8px;text-align:right;">الكمية</th>
-            <th style="border:1px solid #ccc;padding:8px;text-align:right;">الوحدة</th>
-          </tr>
+          <tr>${printTh('المخزن')}${printTh('الصنف')}${printTh('الكمية')}${printTh('الوحدة')}</tr>
         </thead>
         <tbody>
-          ${v.lines.map(l=>`<tr>
-            <td style="border:1px solid #ccc;padding:8px;">${STORE_LABELS[l.store]||'-'}</td>
-            <td style="border:1px solid #ccc;padding:8px;">${escapeHtml(l.name)}</td>
-            <td style="border:1px solid #ccc;padding:8px;font-family:monospace;">${fmtNum(l.qty)}</td>
-            <td style="border:1px solid #ccc;padding:8px;">${escapeHtml(l.unit)}</td>
+          ${v.lines.map((l,idx)=>`<tr style="background:${idx%2===1?'#FAF8F2':'#fff'};">
+            <td style="padding:8px 9px;border-bottom:1px solid #EEE;">${STORE_LABELS[l.store]||'-'}</td>
+            <td style="padding:8px 9px;border-bottom:1px solid #EEE;">${escapeHtml(l.name)}</td>
+            <td style="padding:8px 9px;border-bottom:1px solid #EEE;font-family:monospace;font-weight:700;color:${typeColor};">${v.type==='in'?'+':'−'}${fmtNum(l.qty)}</td>
+            <td style="padding:8px 9px;border-bottom:1px solid #EEE;">${escapeHtml(l.unit)}</td>
           </tr>`).join('')}
         </tbody>
       </table>
-      ${v.photoUrl ? `<div style="margin-top:18px;"><div style="font-size:12px;color:#555;margin-bottom:6px;">صورة مرفقة:</div><img src="${v.photoUrl}" style="max-width:320px;max-height:320px;border:1px solid #ccc;border-radius:6px;"></div>` : ''}
-      <div style="margin-top:56px;display:flex;justify-content:space-between;font-size:13px;">
-        <div>توقيع ${v.type==='in'?'المورّد':'المستلم'}: ______________________</div>
-        <div>توقيع أمين المخزن: ______________________</div>
+      ${v.photoUrl ? `<div style="margin-top:18px;"><div style="font-size:11.5px;color:#8A8375;margin-bottom:6px;font-weight:700;">صورة مرفقة</div><img src="${v.photoUrl}" style="max-width:320px;max-height:320px;border:1px solid #E2DCCB;border-radius:8px;"></div>` : ''}
+      <div style="margin-top:50px;display:flex;gap:16px;">
+        <div style="flex:1;border-top:1.5px solid #999;padding-top:8px;font-size:12.5px;">توقيع ${v.type==='in'?'المورّد':'المستلم'}</div>
+        <div style="flex:1;border-top:1.5px solid #999;padding-top:8px;font-size:12.5px;">توقيع أمين المخزن</div>
       </div>
+      ${printFooter()}
     </div>
   `;
   window.print();
@@ -4224,7 +4468,7 @@ document.getElementById('printVoucherBtn').addEventListener('click', ()=>{
   if(currentDetailVoucher) printVoucher(currentDetailVoucher);
 });
 
-document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
+document.getElementById('exportExcelBtn').addEventListener('click', async ()=>{
   const period = document.getElementById('logFilterPeriod').value;
   const store = document.getElementById('logFilterStore').value;
   const q = document.getElementById('logSearch').value.trim().toLowerCase();
@@ -4263,10 +4507,10 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   });
 
   try{
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'ملخص السندات');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows), 'تفاصيل الأصناف');
-    XLSX.writeFile(wb, 'سندات-' + todayStr() + '.xlsx');
+    await downloadStyledExcel([
+      { name:'ملخص السندات', rows:summaryRows, rowRole:{ column:'النوع', roles:{ 'توريد (وارد)':'in', 'صرف (صادر)':'out' } } },
+      { name:'تفاصيل الأصناف', rows:detailRows, rowRole:{ column:'النوع', roles:{ 'توريد':'in', 'صرف':'out' } } }
+    ], 'سندات-' + todayStr() + '.xlsx');
   }catch(e){
     showErr('تعذر إنشاء ملف Excel.', e);
   }
@@ -4426,7 +4670,7 @@ function renderIncomingRequestsTable(){
 }
 document.getElementById('reqFilterStatus').addEventListener('change', renderIncomingRequestsTable);
 
-document.getElementById('exportRequestsExcelBtn').addEventListener('click', ()=>{
+document.getElementById('exportRequestsExcelBtn').addEventListener('click', async ()=>{
   const filter = document.getElementById('reqFilterStatus').value;
   let list = DB.requests.slice().sort((a,b)=> b.createdAt - a.createdAt);
   if(filter !== 'all') list = list.filter(r=> r.status===filter);
@@ -4444,9 +4688,10 @@ document.getElementById('exportRequestsExcelBtn').addEventListener('click', ()=>
   }));
 
   try{
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'الطلبات');
-    XLSX.writeFile(wb, 'طلبات-الأصناف-' + todayStr() + '.xlsx');
+    await downloadStyledExcel([{
+      name:'الطلبات', rows,
+      rowRole:{ column:'الحالة', roles:{ 'تم الصرف':'in', 'مرفوض':'out', 'قيد الانتظار':'warn' } }
+    }], 'طلبات-الأصناف-' + todayStr() + '.xlsx');
   }catch(e){
     showErr('تعذر إنشاء ملف Excel.', e);
   }
@@ -4577,21 +4822,29 @@ function invoiceRowHtml(v){
   </tr>`;
 }
 
+const INVOICE_PRINT_COLORS = {
+  supplier: { c:'#2F6F8F', bg:'#DCEAF0' },
+  issue: { c:'#B23A2E', bg:'#F6DEDA' },
+  purchase_request: { c:'#4C7A4C', bg:'#E1EBDD' }
+};
 function invoicePrintBlockHtml(v){
   const typeText = INVOICE_TYPE_LABELS[v.docType] || v.docType;
+  const tone = INVOICE_PRINT_COLORS[v.docType] || { c:'#1B2430', bg:'#EDE8DC' };
   return `
     <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid ${tone.c};padding-bottom:14px;margin-bottom:16px;">
         <div>
           <div style="font-weight:800;font-size:22px;">${v.party ? escapeHtml(v.party) : 'فنادق سليمان موسى العليان'}</div>
-          <div style="font-size:13px;color:#555;margin-top:2px;">${typeText}${v.note ? ' — ' + escapeHtml(v.note) : ''}</div>
+          ${v.party ? `<div style="font-size:11px;color:#B5AE9E;margin-top:1px;">أرشيف فنادق سليمان موسى العليان</div>` : ''}
+          <div style="margin-top:8px;">${printBadge(typeText, tone.c, tone.bg)}${v.note ? ' <span style="font-size:13px;color:#555;">— ' + escapeHtml(v.note) + '</span>' : ''}</div>
         </div>
         <div style="text-align:left;">
           <div style="font-family:monospace;font-weight:700;font-size:19px;">${v.number}</div>
-          <div style="font-size:12px;color:#555;">${fmtDate(v.docDate)}</div>
+          <div style="font-size:12px;color:#8A8375;">${fmtDate(v.docDate)}</div>
         </div>
       </div>
-      ${v.photoUrl ? `<div style="text-align:center;"><img src="${v.photoUrl}" style="max-width:100%;max-height:900px;border:1px solid #ccc;border-radius:6px;"></div>` : '<p>لا توجد صورة مرفقة.</p>'}
+      ${v.photoUrl ? `<div style="text-align:center;"><img src="${v.photoUrl}" style="max-width:100%;max-height:900px;border:1px solid #E2DCCB;border-radius:8px;"></div>` : '<p style="color:#999;">لا توجد صورة مرفقة.</p>'}
+      ${printFooter()}
     </div>
   `;
 }
@@ -4720,7 +4973,7 @@ function renderInvoicesTable(){
   renderInvoiceBox('invoicesGroupsPurchase', 'purchase_request');
 }
 
-document.getElementById('exportInvoicesExcelBtn').addEventListener('click', ()=>{
+document.getElementById('exportInvoicesExcelBtn').addEventListener('click', async ()=>{
   const list = getFilteredInvoices(null); // كل الأنواع، بنفس فلاتر التاريخ والبحث الحالية
   if(list.length===0){ showAppAlert('لا توجد فواتير لتصديرها حسب الفلترة الحالية.'); return; }
 
@@ -4734,9 +4987,10 @@ document.getElementById('exportInvoicesExcelBtn').addEventListener('click', ()=>
   }));
 
   try{
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'الأرشيف');
-    XLSX.writeFile(wb, 'أرشيف-الفواتير-' + todayStr() + '.xlsx');
+    await downloadStyledExcel([{
+      name:'الأرشيف', rows,
+      rowRole:{ column:'النوع', roles:{ 'فاتورة مورد':'in', 'سند صرف':'out', 'سند طلب شراء':'warn' } }
+    }], 'أرشيف-الفواتير-' + todayStr() + '.xlsx');
   }catch(e){
     showErr('تعذر إنشاء ملف Excel.', e);
   }
@@ -4781,7 +5035,7 @@ document.getElementById('qcSubmit').addEventListener('click', async ()=>{
 
 document.getElementById('qcFilterStore').addEventListener('change', renderQualityTable);
 
-document.getElementById('exportQualityExcelBtn').addEventListener('click', ()=>{
+document.getElementById('exportQualityExcelBtn').addEventListener('click', async ()=>{
   const store = document.getElementById('qcFilterStore').value;
   let list = DB.quality.slice().sort((a,b)=> b.createdAt - a.createdAt);
   if(store !== 'all') list = list.filter(q=> q.store === store);
@@ -4796,9 +5050,7 @@ document.getElementById('exportQualityExcelBtn').addEventListener('click', ()=>{
   }));
 
   try{
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'الجودة');
-    XLSX.writeFile(wb, 'تقييمات-الجودة-' + todayStr() + '.xlsx');
+    await downloadStyledExcel([{ name:'الجودة', rows }], 'تقييمات-الجودة-' + todayStr() + '.xlsx');
   }catch(e){
     showErr('تعذر إنشاء ملف Excel.', e);
   }
@@ -4849,6 +5101,7 @@ function renderDashboard(){
   if(typeof renderHealthRing === 'function') renderHealthRing();
   if(typeof renderBusiestCard === 'function') renderBusiestCard();
   if(typeof renderPredictedShortages === 'function') renderPredictedShortages();
+  if(typeof renderLowBalanceList === 'function') renderLowBalanceList();
   if(typeof renderActionCenter === 'function') renderActionCenter();
   if(typeof renderCompareStrip === 'function') renderCompareStrip();
   if(typeof renderMonthlyChart === 'function') renderMonthlyChart();
@@ -4939,7 +5192,13 @@ function renderLedgerSelect(){
   sel.innerHTML = '<option value="__ALL__"><i class="fa-solid fa-clipboard-list"></i> كل الأصناف — كشف شامل</option>'
     + DB.items.map(i=>`<option value="${i.id}" ${i.id===current?'selected':''}>${escapeHtml(i.name)} — ${STORE_LABELS[i.store]}</option>`).join('');
   if(current) sel.value = current;
-  renderLedgerTable();
+  // renderAll() يستدعي هذي الدالة بعد أي تغيير بأي مكان بالموقع (حفظ سند، تعديل صنف...) بغض النظر
+  // عن التبويب المفتوح حاليًا — لو ما كانت "الحركة اليومية" هي التبويب الظاهر فعليًا، ما فيه داعي نبني
+  // جدول "كل الأصناف" الثقيل (يمسح كل السندات) بالخلفية وهو أصلاً مخفي؛ هذا كان يجمّد الجوال حتى
+  // بدون ما يدخل المستخدم الحركة اليومية إطلاقًا. switchToTab('ledger') يستدعي هذي الدالة بنفسه
+  // بعد ما يفعّل التبويب، فالتحديث لما تكون الحركة اليومية مفتوحة فعلاً يفضل شغّال زي ما هو.
+  const ledgerView = document.getElementById('view-ledger');
+  if(ledgerView && ledgerView.classList.contains('active')) renderLedgerTable();
 }
 
 function getItemMovesWithBalance(id){
@@ -5367,52 +5626,81 @@ function printAllItemsLedger(){
   const printMoves = filterMovesByPeriod(allMoves, printBounds);
   const printTotalIn = printMoves.filter(m=>m.type==='in').reduce((s,m)=>s+m.qty,0);
   const printTotalOut = printMoves.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0);
-  const distinctItems = new Set(printMoves.map(m=>m.itemId)).size;
+  const activeIds = new Set(printMoves.map(m=>m.itemId));
+  const distinctItems = activeIds.size;
   const area = document.getElementById('printArea');
-  area.innerHTML = `
-    <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:18px;">
-        <div>
-          <div style="font-weight:800;font-size:20px;">فنادق سليمان موسى العليان</div>
-          <div style="font-size:13px;color:#555;margin-top:2px;">كشف شامل لحركة كل الأصناف</div>
-        </div>
-        <div style="text-align:left;">
-          <div style="font-size:12px;color:#555;">${ledgerPeriodLabel(printBounds)}</div>
-          <div style="font-size:12px;color:#555;">تاريخ الطباعة: ${fmtDate(todayStr())}</div>
-        </div>
+
+  // صفحة الغلاف: الشعار + الملخص العام فقط (بدون جدول حركات — كل صنف له صفحته الخاصة بالأسفل)
+  const letterhead = printLetterhead(
+    'كشف شامل لحركة كل الأصناف',
+    `<div style="font-size:12px;color:#8A8375;">${ledgerPeriodLabel(printBounds)}</div><div style="font-size:11px;color:#B5AE9E;margin-top:2px;">تاريخ الطباعة: ${fmtDate(todayStr())}</div>`
+  );
+  const coverPage = `
+    <div style="padding-bottom:10px;">
+      ${letterhead}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        ${printStatTile('عدد الأصناف المتحركة', distinctItems)}
+        ${printStatTile('إجمالي الوارد', fmtNum(printTotalIn), '#2E7D5B')}
+        ${printStatTile('إجمالي الصادر', fmtNum(printTotalOut), '#B23A2E')}
+        ${printStatTile('صافي التغيّر', (printTotalIn-printTotalOut>=0?'+':'')+fmtNum(printTotalIn-printTotalOut), (printTotalIn-printTotalOut)>=0?'#2E7D5B':'#B23A2E')}
+        ${printStatTile('عدد الحركات', printMoves.length)}
       </div>
-      <div style="display:flex;gap:22px;margin-bottom:16px;font-size:13px;flex-wrap:wrap;">
-        <div><b>عدد الأصناف المتحركة:</b> ${distinctItems}</div>
-        <div><b>إجمالي الوارد:</b> ${fmtNum(printTotalIn)}</div>
-        <div><b>إجمالي الصادر:</b> ${fmtNum(printTotalOut)}</div>
-        <div><b>عدد الحركات:</b> ${printMoves.length}</div>
-      </div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead>
-          <tr style="background:#EDE8DC;">
-            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">التاريخ</th>
-            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">الصنف</th>
-            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">المخزن</th>
-            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">النوع</th>
-            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">الكمية</th>
-            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">الجهة</th>
-            <th style="padding:6px 7px;text-align:right;border-bottom:2px solid #1B2430;">رقم السند</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${printMoves.map(m=>`<tr>
-            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${fmtDate(m.date)}</td>
-            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${escapeHtml(m.itemName)}</td>
-            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${m.store ? STORE_LABELS[m.store] : '-'}</td>
-            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${m.type==='in'?'وارد':'صادر'}</td>
-            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
-            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${m.party ? escapeHtml(m.party) : '-'}</td>
-            <td style="padding:5px 7px;border-bottom:1px solid #ddd;">${m.number}</td>
-          </tr>`).join('') || '<tr><td colspan="7" style="padding:14px;text-align:center;color:#777;">لا توجد حركات في هذه الفترة.</td></tr>'}
-        </tbody>
-      </table>
+      <p style="font-size:12px;color:#8A8375;margin-top:16px;">كل صنف له صفحة مستقلة بالتفصيل — بحسب ترتيب الأصناف بالأسفل.</p>
     </div>
   `;
+
+  if(distinctItems===0){
+    area.innerHTML = `<div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">${coverPage}
+      <div style="padding:30px;text-align:center;color:#999;">لا توجد حركات في هذه الفترة.</div>${printFooter()}</div>`;
+    window.print();
+    return;
+  }
+
+  const groupedMoves = getAllItemMovesGrouped();
+  const itemPages = DB.items
+    .filter(it=> activeIds.has(it.id))
+    .map((it, idx)=>{
+      const full = groupedMoves.get(it.id) || [];
+      const periodRows = filterMovesByPeriod(full, printBounds);
+      const totalIn = periodRows.filter(m=>m.type==='in').reduce((s,m)=>s+m.qty,0);
+      const totalOut = periodRows.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0);
+      const low = it.min>0 && it.balance<=it.min;
+      return `
+        <div style="break-before:page;padding-top:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:10px;margin-bottom:14px;">
+            <div>
+              <div style="font-weight:800;font-size:17px;">${escapeHtml(it.name)}</div>
+              <div style="margin-top:6px;">${printStoreBadge(it.store)}</div>
+            </div>
+            <div style="text-align:left;font-size:11px;color:#B5AE9E;">صنف ${idx+1} من ${distinctItems}</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+            ${printStatTile('الرصيد الحالي', fmtNum(it.balance)+' '+escapeHtml(it.unit), low?'#A8631E':'#1B2430')}
+            ${printStatTile('وارد الفترة', fmtNum(totalIn), '#2E7D5B')}
+            ${printStatTile('صادر الفترة', fmtNum(totalOut), '#B23A2E')}
+          </div>
+          ${low ? `<div style="background:#F2E4D3;border:1px solid #E2C89A;color:#A8631E;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:700;margin-bottom:16px;">⚠ الرصيد الحالي عند الحد الأدنى (${fmtNum(it.min)}) أو أقل</div>` : ''}
+          <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #E2DCCB;">
+            <thead>
+              <tr>${printTh('التاريخ')}${printTh('رقم السند')}${printTh('النوع')}${printTh('الكمية')}${printTh('الرصيد بعد الحركة')}${printTh('الجهة')}</tr>
+            </thead>
+            <tbody>
+              ${periodRows.map(m=>`<tr style="background:${m.type==='in'?'#F3F8F5':'#FBF3F2'};">
+                <td style="padding:7px 8px;border-bottom:1px solid #EEE;">${fmtDate(m.date)}</td>
+                <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;">${m.number}</td>
+                <td style="padding:7px 8px;border-bottom:1px solid #EEE;">${printTypeBadge(m.type)}</td>
+                <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;font-weight:700;color:${m.type==='in'?'#2E7D5B':'#B23A2E'};">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
+                <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;font-weight:700;">${fmtNum(m.balanceAfter)}</td>
+                <td style="padding:7px 8px;border-bottom:1px solid #EEE;">${m.party ? escapeHtml(m.party) : '-'}</td>
+              </tr>`).join('') || '<tr><td colspan="6" style="padding:14px;text-align:center;color:#999;">لا توجد حركات في هذه الفترة.</td></tr>'}
+            </tbody>
+          </table>
+          ${idx===distinctItems-1 ? printFooter() : ''}
+        </div>
+      `;
+    }).join('');
+
+  area.innerHTML = `<div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">${coverPage}${itemPages}</div>`;
   window.print();
 }
 
@@ -5426,52 +5714,44 @@ document.getElementById('ledgerPrintBtn').addEventListener('click', ()=>{
   const printTotalIn = printMoves.filter(m=>m.type==='in').reduce((s,m)=>s+m.qty,0);
   const printTotalOut = printMoves.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0);
   const area = document.getElementById('printArea');
+  const low = it.min>0 && it.balance<=it.min;
+  const letterhead = printLetterhead(
+    'الحركه اليوميه — ' + escapeHtml(it.name),
+    `<div style="font-size:12px;color:#8A8375;">${ledgerPeriodLabel(printBounds)}</div><div style="font-size:11px;color:#B5AE9E;margin-top:2px;">تاريخ الطباعة: ${fmtDate(todayStr())}</div>`
+  );
   area.innerHTML = `
     <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;color:#111;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2430;padding-bottom:14px;margin-bottom:18px;">
-        <div>
-          <div style="font-weight:800;font-size:20px;">فنادق سليمان موسى العليان</div>
-          <div style="font-size:13px;color:#555;margin-top:2px;">الحركه اليوميه لصنف: ${escapeHtml(it.name)}</div>
-        </div>
-        <div style="text-align:left;">
-          <div style="font-size:12px;color:#555;">${ledgerPeriodLabel(printBounds)}</div>
-          <div style="font-size:12px;color:#555;">تاريخ الطباعة: ${fmtDate(todayStr())}</div>
-        </div>
+      ${letterhead}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+        ${printStatTile('المخزن', STORE_LABELS[it.store])}
+        ${printStatTile('الوحدة', escapeHtml(it.unit))}
+        ${printStatTile('الرصيد الحالي', fmtNum(it.balance), low?'#A8631E':'#1B2430')}
+        ${printStatTile('إجمالي الوارد', fmtNum(printTotalIn), '#2E7D5B')}
+        ${printStatTile('إجمالي الصادر', fmtNum(printTotalOut), '#B23A2E')}
+        ${printStatTile('صافي التغيّر', (printTotalIn-printTotalOut>=0?'+':'')+fmtNum(printTotalIn-printTotalOut), (printTotalIn-printTotalOut)>=0?'#2E7D5B':'#B23A2E')}
       </div>
-      <div style="display:flex;gap:22px;margin-bottom:16px;font-size:13px;flex-wrap:wrap;">
-        <div><b>المخزن:</b> ${STORE_LABELS[it.store]}</div>
-        <div><b>الوحدة:</b> ${escapeHtml(it.unit)}</div>
-        <div><b>الرصيد الحالي:</b> ${fmtNum(it.balance)}</div>
-        <div><b>إجمالي الوارد:</b> ${fmtNum(printTotalIn)}</div>
-        <div><b>إجمالي الصادر:</b> ${fmtNum(printTotalOut)}</div>
-        <div><b>صافي التغيّر:</b> ${(printTotalIn-printTotalOut)>=0?'+':''}${fmtNum(printTotalIn-printTotalOut)}</div>
-      </div>
-      <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+      ${low ? `<div style="background:#F2E4D3;border:1px solid #E2C89A;color:#A8631E;border-radius:9px;padding:9px 13px;font-size:12.5px;font-weight:700;margin-bottom:16px;">⚠ الرصيد الحالي عند الحد الأدنى (${fmtNum(it.min)}) أو أقل</div>` : ''}
+      <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #E2DCCB;">
         <thead>
-          <tr style="background:#EDE8DC;">
-            <th style="padding:7px 8px;text-align:right;border-bottom:2px solid #1B2430;">التاريخ</th>
-            <th style="padding:7px 8px;text-align:right;border-bottom:2px solid #1B2430;">رقم السند</th>
-            <th style="padding:7px 8px;text-align:right;border-bottom:2px solid #1B2430;">النوع</th>
-            <th style="padding:7px 8px;text-align:right;border-bottom:2px solid #1B2430;">الكمية</th>
-            <th style="padding:7px 8px;text-align:right;border-bottom:2px solid #1B2430;">الرصيد بعد الحركة</th>
-          </tr>
+          <tr>${printTh('التاريخ')}${printTh('رقم السند')}${printTh('النوع')}${printTh('الكمية')}${printTh('الرصيد بعد الحركة')}</tr>
         </thead>
         <tbody>
-          ${printMoves.map(m=>`<tr>
-            <td style="padding:6px 8px;border-bottom:1px solid #ddd;">${fmtDate(m.date)}</td>
-            <td style="padding:6px 8px;border-bottom:1px solid #ddd;">${m.number}</td>
-            <td style="padding:6px 8px;border-bottom:1px solid #ddd;">${m.type==='in'?'وارد':'صادر'}</td>
-            <td style="padding:6px 8px;border-bottom:1px solid #ddd;">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
-            <td style="padding:6px 8px;border-bottom:1px solid #ddd;">${fmtNum(m.balanceAfter)}</td>
-          </tr>`).join('') || '<tr><td colspan="5" style="padding:14px;text-align:center;color:#777;">لا توجد حركات في هذه الفترة.</td></tr>'}
+          ${printMoves.map(m=>`<tr style="background:${m.type==='in'?'#F3F8F5':'#FBF3F2'};">
+            <td style="padding:7px 8px;border-bottom:1px solid #EEE;">${fmtDate(m.date)}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;">${m.number}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid #EEE;">${printTypeBadge(m.type)}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;font-weight:700;color:${m.type==='in'?'#2E7D5B':'#B23A2E'};">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;font-weight:700;">${fmtNum(m.balanceAfter)}</td>
+          </tr>`).join('') || '<tr><td colspan="5" style="padding:14px;text-align:center;color:#999;">لا توجد حركات في هذه الفترة.</td></tr>'}
         </tbody>
       </table>
+      ${printFooter()}
     </div>
   `;
   window.print();
 });
 
-function exportAllItemsLedgerExcel(){
+async function exportAllItemsLedgerExcel(){
   const allMoves = getAllMovesFlat();
   const bounds = computeLedgerPeriodBounds();
   const filteredMoves = filterMovesByPeriod(allMoves, bounds);
@@ -5502,23 +5782,18 @@ function exportAllItemsLedgerExcel(){
   }));
 
   try{
-    const wb = XLSX.utils.book_new();
-    wb.Workbook = { Views: [{ RTL: true }] };
-    const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
-    wsSummary['!cols'] = [ {wch:22},{wch:20},{wch:14},{wch:14},{wch:14},{wch:12},{wch:14} ];
-    XLSX.utils.book_append_sheet(wb, wsSummary, 'ملخص');
-    const wsDetail = XLSX.utils.json_to_sheet(rows);
-    wsDetail['!cols'] = [ {wch:12},{wch:24},{wch:14},{wch:10},{wch:10},{wch:10},{wch:20},{wch:14} ];
-    XLSX.utils.book_append_sheet(wb, wsDetail, 'كل الحركات');
-    XLSX.writeFile(wb, 'كشف-حركة-كل-الأصناف-' + todayStr() + '.xlsx');
+    await downloadStyledExcel([
+      { name:'ملخص', rows:summaryRows, totalsRow:true, emphasizeColumns:['صافي التغيّر'] },
+      { name:'كل الحركات', rows, rowRole:{ column:'النوع', roles:{ 'وارد':'in', 'صادر':'out' } }, emphasizeColumns:['الكمية'] }
+    ], 'كشف-حركة-كل-الأصناف-' + todayStr() + '.xlsx');
   }catch(e){
     showErr('تعذر إنشاء ملف Excel.', e);
   }
 }
 
-document.getElementById('exportLedgerExcelBtn').addEventListener('click', ()=>{
+document.getElementById('exportLedgerExcelBtn').addEventListener('click', async ()=>{
   const id = document.getElementById('ledgerItemSelect').value;
-  if(id === '__ALL__'){ exportAllItemsLedgerExcel(); return; }
+  if(id === '__ALL__'){ await exportAllItemsLedgerExcel(); return; }
   const { it, rows: moves } = getItemMovesWithBalance(id);
   if(!it){ showAppAlert('اختر صنفًا أولاً.'); return; }
   const bounds = computeLedgerPeriodBounds();
@@ -5555,15 +5830,10 @@ document.getElementById('exportLedgerExcelBtn').addEventListener('click', ()=>{
   }));
 
   try{
-    const wb = XLSX.utils.book_new();
-    wb.Workbook = { Views: [{ RTL: true }] };
-    const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
-    wsSummary['!cols'] = [ {wch:22},{wch:18},{wch:10},{wch:14},{wch:16},{wch:22},{wch:14},{wch:14},{wch:14},{wch:12},{wch:46},{wch:14} ];
-    XLSX.utils.book_append_sheet(wb, wsSummary, 'ملخص');
-    const wsDetail = XLSX.utils.json_to_sheet(rows);
-    wsDetail['!cols'] = [ {wch:12},{wch:16},{wch:10},{wch:12},{wch:18} ];
-    XLSX.utils.book_append_sheet(wb, wsDetail, 'كشف الحركة');
-    XLSX.writeFile(wb, 'كشف-حركة-' + it.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g,'_') + '-' + todayStr() + '.xlsx');
+    await downloadStyledExcel([
+      { name:'ملخص', rows:summaryRows, totalsRow:true, emphasizeColumns:['صافي التغيّر'] },
+      { name:'كشف الحركة', rows, rowRole:{ column:'النوع', roles:{ 'وارد':'in', 'صادر':'out' } }, emphasizeColumns:['الكمية'] }
+    ], 'كشف-حركة-' + it.name.replace(/[^a-zA-Z0-9؀-ۿ]/g,'_') + '-' + todayStr() + '.xlsx');
   }catch(e){
     showErr('تعذر إنشاء ملف Excel.', e);
   }
@@ -5708,7 +5978,7 @@ function renderMonthlyReport(){
   }
 }
 
-document.getElementById('reportExportBtn').addEventListener('click', ()=>{
+document.getElementById('reportExportBtn').addEventListener('click', async ()=>{
   const monthStr = document.getElementById('reportMonth').value || currentMonthStr();
   const list = vouchersInMonth(monthStr);
   if(list.length===0){ showAppAlert('لا توجد بيانات مسجّلة لهذا الشهر.'); return; }
@@ -5758,11 +6028,12 @@ document.getElementById('reportExportBtn').addEventListener('click', ()=>{
   ];
 
   try{
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'ملخص المخازن');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows), 'تفاصيل الأصناف');
-    if(partiesRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(partiesRows), 'الموردين والجهات');
-    XLSX.writeFile(wb, 'تقرير-' + monthStr + '.xlsx');
+    const sheets = [
+      { name:'ملخص المخازن', rows:summaryRows, headerRoles:{ 'سندات التوريد':'in', 'إجمالي الوارد':'in', 'سندات الصرف':'out', 'إجمالي الصادر':'out' }, emphasizeColumns:['صافي التغيّر'] },
+      { name:'تفاصيل الأصناف', rows:detailRows, headerRoles:{ 'إجمالي الوارد':'in', 'إجمالي الصادر':'out' }, emphasizeColumns:['صافي التغيّر'] }
+    ];
+    if(partiesRows.length) sheets.push({ name:'الموردين والجهات', rows:partiesRows, rowRole:{ column:'النوع', roles:{ 'مورّد (وارد)':'in', 'جهة مستلمة (صادر)':'out' } } });
+    await downloadStyledExcel(sheets, 'تقرير-' + monthStr + '.xlsx');
   }catch(e){
     showErr('تعذر إنشاء ملف Excel.', e);
   }
@@ -5791,6 +6062,7 @@ function renderAll(){
   if(typeof renderLogStats === 'function') renderLogStats();
   if(typeof renderInventoryHistory === 'function') renderInventoryHistory();
   if(typeof renderInventoryStats === 'function') renderInventoryStats();
+  if(typeof renderVarianceAnalysis === 'function') renderVarianceAnalysis();
 }
 
 document.getElementById('inDate').value = todayStr();
@@ -5836,6 +6108,8 @@ document.getElementById('closePeriodBtn').addEventListener('click', async ()=>{
       .update({ closed:true, closed_at: new Date().toISOString() })
       .eq('closed', false);
     if(error) throw error;
+    const closeDates = open.map(v=>v.date).filter(Boolean).sort();
+    logAudit('period_close', null, null, 'إقفال '+open.length+' سند ('+inCount+' توريد، '+outCount+' صرف)'+(closeDates.length?(' — من '+fmtDate(closeDates[0])+' إلى '+fmtDate(closeDates[closeDates.length-1])):''));
     await loadDB();
     if(typeof showMonthCertificate === 'function'){
       showMonthCertificate(open, inCount, outCount);
@@ -5879,6 +6153,7 @@ document.getElementById('mergeDuplicatesBtn').addEventListener('click', async ()
       const { error: upErr } = await sb.from('items').update({ balance:mergedBalance, min_qty:mergedMin }).eq('id', survivor.id);
       if(upErr) throw upErr;
     }
+    logAudit('merge_duplicates', null, null, 'دمج '+dupGroups.length+' مجموعة أصناف مكررة');
     await loadDB();
     showAppAlert('تم دمج '+dupGroups.length+' صنف مكرر بنجاح.');
   }catch(e){
@@ -5896,6 +6171,7 @@ document.getElementById('resetBalancesBtn').addEventListener('click', async ()=>
   try{
     const { error } = await sb.from('items').update({ balance:0 }).not('id','is',null);
     if(error) throw error;
+    logAudit('reset_balances', null, null, 'تصفير رصيد '+DB.items.length+' صنف');
     await loadDB();
     showAppAlert('تم تصفير كل الأرصدة.');
   }catch(e){ showErr('تعذر تصفير الأرصدة.', e); }
@@ -5921,6 +6197,7 @@ document.getElementById('resetVouchersBtn').addEventListener('click', async ()=>
   try{
     const { error } = await sb.from('vouchers').delete().eq('closed', false);
     if(error) throw error;
+    logAudit('reset_vouchers', null, null, 'حذف '+openVouchers.length+' سند مفتوح');
     await loadDB();
     showAppAlert('تم حذف السندات المفتوحة. السندات المقفلة (الأرشيف) بقيت محفوظة كما هي.');
   }catch(e){ showErr('تعذر حذف سجل السندات.', e); }
@@ -5935,6 +6212,7 @@ document.getElementById('resetItemsBtn').addEventListener('click', async ()=>{
   try{
     const { error } = await sb.from('items').delete().not('id','is',null);
     if(error) throw error;
+    logAudit('reset_items', null, null, 'حذف '+DB.items.length+' صنف من المخازن الثلاثة');
     await loadDB();
     showAppAlert('تم حذف كل الأصناف.');
   }catch(e){ showErr('تعذر حذف كل الأصناف.', e); }
@@ -5956,11 +6234,14 @@ fullResetBtn.addEventListener('click', async ()=>{
     ' متابعة؟'
   )) return;
   busy = true;
+  const preResetVoucherCount = DB.vouchers.filter(v=>!v.closed).length;
+  const preResetItemCount = DB.items.length;
   try{
     const { error: e1 } = await sb.from('vouchers').delete().eq('closed', false);
     if(e1) throw e1;
     const { error: e2 } = await sb.from('items').delete().not('id','is',null);
     if(e2) throw e2;
+    logAudit('full_reset', null, null, 'إعادة تعيين شاملة — حذف '+preResetVoucherCount+' سند مفتوح و'+preResetItemCount+' صنف');
     await loadDB();
     fullResetInput.value = '';
     fullResetBtn.disabled = true;
@@ -6105,7 +6386,7 @@ function renderAttendanceLog(){
 document.getElementById('attendanceLogMonth').addEventListener('change', renderAttendanceLog);
 document.getElementById('attendanceLogSearch').addEventListener('input', renderAttendanceLog);
 
-document.getElementById('exportAttendanceExcelBtn').addEventListener('click', ()=>{
+document.getElementById('exportAttendanceExcelBtn').addEventListener('click', async ()=>{
   const month = document.getElementById('attendanceLogMonth').value;
   const q = document.getElementById('attendanceLogSearch').value.trim().toLowerCase();
   let list = DB.attendance.slice();
@@ -6126,15 +6407,98 @@ document.getElementById('exportAttendanceExcelBtn').addEventListener('click', ()
     };
   });
   try{
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'الحضور');
-    XLSX.writeFile(wb, 'حضور-العمال-' + todayStr() + '.xlsx');
+    await downloadStyledExcel([{
+      name:'الحضور', rows,
+      rowRole:{ column:'الحالة', roles:{ 'حاضر':'in', 'غائب':'out' } }
+    }], 'حضور-العمال-' + todayStr() + '.xlsx');
   }catch(e){ showErr('تعذر إنشاء ملف Excel.', e); }
 });
+
+/* ============ سجل التدقيق (Audit Log) ============
+   يسجّل كل عملية مهمة (إنشاء/تعديل/حذف سند، إقفال شهر، إجراءات إعادة التعيين الخطرة) — مين سواها ومتى.
+   لا يوقف العملية الأساسية أبدًا لو فشل التسجيل (مثلًا لو جدول audit_log ما زال ما اتنشأ بقاعدة البيانات) —
+   العملية الأصلية أصلاً تمّت بنجاح، وتسجيل الحدث ثانوي بالنسبة لها. */
+async function logAudit(action, entityId, entityLabel, details, reason){
+  try{
+    await sb.from('audit_log').insert({
+      actor_email: currentUserEmail || null,
+      action: action, entity_id: entityId || null, entity_label: entityLabel || null,
+      details: details || null, reason: reason || null
+    });
+  }catch(e){
+    console.warn('تعذر تسجيل الحدث بسجل التدقيق (العملية الأساسية تمّت بنجاح رغم ذلك). تأكد إنك أنشأت جدول audit_log بقاعدة البيانات.', e);
+  }
+}
 
 function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+/* ============ عرض سجل التدقيق بالإعدادات ============
+   يتحمّل عند فتح تبويب الإعدادات فقط (مو مع كل تحديث بيانات بالموقع) — نفس درس الأداء اللي
+   طبّقناه على الحركة اليومية: تحميل شي ثقيل بالخلفية وهو مو ظاهر أصلًا هدر واضح. */
+let AUDIT_LOG_CACHE = [];
+const AUDIT_ACTION_LABELS = {
+  voucher_create:'إنشاء سند', voucher_edit:'تعديل سند', voucher_delete:'حذف سند',
+  period_close:'إقفال شهر', merge_duplicates:'دمج أصناف مكررة',
+  reset_balances:'تصفير الأرصدة', reset_vouchers:'حذف السندات المفتوحة',
+  reset_items:'حذف كل الأصناف', full_reset:'إعادة تعيين شاملة'
+};
+const AUDIT_ACTION_TONE = {
+  voucher_create:'in', voucher_edit:'pending', voucher_delete:'out', period_close:'pending',
+  merge_duplicates:'out', reset_balances:'out', reset_vouchers:'out', reset_items:'out', full_reset:'out'
+};
+const AUDIT_DANGER_ACTIONS = ['merge_duplicates','reset_balances','reset_vouchers','reset_items','full_reset'];
+
+async function loadAuditLog(){
+  const tbody = document.querySelector('#auditLogTable tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="4" class="empty-cell"><div class="empty-state"><div class="icon"><i class="fa-solid fa-spinner"></i></div>جارٍ التحميل...</div></td></tr>';
+  try{
+    const { data, error } = await sb.from('audit_log').select('*').order('created_at', { ascending:false }).limit(300);
+    if(error) throw error;
+    AUDIT_LOG_CACHE = data || [];
+    renderAuditLogTable();
+  }catch(e){
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-cell"><div class="empty-state"><div class="icon"><i class="fa-solid fa-triangle-exclamation"></i></div>تعذر تحميل سجل التدقيق. تأكد إنك أنشأت جدول audit_log بقاعدة بيانات Supabase (راجع تعليمات الإعداد).</div></td></tr>';
+    console.error(e);
+  }
+}
+
+function renderAuditLogTable(){
+  const tbody = document.querySelector('#auditLogTable tbody');
+  const filterEl = document.getElementById('auditFilterAction');
+  if(!tbody || !filterEl) return;
+  const filter = filterEl.value;
+  let list = AUDIT_LOG_CACHE.slice();
+  if(filter === 'danger_action') list = list.filter(function(r){ return AUDIT_DANGER_ACTIONS.indexOf(r.action) > -1; });
+  else if(filter !== 'all') list = list.filter(function(r){ return r.action === filter; });
+
+  if(list.length===0){
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-cell"><div class="empty-state"><div class="icon"><i class="fa-solid fa-clock-rotate-left"></i></div>لا توجد سجلات مطابقة.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(function(r){
+    const tone = AUDIT_ACTION_TONE[r.action] || 'pending';
+    const cls = tone==='in' ? 'pill-in' : (tone==='out' ? 'pill-out' : 'pill-pending');
+    const label = AUDIT_ACTION_LABELS[r.action] || r.action;
+    const dt = new Date(r.created_at);
+    const timeStr = fmtDate(dt.toISOString().slice(0,10)) + ' ' + dt.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
+    return '<tr>'
+      + '<td class="mono" data-label="الوقت">'+timeStr+'</td>'
+      + '<td class="wrap-cell" data-label="المستخدم">'+escapeHtml(r.actor_email||'-')+'</td>'
+      + '<td data-label="الإجراء"><span class="pill '+cls+'">'+label+(r.entity_label?(' — '+escapeHtml(r.entity_label)):'')+'</span></td>'
+      + '<td class="wrap-cell" data-label="التفاصيل">'+escapeHtml(r.details||'-')+(r.reason?('<br><span style="color:var(--ink-soft);font-size:11.5px;">السبب: '+escapeHtml(r.reason)+'</span>'):'')+'</td>'
+      + '</tr>';
+  }).join('');
+}
+
+(function(){
+  const filterEl = document.getElementById('auditFilterAction');
+  const refreshBtn = document.getElementById('refreshAuditLogBtn');
+  if(filterEl) filterEl.addEventListener('change', renderAuditLogTable);
+  if(refreshBtn) refreshBtn.addEventListener('click', loadAuditLog);
+})();
 
 /* ============ الجرد (Inventory Count) ============ */
 document.getElementById('invCountDate').value = todayStr();
@@ -6327,7 +6691,7 @@ async function applyInventoryAdjustments(c){
   busy = false;
 }
 
-document.getElementById('exportInventoryDetailExcelBtn').addEventListener('click', ()=>{
+document.getElementById('exportInventoryDetailExcelBtn').addEventListener('click', async ()=>{
   const c = currentInventoryDetail;
   if(!c){ showAppAlert('افتح تفاصيل جرد أولاً.'); return; }
   const rows = c.lines.map(l=>({
@@ -6339,12 +6703,9 @@ document.getElementById('exportInventoryDetailExcelBtn').addEventListener('click
     'الفرق': Math.round((l.countedQty-l.systemQty)*100)/100
   }));
   try{
-    const wb = XLSX.utils.book_new();
-    wb.Workbook = { Views: [{ RTL: true }] };
-    const ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols'] = [ {wch:24},{wch:16},{wch:10},{wch:14},{wch:14},{wch:10} ];
-    XLSX.utils.book_append_sheet(wb, ws, 'الجرد');
-    XLSX.writeFile(wb, 'جرد-' + fmtDate(c.date).replace(/\//g,'-') + '.xlsx');
+    await downloadStyledExcel([{
+      name:'الجرد', rows, rowToneFromColumn:'الفرق', emphasizeColumns:['الفرق']
+    }], 'جرد-' + fmtDate(c.date).replace(/\//g,'-') + '.xlsx');
   }catch(e){ showErr('تعذر إنشاء ملف Excel.', e); }
 });
 
@@ -6363,6 +6724,117 @@ function renderInventoryStats(){
     + kpiTile(lastVariance>0?'kpi-low':'kpi-in','<i class="fa-solid fa-scale-balanced"></i>','فروقات آخر جرد', lastVariance, true)
     + kpiTile(notFinalized>0?'kpi-low':'kpi-in','<i class="fa-solid fa-hourglass-half"></i>','جرد بانتظار التطبيق', notFinalized, true);
   animateCounters(el);
+}
+
+/* ============ تحليل الفروقات المتكررة — يجمع كل عمليات الجرد التاريخية (مو آخر عملية بس)
+   ويوضّح: أي صنف يتكرر فيه الفرق، اتجاهه (زيادة أو نقص)، ونسبة الخطأ مقارنة برصيد النظام ============ */
+
+// يمر على كل خطوط كل عمليات الجرد المسجّلة ويجمع تاريخ الفروقات لكل صنف (حسب المخزن)
+function computeItemVarianceHistory(){
+  const map = new Map();
+  DB.inventoryCounts.forEach(function(c){
+    c.lines.forEach(function(l){
+      const key = (l.itemId || l.name) + '||' + l.store;
+      if(!map.has(key)){
+        map.set(key, { itemId:l.itemId, name:l.name, store:l.store, occurrences:0, totalCounts:0, posCount:0, negCount:0, pctSum:0, pctN:0, lastDate:null, lastDiff:0 });
+      }
+      const entry = map.get(key);
+      entry.totalCounts++;
+      const diff = Math.round((l.countedQty - l.systemQty)*100)/100;
+      if(diff !== 0){
+        entry.occurrences++;
+        if(diff>0) entry.posCount++; else entry.negCount++;
+        if(l.systemQty){
+          entry.pctSum += Math.abs(diff/l.systemQty)*100;
+          entry.pctN++;
+        }
+        if(!entry.lastDate || c.date > entry.lastDate){ entry.lastDate = c.date; entry.lastDiff = diff; }
+      }
+    });
+  });
+  // "متكرر" = صار فيه فرق أكثر من مرة وحدة عبر عمليات الجرد المختلفة
+  return Array.from(map.values())
+    .filter(function(e){ return e.occurrences >= 2; })
+    .map(function(e){
+      const direction = e.posCount > e.negCount ? 'surplus' : (e.negCount > e.posCount ? 'shortage' : 'mixed');
+      return {
+        itemId:e.itemId, name:e.name, store:e.store,
+        occurrences:e.occurrences, totalCounts:e.totalCounts,
+        direction:direction, avgPct: e.pctN>0 ? (e.pctSum/e.pctN) : null,
+        lastDate:e.lastDate, lastDiff:e.lastDiff
+      };
+    })
+    .sort(function(a,b){ return (b.occurrences/b.totalCounts) - (a.occurrences/a.totalCounts) || b.occurrences - a.occurrences; });
+}
+
+// تجميع نفس الفروقات على مستوى كل مخزن — عدد الحركات وصافي الاتجاه (ميل عام للزيادة أو النقص)
+function computeStoreVarianceSummary(){
+  const stores = ['freezer','pantry','cleaning'];
+  return stores.map(function(s){
+    let occurrences=0, netDiff=0;
+    DB.inventoryCounts.forEach(function(c){
+      c.lines.forEach(function(l){
+        if(l.store !== s) return;
+        const diff = Math.round((l.countedQty-l.systemQty)*100)/100;
+        if(diff!==0){ occurrences++; netDiff += diff; }
+      });
+    });
+    return { store:s, occurrences:occurrences, netDiff:Math.round(netDiff*100)/100 };
+  });
+}
+
+function renderVarianceAnalysis(){
+  const card = document.getElementById('varianceAnalysisCard');
+  if(!card) return;
+  const items = computeItemVarianceHistory();
+  const storeStats = computeStoreVarianceSummary();
+
+  const storeTilesHtml = storeStats.map(function(s){
+    const dirIcon = s.netDiff<0 ? '<i class="fa-solid fa-arrow-trend-down"></i>' : (s.netDiff>0 ? '<i class="fa-solid fa-arrow-trend-up"></i>' : '<i class="fa-solid fa-minus"></i>');
+    const dirColor = s.netDiff<0 ? 'var(--danger)' : (s.netDiff>0 ? 'var(--pantry)' : 'var(--ink-soft)');
+    return '<div style="flex:1;min-width:140px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;">'
+      + '<div style="font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;">'+STORE_LABELS[s.store]+'</div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;">'
+      + '<span class="mono" style="font-weight:700;font-size:16px;">'+s.occurrences+'</span>'
+      + '<span style="color:'+dirColor+';font-size:13px;">'+dirIcon+' '+(s.netDiff>0?'+':'')+fmtNum(s.netDiff)+'</span>'
+      + '</div>'
+      + '<div style="font-size:10.5px;color:var(--ink-soft);margin-top:3px;">فرق مسجّل بكل عمليات الجرد</div>'
+      + '</div>';
+  }).join('');
+
+  if(items.length===0){
+    card.innerHTML = '<h2 class="section-title" style="font-size:15px;"><i class="fa-solid fa-magnifying-glass-chart"></i> تحليل الفروقات المتكررة</h2>'
+      + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">'+storeTilesHtml+'</div>'
+      + '<div class="empty-state" style="padding:24px;"><div class="icon"><i class="fa-solid fa-circle-check"></i></div>ما فيه أصناف عندها فروقات متكررة بين عمليات الجرد لحد الآن — كل فرق حصل (إن وُجد) صار مرة وحدة بس.</div>';
+    return;
+  }
+
+  const rowsHtml = items.slice(0,15).map(function(e){
+    const rate = Math.round((e.occurrences/e.totalCounts)*100);
+    const dirLabel = e.direction==='shortage' ? 'غالبًا ناقص' : (e.direction==='surplus' ? 'غالبًا زائد' : 'متذبذب');
+    const dirColor = e.direction==='shortage' ? 'var(--danger)' : (e.direction==='surplus' ? 'var(--pantry)' : 'var(--ink-soft)');
+    const dirBg = e.direction==='shortage' ? '#F6DEDA' : (e.direction==='surplus' ? 'var(--pantry-soft)' : 'var(--line)');
+    const pctText = e.avgPct===null ? '—' : ('~' + (Math.round(e.avgPct*10)/10) + '%');
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;">'
+      + '<div style="min-width:0;flex:1;">'
+      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+      + '<b style="font-size:13px;">'+escapeHtml(e.name)+'</b>'
+      + '<span class="pill pill-store-'+e.store+'" style="font-size:10.5px;">'+(STORE_LABELS[e.store]||e.store)+'</span>'
+      + '</div>'
+      + '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:3px;">تكرر الفرق <b class="mono">'+e.occurrences+'</b> من <b class="mono">'+e.totalCounts+'</b> مرة جرد ('+rate+'%) — آخر مرة: '+fmtDate(e.lastDate)+'</div>'
+      + '</div>'
+      + '<div style="text-align:left;flex-shrink:0;">'
+      + '<span class="pill" style="background:'+dirBg+';color:'+dirColor+';">'+dirLabel+'</span>'
+      + '<div style="font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);margin-top:4px;">متوسط الانحراف: '+pctText+'</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  card.innerHTML = '<h2 class="section-title" style="font-size:15px;"><i class="fa-solid fa-magnifying-glass-chart"></i> تحليل الفروقات المتكررة</h2>'
+    + '<p class="section-sub" style="margin-bottom:14px;">مبني على كل عمليات الجرد المسجّلة تاريخيًا — يوضّح أي صنف يتكرر فيه الفرق، اتجاهه (زيادة أو نقص)، ونسبة الخطأ مقارنة برصيد النظام.</p>'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">'+storeTilesHtml+'</div>'
+    + '<div>'+rowsHtml+'</div>'
+    + (items.length>15 ? '<div style="text-align:center;padding-top:10px;font-size:11.5px;color:var(--ink-soft);">وأصناف أخرى ('+(items.length-15)+') لها فروقات متكررة أيضًا</div>' : '');
 }
 
 document.getElementById('newVoucherBtn').addEventListener('click', ()=>{
@@ -7389,6 +7861,50 @@ function sparklineSvg(values){
 }
 
 /* ====== تنبؤ نقص مبكر — بناءً على معدّل الاستهلاك آخر 30 يوم ====== */
+/* ============ أصناف تحتاج طلب جديد — حسب الرصيد الفعلي الحالي (balance) مباشرة، مو الحد الأدنى المخصّص
+   لكل صنف (min_qty). حد مستقل تقدر تغيّره من اللوحة نفسها ويُحفظ لك تلقائيًا لهذا الجهاز. ============ */
+function lowBalanceThresholdKey(){
+  const email = (typeof currentUserEmail !== 'undefined' && currentUserEmail) ? currentUserEmail : 'guest';
+  return 'lowBalanceThreshold_' + email;
+}
+function reloadLowBalanceThreshold(){
+  const inputEl = document.getElementById('lowBalanceThreshold');
+  if(!inputEl) return;
+  let saved = null;
+  try{ saved = localStorage.getItem(lowBalanceThresholdKey()); }catch(e){}
+  if(saved !== null && saved !== '') inputEl.value = saved;
+}
+function computeLowBalanceItems(threshold){
+  if(typeof DB === 'undefined' || !DB.items) return [];
+  return DB.items
+    .filter(function(i){ return i.balance < threshold; })
+    .sort(function(a,b){ return a.balance - b.balance; });
+}
+function renderLowBalanceList(){
+  const listEl = document.getElementById('lowBalanceList');
+  const inputEl = document.getElementById('lowBalanceThreshold');
+  if(!listEl || !inputEl) return;
+  const threshold = parseFloat(inputEl.value);
+  const validThreshold = Number.isNaN(threshold) ? 8 : threshold;
+  const items = computeLowBalanceItems(validThreshold);
+  if(items.length===0){
+    listEl.innerHTML = '<div class="empty-state" style="padding:20px;"><div class="icon"><i class="fa-solid fa-circle-check"></i></div>ما فيه أصناف رصيدها أقل من '+fmtNum(validThreshold)+' حاليًا.</div>';
+    return;
+  }
+  listEl.innerHTML = items.map(function(i){
+    return '<div class="predicted-row"><span class="pr-name">'+escapeHtml(i.name)+' <span style="font-size:11px;color:var(--ink-soft);">('+(STORE_LABELS[i.store]||i.store)+')</span></span>'
+      + '<span class="pr-days" style="color:var(--danger);">'+fmtNum(i.balance)+' '+escapeHtml(i.unit||'')+'</span></div>';
+  }).join('');
+}
+(function(){
+  const inputEl = document.getElementById('lowBalanceThreshold');
+  if(!inputEl) return;
+  inputEl.addEventListener('input', function(){
+    try{ localStorage.setItem(lowBalanceThresholdKey(), inputEl.value); }catch(e){}
+    renderLowBalanceList();
+  });
+})();
+
 function computePredictedShortages(){
   if(typeof DB === 'undefined' || !DB.items || !DB.vouchers) return [];
   const now = new Date();
@@ -7736,6 +8252,10 @@ function renderActionCenter(){
   if(lowNow>0){
     rows.push({ danger:true, ico:'<i class="fa-solid fa-triangle-exclamation"></i>', html:'<b>'+lowNow+'</b> صنف عند الحد الأدنى أو أقل الآن', action:function(){ switchToTab('items'); } });
   }
+  const recurringVariance = (typeof computeItemVarianceHistory === 'function') ? computeItemVarianceHistory() : [];
+  if(recurringVariance.length>0){
+    rows.push({ danger:true, ico:'<i class="fa-solid fa-magnifying-glass-chart"></i>', html:'<b>'+recurringVariance.length+'</b> صنف عنده فروقات متكررة بالجرد — يستاهل مراجعة', action:function(){ switchToTab('inventory'); } });
+  }
 
   card.style.display = 'block';
   if(rows.length===0){
@@ -7935,7 +8455,7 @@ function renderTopSuppliers(){
     openVoucherDetail(DB.vouchers[0].id);
   });
   const expBtn = document.getElementById('dashExportTodayBtn');
-  if(expBtn) expBtn.addEventListener('click', function(){
+  if(expBtn) expBtn.addEventListener('click', async function(){
     const todayS = todayStr();
     const list = (DB.vouchers||[]).filter(function(v){ return v.date === todayS; });
     if(list.length===0){ showAppAlert('ما فيه أي سندات مسجّلة اليوم لتصديرها.'); return; }
@@ -7949,9 +8469,9 @@ function renderTopSuppliers(){
           });
         });
       });
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'حركة اليوم');
-      XLSX.writeFile(wb, 'حركة-اليوم-' + todayS + '.xlsx');
+      await downloadStyledExcel([{
+        name:'حركة اليوم', rows, rowRole:{ column:'النوع', roles:{ 'توريد':'in', 'صرف':'out' } }
+      }], 'حركة-اليوم-' + todayS + '.xlsx');
     }catch(e){ showErr('تعذر إنشاء ملف Excel.', e); }
   });
 })();
