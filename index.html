@@ -1508,9 +1508,10 @@
     <div class="card" id="lowBalanceCard">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px;">
         <h2 class="section-title" style="font-size:16px;margin:0;"><i class="fa-solid fa-cart-shopping"></i> أصناف تحتاج طلب جديد</h2>
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <label style="margin-bottom:0;white-space:nowrap;font-size:12.5px;">الرصيد أقل من</label>
           <input type="number" id="lowBalanceThreshold" min="0" step="any" value="8" style="width:80px;padding:6px 8px;">
+          <button class="btn-ghost btn-sm" id="exportLowBalanceExcelBtn"><i class="fa-solid fa-file-excel"></i> تصدير Excel</button>
         </div>
       </div>
       <p class="section-sub" style="margin-bottom:12px;">مبنية مباشرة على الرصيد الحالي الفعلي لكل صنف (بغض النظر عن الحد الأدنى المحدّد له) — عشان تعرف بسرعة وش تطلب من جديد.</p>
@@ -1611,9 +1612,8 @@
           <col style="width:7%">
           <col style="width:20%">
           <col style="width:15%">
-          <col style="width:8%">
         </colgroup>
-        <thead><tr><th>الصنف</th><th>المخزن</th><th>الوحدة</th><th>الرصيد الحالي</th><th>الحد الأدنى</th><th>الباركود</th><th>الصورة</th><th></th></tr></thead>
+        <thead><tr><th>الصنف</th><th>المخزن</th><th>الوحدة</th><th>الرصيد الحالي</th><th>الحد الأدنى</th><th>الباركود</th><th>الصورة</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -1640,19 +1640,16 @@
       </div>
 
       <div class="row" style="align-items:end;background:var(--paper);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
-        <div class="field" style="flex:0 0 auto;margin-bottom:0;">
-          <button type="button" class="btn-ghost" id="inScanBtn"><i class="fa-solid fa-camera"></i> مسح باركود لإضافة صنف</button>
-        </div>
         <div class="field" style="margin-bottom:0;">
-          <label style="margin-bottom:2px;">أو امسح برقم بجهاز خارجي / اكتب يدويًا</label>
+          <label style="margin-bottom:2px;">امسح الباركود بالقارئ الخارجي أو اكتب الرقم يدويًا</label>
           <input id="inManualBarcode" placeholder="امسح هنا ثم Enter...">
         </div>
       </div>
 
       <div style="overflow-x:auto;">
       <table class="lines-table" id="inLinesTable" style="min-width:560px;">
-        <colgroup><col style="width:172px"><col><col style="width:100px"><col style="width:100px"><col style="width:40px"></colgroup>
-        <thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th></th></tr></thead>
+        <colgroup><col style="width:172px"><col><col style="width:100px"><col style="width:100px"></colgroup>
+        <thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th></tr></thead>
         <tbody></tbody>
       </table>
       </div>
@@ -1697,19 +1694,16 @@
       </div>
 
       <div class="row" style="align-items:end;background:var(--paper);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
-        <div class="field" style="flex:0 0 auto;margin-bottom:0;">
-          <button type="button" class="btn-ghost" id="outScanBtn"><i class="fa-solid fa-camera"></i> مسح باركود لإضافة صنف</button>
-        </div>
         <div class="field" style="margin-bottom:0;">
-          <label style="margin-bottom:2px;">أو امسح برقم بجهاز خارجي / اكتب يدويًا</label>
+          <label style="margin-bottom:2px;">امسح الباركود بالقارئ الخارجي أو اكتب الرقم يدويًا</label>
           <input id="outManualBarcode" placeholder="امسح هنا ثم Enter...">
         </div>
       </div>
 
       <div style="overflow-x:auto;">
       <table class="lines-table" id="outLinesTable" style="min-width:560px;">
-        <colgroup><col style="width:172px"><col><col style="width:100px"><col style="width:100px"><col style="width:40px"></colgroup>
-        <thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th></th></tr></thead>
+        <colgroup><col style="width:172px"><col><col style="width:100px"><col style="width:100px"></colgroup>
+        <thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th></tr></thead>
         <tbody></tbody>
       </table>
       </div>
@@ -2009,8 +2003,8 @@
 
     <div class="table-wrap">
       <table class="data" id="qualityTable">
-        <colgroup><col style="width:14%"><col style="width:12%"><col style="width:10%"><col style="width:22%"><col style="width:22%"><col style="width:10%"></colgroup>
-        <thead><tr><th>المخزن</th><th>التاريخ</th><th>الصورة</th><th>جودة المخزن</th><th>جودة التخزين</th><th></th></tr></thead>
+        <colgroup><col style="width:16%"><col style="width:13%"><col style="width:11%"><col style="width:30%"><col style="width:30%"></colgroup>
+        <thead><tr><th>المخزن</th><th>التاريخ</th><th>الصورة</th><th>جودة المخزن</th><th>جودة التخزين</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -2165,8 +2159,8 @@
       </div>
       <div class="table-wrap">
         <table class="data" id="workersTable">
-          <colgroup><col style="width:45%"><col style="width:35%"><col style="width:20%"></colgroup>
-          <thead><tr><th>الاسم</th><th>الوظيفة</th><th></th></tr></thead>
+          <colgroup><col style="width:55%"><col style="width:45%"></colgroup>
+          <thead><tr><th>الاسم</th><th>الوظيفة</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -2358,18 +2352,6 @@
     </div>
 
     <div class="card">
-      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف سجل السندات المفتوحة فقط</h3>
-      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح سندات التوريد والصرف <b>غير المقفلة</b> فقط، بدون التأثير على الأصناف أو أرصدتها الحالية. السندات المقفلة (المؤرشفة شهريًا) محمية تمامًا ولن تُحذف مهما كان.</p>
-      <button class="btn-ghost" id="resetVouchersBtn" disabled>حذف السندات المفتوحة</button>
-    </div>
-
-    <div class="card">
-      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">حذف كل الأصناف</h3>
-      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يمسح كل الأصناف من المخازن الثلاثة. سجل السندات القديم يبقى موجودًا كأرشيف فقط.</p>
-      <button class="btn-danger-outline" id="resetItemsBtn" disabled>حذف كل الأصناف</button>
-    </div>
-
-    <div class="card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">وضع المطور (حماية الصفحة)</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">عند التفعيل يمنع أدوات المطور (F12)، النقر بالزر الأيمن، وعرض المصدر والنسخ من الصفحة. تقدر تفعّله أو تلغيه في أي وقت، والحالة تُحفظ تلقائيًا. <b>ملاحظة:</b> هذي حماية سطحية يسهل تجاوزها وليست أمانًا حقيقيًا.</p>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -2389,19 +2371,6 @@
       <div id="locationResult" style="margin-top:14px;"></div>
     </div>
 
-    <div class="card" style="border:1.5px solid var(--danger);">
-      <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;color:var(--danger);">إعادة تعيين شاملة</h3>
-      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يحذف كل الأصناف وكل السندات <b>غير المقفلة</b> نهائيًا. السندات المقفلة (الأرشيف الشهري) محمية دائمًا ولن تُحذف حتى بهذا الإجراء. هذا الإجراء لا يمكن التراجع عنه.</p>
-      <label>للتأكيد، اكتب كلمة "<b>حذف الكل</b>" بالضبط في الخانة:</label>
-      <div class="row" style="align-items:end;">
-        <div class="field" style="flex:1;min-width:180px;">
-          <input disabled id="fullResetConfirmInput" placeholder="اكتب هنا للتأكيد...">
-        </div>
-        <div class="field" style="flex:0 0 auto;">
-          <button class="btn-danger-outline" id="fullResetBtn" disabled>إعادة تعيين كل شيء</button>
-        </div>
-      </div>
-    </div>
   </div>
 
 </div>
@@ -2442,8 +2411,8 @@
     </div>
     <div style="overflow-x:auto;">
       <table class="lines-table" id="editLinesTable" style="min-width:560px;">
-        <colgroup><col style="width:172px"><col><col style="width:100px"><col style="width:100px"><col style="width:40px"></colgroup>
-        <thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th></th></tr></thead>
+        <colgroup><col style="width:172px"><col><col style="width:100px"><col style="width:100px"></colgroup>
+        <thead><tr><th>المخزن</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -2589,39 +2558,6 @@
 
 <div id="printArea"></div>
 
-<div class="stamp-overlay" id="scannerOverlay">
-  <div class="stamp-card" style="max-width:420px;">
-    <video id="scannerVideo" style="width:100%;border-radius:10px;background:#000;" muted playsinline></video>
-    <p id="scannerStatus" style="font-size:13px;color:var(--ink-soft);margin:12px 0;min-height:20px;">وجّه الكاميرا نحو الباركود...</p>
-
-    <div id="scannerQuickAdd" style="display:none;text-align:right;background:var(--paper);border-radius:10px;padding:12px;margin-bottom:12px;">
-      <p style="font-size:12.5px;margin:0 0 8px;">باركود جديد (<span id="quickAddCode" class="mono" style="font-weight:700;"></span>) — أضفه كصنف جديد وأربطه بالسند:</p>
-      <div class="field">
-        <label>المخزن</label>
-        <select id="quickAddStore">
-          <option value="freezer">فريزر المواد المجمدة</option>
-          <option value="pantry">مخزن المواد الغذائية</option>
-          <option value="cleaning">مخزن أدوات النظافة</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>اسم الصنف</label>
-        <input id="quickAddName" placeholder="اسم الصنف الجديد">
-      </div>
-      <div class="field">
-        <label>الوحدة</label>
-        <input id="quickAddUnit" placeholder="كرتون / كجم / علبة..." value="وحدة">
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-in btn-sm" id="quickAddConfirmBtn" style="flex:1;">إضافة وربط بالسند</button>
-        <button class="btn-ghost btn-sm" id="quickAddSkipBtn" style="flex:1;">تجاهل ومتابعة المسح</button>
-      </div>
-    </div>
-
-    <button class="btn-ghost stamp-close" id="closeScannerBtn" style="width:100%;">إغلاق الماسح</button>
-  </div>
-</div>
-
 <div class="stamp-overlay" id="stampOverlay">
   <div class="stamp-card">
     <div class="stamp-ring" id="stampRing">
@@ -2649,8 +2585,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script src="https://unpkg.com/@zxing/library@latest"></script>
-<script src="https://unpkg.com/@zxing/browser@latest"></script>
 
 <script>
   const SUPABASE_URL = 'https://kaxwfvegfpezomvlkqjz.supabase.co';
@@ -2897,7 +2831,9 @@ document.getElementById('dbActivity').addEventListener('click', ()=>{
 });
 
 function showErr(prefix, error){
-  alert(prefix + (error && error.message ? ('\n\nتفاصيل تقنية: ' + error.message) : ''));
+  if(error) console.error(prefix, error);
+  const showDetails = (typeof currentRole !== 'undefined' && currentRole === 'admin');
+  alert(prefix + (showDetails && error && error.message ? ('\n\nتفاصيل تقنية: ' + error.message) : ''));
 }
 
 function animateCounters(container){
@@ -3421,7 +3357,7 @@ function renderItemsTable(){
   let list = getItemsByStore(store);
   if(q) list = list.filter(i=> i.name.toLowerCase().includes(q));
   if(list.length===0){
-    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="icon"><i class="fa-solid fa-box"></i></div>لا توجد أصناف مطابقة. أضف صنفًا جديدًا من الأعلى.</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon"><i class="fa-solid fa-box"></i></div>لا توجد أصناف مطابقة. أضف صنفًا جديدًا من الأعلى.</div></td></tr>';
     return;
   }
   tbody.innerHTML = list.map(i=>{
@@ -3442,22 +3378,8 @@ function renderItemsTable(){
           ${i.photo ? `<button class="btn-danger-outline btn-sm" data-photo-remove="${i.id}" title="حذف الصورة" style="flex-shrink:0;"><i class="fa-solid fa-trash"></i></button>` : ''}
         </div>
       </td>
-      <td data-label=""><button class="btn-danger-outline btn-sm" data-del="${i.id}" disabled>حذف</button></td>
     </tr>`;
   }).join('');
-  tbody.querySelectorAll('[data-del]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      if(busy) return;
-      if(!confirm('حذف هذا الصنف؟ سجل السندات القديم يبقى كما هو.')) return;
-      busy = true;
-      try{
-        const { error } = await sb.from('items').delete().eq('id', btn.dataset.del);
-        if(error) throw error;
-        await loadDB();
-      }catch(e){ showErr('تعذر حذف الصنف.', e); }
-      busy = false;
-    });
-  });
 
   tbody.querySelectorAll('[data-item-barcode]').forEach(inp=>{
     inp.addEventListener('change', async ()=>{
@@ -3492,7 +3414,7 @@ function renderItemsTable(){
   });
 
   tbody.querySelectorAll('[data-view-item-photo]').forEach(img=>{
-    img.addEventListener('click', ()=> window.open(img.dataset.viewItemPhoto, '_blank'));
+    img.addEventListener('click', ()=> window.open(img.dataset.viewItemPhoto, '_blank', 'noopener'));
   });
   tbody.querySelectorAll('[data-photo-item]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -3532,54 +3454,6 @@ document.getElementById('itemPhotoInput').addEventListener('change', async ()=>{
   }
 });
 
-let zxingReader = null;
-let scannerControls = null;
-let scannerOnResult = null;
-let lastScanCode = null;
-let lastScanTime = 0;
-let scannerPaused = false;
-
-async function openScanner(onResult, statusText){
-  const overlay = document.getElementById('scannerOverlay');
-  const statusEl = document.getElementById('scannerStatus');
-  statusEl.textContent = statusText || 'وجّه الكاميرا نحو الباركود...';
-  overlay.classList.add('show');
-  scannerOnResult = onResult;
-  lastScanCode = null; lastScanTime = 0;
-  scannerPaused = false;
-  document.getElementById('scannerQuickAdd').style.display = 'none';
-
-  if(!window.ZXingBrowser){
-    statusEl.textContent = 'تعذر تحميل أداة المسح — تأكد من اتصالك بالإنترنت وحدّث الصفحة.';
-    return;
-  }
-  try{
-    if(!zxingReader) zxingReader = new ZXingBrowser.BrowserMultiFormatReader();
-    const videoEl = document.getElementById('scannerVideo');
-    scannerControls = await zxingReader.decodeFromVideoDevice(undefined, videoEl, (result)=>{
-      if(!result || scannerPaused) return;
-      const text = result.getText();
-      const now = Date.now();
-      if(text === lastScanCode && (now - lastScanTime) < 2000) return;
-      lastScanCode = text; lastScanTime = now;
-      if(scannerOnResult) scannerOnResult(text);
-    });
-  }catch(e){
-    console.error(e);
-    statusEl.textContent = 'تعذر فتح الكاميرا — تأكد إنك سمحت للموقع بالوصول للكاميرا.';
-  }
-}
-
-function closeScanner(){
-  document.getElementById('scannerOverlay').classList.remove('show');
-  if(scannerControls){ try{ scannerControls.stop(); }catch(e){} scannerControls = null; }
-  scannerOnResult = null;
-  scannerPaused = false;
-  document.getElementById('scannerQuickAdd').style.display = 'none';
-  quickAddTableId = null;
-}
-document.getElementById('closeScannerBtn').addEventListener('click', closeScanner);
-
 function storeOptionsHtml(selected){
   return Object.keys(STORE_SHORT).map(s=> `<option value="${s}" ${s===selected?'selected':''}>${STORE_SHORT[s]}</option>`).join('');
 }
@@ -3597,7 +3471,6 @@ function addVoucherLineRow(tableId){
     </td>
     <td class="unit-col"><input class="line-unit" placeholder="الوحدة"></td>
     <td class="qty-col"><input type="number" min="0" step="any" class="line-qty" value="1"></td>
-    <td class="rm-col"><button class="rm-line" title="إزالة"><i class="fa-solid fa-xmark"></i></button></td>
   `;
   tbody.appendChild(tr);
 
@@ -3616,7 +3489,6 @@ function addVoucherLineRow(tableId){
   refreshDatalist();
   storeSel.addEventListener('change', ()=>{ refreshDatalist(); tryAutoUnit(); });
   nameInput.addEventListener('input', tryAutoUnit);
-  tr.querySelector('.rm-line').addEventListener('click', ()=> tr.remove());
 }
 
 function refreshAllLineDatalists(tableId){
@@ -3724,50 +3596,6 @@ function addOrIncrementLineForItem(tableId, item){
   newRow.querySelector('.line-qty').value = 1;
 }
 
-let quickAddTableId = null;
-
-function showQuickAddForm(code, tableId){
-  quickAddTableId = tableId;
-  scannerPaused = true;
-  document.getElementById('quickAddCode').textContent = code;
-  document.getElementById('quickAddName').value = '';
-  document.getElementById('quickAddUnit').value = 'وحدة';
-  document.getElementById('scannerQuickAdd').style.display = 'block';
-  document.getElementById('scannerStatus').textContent = 'باركود جديد — عبّي بيانات الصنف بالأسفل أو تجاهله ومتابعة المسح.';
-  document.getElementById('quickAddName').focus();
-}
-function hideQuickAddForm(){
-  document.getElementById('scannerQuickAdd').style.display = 'none';
-  scannerPaused = false;
-  quickAddTableId = null;
-}
-document.getElementById('quickAddSkipBtn').addEventListener('click', ()=>{
-  hideQuickAddForm();
-  document.getElementById('scannerStatus').textContent = 'وجّه الكاميرا نحو باركود الصنف...';
-});
-document.getElementById('quickAddConfirmBtn').addEventListener('click', async ()=>{
-  const code = document.getElementById('quickAddCode').textContent;
-  const store = document.getElementById('quickAddStore').value;
-  const name = document.getElementById('quickAddName').value.trim();
-  const unit = document.getElementById('quickAddUnit').value.trim() || 'وحدة';
-  if(!name){ showAppAlert('الرجاء إدخال اسم الصنف.'); return; }
-  const tableId = quickAddTableId;
-  const btn = document.getElementById('quickAddConfirmBtn');
-  btn.disabled = true;
-  try{
-    const { data: created, error } = await sb.from('items').insert({ store, name, unit, balance:0, min_qty:0, barcode:code }).select().single();
-    if(error) throw error;
-    const item = { id:created.id, store:created.store, name:created.name, unit:created.unit, balance:0, min:0, barcode:code };
-    DB.items.push(item);
-    addOrIncrementLineForItem(tableId, item);
-    document.getElementById('scannerStatus').innerHTML = '<i class="fa-solid fa-check"></i> تمت إضافة "' + escapeHtml(name) + '" وربطه بالسند';
-    hideQuickAddForm();
-  }catch(e){
-    showAppAlert(e && e.code==='23505' ? 'هذا الباركود مستخدم مسبقًا لصنف آخر.' : 'تعذرت إضافة الصنف.');
-  }
-  btn.disabled = false;
-});
-
 async function quickAddViaPrompt(code, tableId){
   const name = prompt('صنف جديد (باركود: ' + code + ') — اكتب اسم الصنف:');
   if(!name || !name.trim()) return;
@@ -3785,22 +3613,7 @@ async function quickAddViaPrompt(code, tableId){
   }
 }
 
-function wireBarcodeScanForVoucher(scanBtnId, manualInputId, tableId, allowQuickAdd){
-  document.getElementById(scanBtnId).addEventListener('click', ()=>{
-    openScanner((code)=>{
-      const item = findItemByBarcode(code);
-      const statusEl = document.getElementById('scannerStatus');
-      if(item){
-        addOrIncrementLineForItem(tableId, item);
-        statusEl.innerHTML = '<i class="fa-solid fa-check"></i> تمت إضافة: ' + escapeHtml(item.name);
-      } else if(allowQuickAdd){
-        showQuickAddForm(code, tableId);
-      } else {
-        statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> لا يوجد صنف مرتبط بهذا الباركود (' + escapeHtml(code) + ')';
-      }
-    }, 'وجّه الكاميرا نحو باركود الصنف...');
-  });
-
+function wireBarcodeScanForVoucher(manualInputId, tableId, allowQuickAdd){
   const manualInput = document.getElementById(manualInputId);
   manualInput.addEventListener('keydown', (e)=>{
     if(e.key !== 'Enter') return;
@@ -3814,8 +3627,8 @@ function wireBarcodeScanForVoucher(scanBtnId, manualInputId, tableId, allowQuick
     else { showAppAlert('لا يوجد صنف مرتبط بهذا الباركود: ' + code); }
   });
 }
-wireBarcodeScanForVoucher('inScanBtn','inManualBarcode','inLinesTable', true);
-wireBarcodeScanForVoucher('outScanBtn','outManualBarcode','outLinesTable', false);
+wireBarcodeScanForVoucher('inManualBarcode','inLinesTable', true);
+wireBarcodeScanForVoucher('outManualBarcode','outLinesTable', false);
 
 document.getElementById('inSubmit').addEventListener('click', async ()=>{
   if(busy) return;
@@ -4094,7 +3907,6 @@ function openVoucherDetail(id){
     ${v.closed ? `<div style="background:var(--freezer-soft);color:var(--freezer);border-radius:9px;padding:8px 12px;font-size:12.5px;font-weight:700;margin-bottom:10px;"><i class="fa-solid fa-lock"></i> سند مقفل (مؤرشف) — لا يمكن تعديله أو حذفه.</div>` : `
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <button class="btn-ghost btn-sm" id="editVoucherBtn" style="flex:1;"><i class="fa-solid fa-pen"></i> تعديل السند</button>
-      <button class="btn-danger-outline btn-sm" id="deleteVoucherBtn" style="flex:1;"><i class="fa-solid fa-trash"></i> حذف السند</button>
     </div>
     `}
     <p style="margin:4px 0;font-size:13px;"><b>التاريخ:</b> ${fmtDate(v.date)}</p>
@@ -4106,12 +3918,12 @@ function openVoucherDetail(id){
         ${v.lines.map(l=>`<tr><td><span class="pill pill-store-${l.store}">${STORE_LABELS[l.store]||'-'}</span></td><td>${escapeHtml(l.name)}</td><td class="mono">${fmtNum(l.qty)}</td><td>${escapeHtml(l.unit)}</td></tr>`).join('')}
       </tbody>
     </table>
-    ${v.photoUrl ? `<img src="${v.photoUrl}" class="voucher-photo" onclick="window.open('${v.photoUrl}','_blank')" title="اضغط لعرض الصورة كاملة"><div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">اضغط على الصورة لعرضها بحجمها الكامل</div>` : ''}
+    ${v.photoUrl ? `<img src="${v.photoUrl}" class="voucher-photo" onclick="window.open('${v.photoUrl}','_blank','noopener')" title="اضغط لعرض الصورة كاملة"><div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">اضغط على الصورة لعرضها بحجمها الكامل</div>` : ''}
     <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px;">
       <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 8px;font-weight:700;">صورة السند الموقّع (بعد الختم والتوقيع)</p>
       <div id="signedPhotoWrap">
         ${v.signedPhotoUrl
-          ? `<img src="${v.signedPhotoUrl}" class="voucher-photo" onclick="window.open('${v.signedPhotoUrl}','_blank')" title="اضغط لعرض الصورة كاملة">`
+          ? `<img src="${v.signedPhotoUrl}" class="voucher-photo" onclick="window.open('${v.signedPhotoUrl}','_blank','noopener')" title="اضغط لعرض الصورة كاملة">`
           : `<div class="empty-state" style="padding:16px;"><div class="icon"><i class="fa-solid fa-signature"></i></div>لم تُرفع صورة موقّعة بعد — الطباعة حاليًا تصدر النموذج الفارغ.</div>`}
       </div>
       ${v.closed ? '' : `
@@ -4127,7 +3939,6 @@ function openVoucherDetail(id){
   if(v.closed) return;
 
   document.getElementById('editVoucherBtn').addEventListener('click', ()=> openEditVoucher(v));
-  document.getElementById('deleteVoucherBtn').addEventListener('click', ()=> deleteVoucherConfirm(v));
 
   const signedBtn = document.getElementById('signedPhotoUploadBtn');
   signedBtn.addEventListener('click', async ()=>{
@@ -4282,61 +4093,6 @@ document.getElementById('editVoucherSave').addEventListener('click', async ()=>{
   }
   busy = false; btn.disabled = false;
 });
-
-function deleteVoucherConfirm(v){
-  if(busy) return;
-  if(v.closed){ showAppAlert('هذا السند مقفل ولا يمكن حذفه.'); return; }
-  if(!confirm('سيتم حذف السند "'+v.number+'" نهائيًا وإرجاع أثره على أرصدة الأصناف. هذا الإجراء لا يمكن التراجع عنه. متابعة؟')) return;
-  const reason = prompt('سبب الحذف (اختياري — يُسجّل بسجل التدقيق):') || '';
-  deleteVoucherNow(v, reason);
-}
-
-async function deleteVoucherNow(v, reason){
-  if(busy) return;
-  busy = true;
-  const appliedDeltas = [];
-  try{
-    for(const l of v.lines){
-      if(!l.itemId) continue;
-      const it = findItem(l.itemId);
-      if(!it) continue;
-      const delta = (v.type==='in' ? -l.qty : l.qty);
-      const reverted = await incrementItemBalance(it.id, delta);
-      appliedDeltas.push({ itemId: it.id, delta });
-      it.balance = reverted;
-    }
-
-    const linkedReq = DB.requests.find(r=> r.fulfilledVoucherId === v.id);
-    if(linkedReq){
-      const { error: reqErr } = await sb.from('material_requests').update({ status:'pending', fulfilled_voucher_id:null }).eq('id', linkedReq.id);
-      if(reqErr) throw reqErr;
-    }
-
-    const { error: lErr } = await sb.from('voucher_lines').delete().eq('voucher_id', v.id);
-    if(lErr) throw lErr;
-    const { error: vErr } = await sb.from('vouchers').delete().eq('id', v.id);
-    if(vErr) throw vErr;
-
-    logAudit('voucher_delete', v.id, v.number, (v.type==='in'?'سند توريد':'سند صرف')+' — '+v.lines.length+' صنف — الجهة: '+(v.party||'-'), reason);
-
-    document.getElementById('voucherDetailOverlay').classList.remove('show');
-    await loadDB();
-    showAppAlert('تم حذف السند وإرجاع أثره على الأرصدة.');
-  }catch(e){
-    let revertOk = true;
-    for(const d of appliedDeltas.slice().reverse()){
-      try{
-        const reverted = await incrementItemBalance(d.itemId, -d.delta);
-        const it = findItem(d.itemId); if(it) it.balance = reverted;
-      }catch(revertErr){ revertOk = false; console.error('تعذر التراجع التلقائي عن رصيد بعد فشل حذف السند', revertErr); }
-    }
-    showErr(revertOk
-      ? 'تعذر حذف السند. تم التراجع تلقائيًا عن أي تعديل مؤقت على الأرصدة.'
-      : 'تعذر حذف السند، وتعذر أيضًا التراجع الكامل عن تعديل الأرصدة تلقائيًا. راجع سجل السندات والأصناف قبل ما تعيد المحاولة.', e);
-    await loadDB();
-  }
-  busy = false;
-}
 
 document.getElementById('closeVoucherDetail').addEventListener('click', ()=>{
   document.getElementById('voucherDetailOverlay').classList.remove('show');
@@ -4816,7 +4572,6 @@ function invoiceRowHtml(v){
     <td>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="btn-ghost btn-sm" data-inv-print="${v.id}"><i class="fa-solid fa-print"></i> PDF</button>
-        <button class="btn-danger-outline btn-sm" data-inv-del="${v.id}" disabled>حذف</button>
       </div>
     </td>
   </tr>`;
@@ -4923,20 +4678,7 @@ function renderInvoiceBox(containerId, docType){
   }).join('');
 
   container.querySelectorAll('[data-view-inv-photo]').forEach(img=>{
-    img.addEventListener('click', ()=> window.open(img.dataset.viewInvPhoto, '_blank'));
-  });
-  container.querySelectorAll('[data-inv-del]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      if(busy) return;
-      if(!confirm('حذف هذه الفاتورة من الأرشيف؟')) return;
-      busy = true;
-      try{
-        const { error } = await sb.from('invoice_archive').delete().eq('id', btn.dataset.invDel);
-        if(error) throw error;
-        await loadDB();
-      }catch(e){ showErr('تعذر حذف الفاتورة.', e); }
-      busy = false;
-    });
+    img.addEventListener('click', ()=> window.open(img.dataset.viewInvPhoto, '_blank', 'noopener'));
   });
   container.querySelectorAll('[data-inv-print]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -5063,7 +4805,7 @@ function renderQualityTable(){
   if(store !== 'all') list = list.filter(q=> q.store === store);
 
   if(list.length===0){
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon"><i class="fa-solid fa-camera"></i></div>لا توجد تقييمات جودة مسجّلة بعد.</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="icon"><i class="fa-solid fa-camera"></i></div>لا توجد تقييمات جودة مسجّلة بعد.</div></td></tr>';
     return;
   }
   tbody.innerHTML = list.map(q=>`
@@ -5073,25 +4815,11 @@ function renderQualityTable(){
       <td>${q.photoUrl ? `<img src="${q.photoUrl}" alt="" data-view-qc-photo="${q.photoUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid var(--line-strong);cursor:pointer;">` : '-'}</td>
       <td class="wrap-cell">${escapeHtml(q.warehouseNote||'-')}</td>
       <td class="wrap-cell">${escapeHtml(q.storageNote||'-')}</td>
-      <td><button class="btn-danger-outline btn-sm" data-qc-del="${q.id}" disabled>حذف</button></td>
     </tr>
   `).join('');
 
   tbody.querySelectorAll('[data-view-qc-photo]').forEach(img=>{
-    img.addEventListener('click', ()=> window.open(img.dataset.viewQcPhoto, '_blank'));
-  });
-  tbody.querySelectorAll('[data-qc-del]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      if(busy) return;
-      if(!confirm('حذف تقييم الجودة هذا؟')) return;
-      busy = true;
-      try{
-        const { error } = await sb.from('quality_checks').delete().eq('id', btn.dataset.qcDel);
-        if(error) throw error;
-        await loadDB();
-      }catch(e){ showErr('تعذر الحذف.', e); }
-      busy = false;
-    });
+    img.addEventListener('click', ()=> window.open(img.dataset.viewQcPhoto, '_blank', 'noopener'));
   });
 }
 
@@ -6178,78 +5906,6 @@ document.getElementById('resetBalancesBtn').addEventListener('click', async ()=>
   busy = false;
 });
 
-document.getElementById('resetVouchersBtn').addEventListener('click', async ()=>{
-  if(busy) return;
-  const openVouchers = DB.vouchers.filter(v=>!v.closed);
-  const closedCount = DB.vouchers.length - openVouchers.length;
-  if(openVouchers.length===0){
-    showAppAlert(closedCount>0
-      ? 'لا توجد سندات مفتوحة للحذف. يوجد '+closedCount+' سند مقفل (مؤرشف) وهي محمية ولن تُحذف.'
-      : 'لا توجد سندات حاليًا.');
-    return;
-  }
-  if(!confirm(
-    'سيتم حذف '+openVouchers.length+' سند مفتوح (غير مقفل) نهائيًا.'+
-    (closedCount>0 ? ' يوجد '+closedCount+' سند مقفل (مؤرشف) محمي تمامًا ولن يتأثر.' : '')+
-    ' الأصناف وأرصدتها الحالية ستبقى كما هي. متابعة؟'
-  )) return;
-  busy = true;
-  try{
-    const { error } = await sb.from('vouchers').delete().eq('closed', false);
-    if(error) throw error;
-    logAudit('reset_vouchers', null, null, 'حذف '+openVouchers.length+' سند مفتوح');
-    await loadDB();
-    showAppAlert('تم حذف السندات المفتوحة. السندات المقفلة (الأرشيف) بقيت محفوظة كما هي.');
-  }catch(e){ showErr('تعذر حذف سجل السندات.', e); }
-  busy = false;
-});
-
-document.getElementById('resetItemsBtn').addEventListener('click', async ()=>{
-  if(busy) return;
-  if(DB.items.length===0){ showAppAlert('لا توجد أصناف حاليًا.'); return; }
-  if(!confirm('سيتم حذف كل الأصناف من المخازن الثلاثة نهائيًا. سجل السندات القديم سيبقى كأرشيف فقط. متابعة؟')) return;
-  busy = true;
-  try{
-    const { error } = await sb.from('items').delete().not('id','is',null);
-    if(error) throw error;
-    logAudit('reset_items', null, null, 'حذف '+DB.items.length+' صنف من المخازن الثلاثة');
-    await loadDB();
-    showAppAlert('تم حذف كل الأصناف.');
-  }catch(e){ showErr('تعذر حذف كل الأصناف.', e); }
-  busy = false;
-});
-
-const fullResetInput = document.getElementById('fullResetConfirmInput');
-const fullResetBtn = document.getElementById('fullResetBtn');
-fullResetInput.addEventListener('input', ()=>{
-  fullResetBtn.disabled = fullResetInput.value.trim() !== 'حذف الكل';
-});
-fullResetBtn.addEventListener('click', async ()=>{
-  if(busy) return;
-  if(fullResetInput.value.trim() !== 'حذف الكل') return;
-  const closedCount = DB.vouchers.filter(v=>v.closed).length;
-  if(!confirm(
-    'تأكيد أخير: سيتم حذف كل الأصناف وكل السندات المفتوحة (غير المقفلة) نهائيًا ولا يمكن التراجع.'+
-    (closedCount>0 ? ' يوجد '+closedCount+' سند مقفل (أرشيف شهري) محمي تمامًا ولن يُحذف.' : '')+
-    ' متابعة؟'
-  )) return;
-  busy = true;
-  const preResetVoucherCount = DB.vouchers.filter(v=>!v.closed).length;
-  const preResetItemCount = DB.items.length;
-  try{
-    const { error: e1 } = await sb.from('vouchers').delete().eq('closed', false);
-    if(e1) throw e1;
-    const { error: e2 } = await sb.from('items').delete().not('id','is',null);
-    if(e2) throw e2;
-    logAudit('full_reset', null, null, 'إعادة تعيين شاملة — حذف '+preResetVoucherCount+' سند مفتوح و'+preResetItemCount+' صنف');
-    await loadDB();
-    fullResetInput.value = '';
-    fullResetBtn.disabled = true;
-    showAppAlert('تمت إعادة التعيين. السندات المقفلة (الأرشيف) بقيت محفوظة كما هي.');
-  }catch(e){ showErr('تعذرت إعادة التعيين الشاملة.', e); }
-  busy = false;
-});
-
 const ATTENDANCE_STATUS_LABELS = { present:'حاضر', absent:'غائب' };
 
 function findWorker(id){ return DB.workers.find(w=>w.id===id); }
@@ -6274,29 +5930,15 @@ function renderWorkersTable(){
   const tbody = document.querySelector('#workersTable tbody');
   if(!tbody) return;
   if(DB.workers.length===0){
-    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="icon"><i class="fa-solid fa-helmet-safety"></i></div>لا يوجد عمال مسجّلين بعد.</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="2"><div class="empty-state"><div class="icon"><i class="fa-solid fa-helmet-safety"></i></div>لا يوجد عمال مسجّلين بعد.</div></td></tr>';
     return;
   }
   tbody.innerHTML = DB.workers.slice().sort((a,b)=> a.name.localeCompare(b.name,'ar')).map(w=>`
     <tr>
       <td>${escapeHtml(w.name)}</td>
       <td>${escapeHtml(w.jobTitle||'-')}</td>
-      <td><button class="btn-danger-outline btn-sm" data-del-worker="${w.id}">حذف</button></td>
     </tr>
   `).join('');
-  tbody.querySelectorAll('[data-del-worker]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      if(busy) return;
-      if(!confirm('حذف هذا العامل؟ سجل الحضور القديم الخاص فيه يبقى محفوظًا.')) return;
-      busy = true;
-      try{
-        const { error } = await sb.from('workers').delete().eq('id', btn.dataset.delWorker);
-        if(error) throw error;
-        await loadDB();
-      }catch(e){ showErr('تعذر حذف العامل.', e); }
-      busy = false;
-    });
-  });
 }
 
 function renderAttendanceGrid(){
@@ -6983,8 +6625,6 @@ function isTypingContext(){
 }
 
 function closeTopMostOverlay(){
-  const scannerOv = document.getElementById('scannerOverlay');
-  if(scannerOv && scannerOv.classList.contains('show')){ closeScanner(); return; }
   document.querySelectorAll('.stamp-overlay.show').forEach(o=> o.classList.remove('show'));
 }
 
@@ -7192,7 +6832,7 @@ if(devModeBtn){
     if(img && img.getAttribute('src')){
       const src = img.getAttribute('src');
       frag.appendChild(makeLabel('الصورة'));
-      frag.appendChild(makeItem('<i class="fa-solid fa-magnifying-glass"></i>','فتح الصورة بحجمها الكامل', function(){ window.open(src,'_blank'); }));
+      frag.appendChild(makeItem('<i class="fa-solid fa-magnifying-glass"></i>','فتح الصورة بحجمها الكامل', function(){ window.open(src,'_blank','noopener'); }));
       frag.appendChild(makeItem('⧉','نسخ رابط الصورة', function(){ copyText(src); }));
       has = true;
     }
@@ -7904,6 +7544,42 @@ function renderLowBalanceList(){
     renderLowBalanceList();
   });
 })();
+
+document.getElementById('exportLowBalanceExcelBtn').addEventListener('click', async function(){
+  const inputEl = document.getElementById('lowBalanceThreshold');
+  const threshold = parseFloat(inputEl.value);
+  const validThreshold = Number.isNaN(threshold) ? 8 : threshold;
+  const items = computeLowBalanceItems(validThreshold);
+  if(items.length===0){ showAppAlert('ما فيه أصناف رصيدها أقل من '+fmtNum(validThreshold)+' حاليًا لتصديرها.'); return; }
+
+  const rows = items.map(function(i, idx){
+    const outOfStock = i.balance <= 0;
+    const suggestedQty = Math.max(Math.round((validThreshold - i.balance)*100)/100, 0);
+    return {
+      '#': idx+1,
+      'الصنف': i.name,
+      'المخزن': STORE_LABELS[i.store] || i.store,
+      'الرصيد الحالي': i.balance,
+      'الوحدة': i.unit || '',
+      'الحد الأدنى المحدد للصنف': i.min || 0,
+      'الكمية المقترحة للطلب': suggestedQty,
+      'الحالة': outOfStock ? 'نفذ من المخزون' : 'رصيد منخفض'
+    };
+  });
+
+  try{
+    await downloadStyledExcel([{
+      name:'أصناف تحتاج طلب',
+      rows,
+      subtitle:'أصناف تحتاج طلب جديد — الرصيد أقل من '+fmtNum(validThreshold)+' (بغض النظر عن الحد الأدنى المحدّد لكل صنف) — إجمالي الأصناف: '+items.length,
+      headerRoles:{ 'الحالة':'warn', 'الرصيد الحالي':'warn' },
+      rowRole:{ column:'الحالة', roles:{ 'نفذ من المخزون':'out', 'رصيد منخفض':'warn' } },
+      emphasizeColumns:['الكمية المقترحة للطلب']
+    }], 'أصناف-تحتاج-طلب-' + todayStr() + '.xlsx');
+  }catch(e){
+    showErr('تعذر إنشاء ملف Excel.', e);
+  }
+});
 
 function computePredictedShortages(){
   if(typeof DB === 'undefined' || !DB.items || !DB.vouchers) return [];
