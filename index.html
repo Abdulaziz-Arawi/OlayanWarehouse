@@ -329,6 +329,8 @@
   .pill-store-cleaning{background:var(--cleaning-soft);color:var(--cleaning);}
   .mono{font-family:var(--font-mono);}
   .low-flag{color:var(--warn);font-weight:700;}
+  input.expiry-soon{border-color:var(--warn);background:var(--pantry-soft);color:var(--warn);font-weight:700;}
+  input.expiry-expired{border-color:var(--danger);background:#F6DEDA;color:var(--danger);font-weight:700;}
   .newsection-spinner{
     width:56px;height:56px;border-radius:50%;
     border:4px solid var(--line);border-top-color:var(--pantry);
@@ -1518,6 +1520,19 @@
       <div id="lowBalanceList"></div>
     </div>
 
+    <div class="card" id="expiringItemsCard">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px;">
+        <h2 class="section-title" style="font-size:16px;margin:0;"><i class="fa-solid fa-hourglass-half"></i> أصناف قربت تنتهي صلاحيتها</h2>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <label style="margin-bottom:0;white-space:nowrap;font-size:12.5px;">خلال كم يوم</label>
+          <input type="number" id="expiringThreshold" min="0" step="1" value="7" style="width:80px;padding:6px 8px;">
+          <button class="btn-ghost btn-sm" id="exportExpiringExcelBtn"><i class="fa-solid fa-file-excel"></i> تصدير Excel</button>
+        </div>
+      </div>
+      <p class="section-sub" style="margin-bottom:12px;">مبنية على تاريخ الصلاحية المسجّل لكل صنف من تبويب "الأصناف" — الأصناف بدون تاريخ صلاحية مسجّل لا تظهر هنا.</p>
+      <div id="expiringItemsList"></div>
+    </div>
+
     <div class="card" id="predictedShortageCard" style="display:none;">
       <h2 class="section-title" style="font-size:16px;"><i class="fa-solid fa-chart-line"></i> أصناف يُتوقع نقصها قريبًا</h2>
       <p class="section-sub" style="margin-bottom:12px;">تقدير تقريبي بناءً على معدّل الاستهلاك آخر 30 يوم — مو رصيدًا فعليًا تحت الحد الأدنى بعد، بس يستاهل انتباه.</p>
@@ -1577,6 +1592,10 @@
           <label>الباركود (اختياري)</label>
           <input id="newItemBarcode" placeholder="اكتب الرقم">
         </div>
+        <div class="field">
+          <label>تاريخ الصلاحية (اختياري)</label>
+          <input id="newItemExpiry" type="date">
+        </div>
         <div class="field" style="flex:0 0 auto;align-self:end;">
           <button class="btn-primary" id="addItemBtn">إضافة الصنف</button>
         </div>
@@ -1605,15 +1624,16 @@
     <div class="table-wrap">
       <table class="data" id="itemsTable">
         <colgroup>
-          <col style="width:18%">
           <col style="width:15%">
-          <col style="width:8%">
-          <col style="width:9%">
+          <col style="width:12%">
           <col style="width:7%">
-          <col style="width:20%">
+          <col style="width:8%">
+          <col style="width:6%">
           <col style="width:15%">
+          <col style="width:14%">
+          <col style="width:11%">
         </colgroup>
-        <thead><tr><th>الصنف</th><th>المخزن</th><th>الوحدة</th><th>الرصيد الحالي</th><th>الحد الأدنى</th><th>الباركود</th><th>الصورة</th></tr></thead>
+        <thead><tr><th>الصنف</th><th>المخزن</th><th>الوحدة</th><th>الرصيد الحالي</th><th>الحد الأدنى</th><th>الباركود</th><th>تاريخ الصلاحية</th><th>الصورة</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -2724,18 +2744,22 @@ function fmtNum(n){
   return (Math.round(n*100)/100).toLocaleString('en-US');
 }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
+
 function fmtDate(d){
   if(!d) return '-';
   const parts = d.split('-');
   if(parts.length===3) return parts[2]+'/'+parts[1]+'/'+parts[0];
   return d;
 }
+
+
 function showBootLoader(text){
   const el = document.getElementById('bootLoader');
   if(!el) return;
   if(text) document.getElementById('bootText').innerHTML = text;
   el.classList.remove('hide');
 }
+
 function hideBootLoader(){
   const el = document.getElementById('bootLoader');
   if(el) el.classList.add('hide');
@@ -2745,6 +2769,7 @@ function showAppAlert(message){
   document.getElementById('appAlertMessage').textContent = message;
   document.getElementById('appAlertOverlay').classList.add('show');
 }
+
 document.getElementById('appAlertCloseBtn').addEventListener('click', ()=>{
   document.getElementById('appAlertOverlay').classList.remove('show');
 });
@@ -2877,6 +2902,7 @@ async function enterApp(){
   await applyRole();
   await populateProfile();
   if(typeof reloadLowBalanceThreshold === 'function') reloadLowBalanceThreshold();
+  if(typeof reloadExpiringThreshold === 'function') reloadExpiringThreshold();
   await loadDB();
   hideBootLoader();
   maybeShowWelcome();
@@ -3121,7 +3147,8 @@ async function loadDB(){
       id:i.id, store:i.store, name:i.name, unit:i.unit,
       balance:Number(i.balance), min:Number(i.min_qty), barcode:i.barcode || null,
       photo:i.photo_path || null,
-      price: Number(i.unit_price || 0)
+      price: Number(i.unit_price || 0),
+      expiryDate: i.expiry_date || null
     }));
     DB.vouchers = (vouchers||[]).map(v=>({
       id:v.id, type:v.type, number:v.number, date:v.voucher_date,
@@ -3281,6 +3308,7 @@ document.getElementById('addItemBtn').addEventListener('click', async ()=>{
   const balance = parseFloat(document.getElementById('newItemBalance').value) || 0;
   const min = parseFloat(document.getElementById('newItemMin').value) || 0;
   const barcode = document.getElementById('newItemBarcode').value.trim() || null;
+  const expiryDate = document.getElementById('newItemExpiry').value || null;
   if(!name){ showAppAlert('الرجاء إدخال اسم الصنف.'); return; }
 
   if(barcode && DB.items.some(i=> i.barcode===barcode)){
@@ -3296,12 +3324,13 @@ document.getElementById('addItemBtn').addEventListener('click', async ()=>{
       const payload = { balance:newBalance };
       if(min>0) payload.min_qty = min;
       if(barcode) payload.barcode = barcode;
+      if(expiryDate) payload.expiry_date = expiryDate;
       const { error } = await sb.from('items').update(payload).eq('id', existing.id);
       if(error) throw error;
       await loadDB();
       showAppAlert('هذا الصنف موجود مسبقًا في '+STORE_LABELS[store]+' باسم "'+existing.name+'" — تم دمج الكمية مع رصيده الحالي بدل إنشاء صنف مكرر. الرصيد الآن: '+fmtNum(newBalance)+' '+existing.unit);
     } else {
-      const { error } = await sb.from('items').insert({ store, name, unit, balance, min_qty:min, barcode });
+      const { error } = await sb.from('items').insert({ store, name, unit, balance, min_qty:min, barcode, expiry_date: expiryDate });
       if(error) throw error;
       await loadDB();
     }
@@ -3310,6 +3339,7 @@ document.getElementById('addItemBtn').addEventListener('click', async ()=>{
     document.getElementById('newItemBalance').value=0;
     document.getElementById('newItemMin').value=0;
     document.getElementById('newItemBarcode').value='';
+    document.getElementById('newItemExpiry').value='';
   }catch(e){
     if(e && e.code === '23505'){
       showAppAlert('هذا الباركود مستخدم مسبقًا لصنف آخر بقاعدة البيانات.');
@@ -3338,6 +3368,7 @@ document.getElementById('exportItemsExcelBtn').addEventListener('click', async (
     'الرصيد الحالي': i.balance,
     'الحد الأدنى': i.min,
     'الباركود': i.barcode || '',
+    'تاريخ الصلاحية': i.expiryDate || '',
     'عند الحد الأدنى؟': (i.min>0 && i.balance<=i.min) ? 'نعم' : 'لا'
   }));
 
@@ -3350,6 +3381,14 @@ document.getElementById('exportItemsExcelBtn').addEventListener('click', async (
   }
 });
 
+function expiryFlagClass(dateStr){
+  if(!dateStr) return '';
+  const today = localDateStr(new Date());
+  if(dateStr < today) return 'expiry-expired';
+  const days = Math.round((new Date(dateStr) - new Date(today)) / 86400000);
+  if(days <= 7) return 'expiry-soon';
+  return '';
+}
 function renderItemsTable(){
   const store = document.getElementById('itemsFilterStore').value;
   const q = document.getElementById('itemsSearch').value.trim().toLowerCase();
@@ -3357,7 +3396,7 @@ function renderItemsTable(){
   let list = getItemsByStore(store);
   if(q) list = list.filter(i=> i.name.toLowerCase().includes(q));
   if(list.length===0){
-    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon"><i class="fa-solid fa-box"></i></div>لا توجد أصناف مطابقة. أضف صنفًا جديدًا من الأعلى.</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="icon"><i class="fa-solid fa-box"></i></div>لا توجد أصناف مطابقة. أضف صنفًا جديدًا من الأعلى.</div></td></tr>';
     return;
   }
   tbody.innerHTML = list.map(i=>{
@@ -3370,6 +3409,9 @@ function renderItemsTable(){
       <td class="mono mono-cell" data-label="الحد الأدنى">${fmtNum(i.min)}</td>
       <td data-label="الباركود">
         <input class="mono item-barcode-input" data-item-barcode="${i.id}" value="${escapeHtml(i.barcode||'')}" placeholder="لا يوجد باركود" style="font-size:12.5px;padding:8px 10px;width:100%;text-align:center;">
+      </td>
+      <td data-label="تاريخ الصلاحية">
+        <input type="date" class="mono item-expiry-input ${expiryFlagClass(i.expiryDate)}" data-item-expiry="${i.id}" value="${i.expiryDate||''}" style="font-size:12.5px;padding:8px 10px;width:100%;text-align:center;">
       </td>
       <td data-label="الصورة">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;">
@@ -3406,6 +3448,28 @@ function renderItemsTable(){
         } else {
           showErr('تعذر حفظ الباركود.', e);
         }
+        inp.value = original || '';
+        inp.disabled = false;
+      }
+      busy = false;
+    });
+  });
+
+  tbody.querySelectorAll('[data-item-expiry]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      if(busy) return;
+      const itemId = inp.dataset.itemExpiry;
+      const original = (findItem(itemId) || {}).expiryDate || null;
+      const newDate = inp.value || null;
+      if(newDate === original) return;
+      busy = true;
+      inp.disabled = true;
+      try{
+        const { error } = await sb.from('items').update({ expiry_date: newDate }).eq('id', itemId);
+        if(error) throw error;
+        await loadDB();
+      }catch(e){
+        showErr('تعذر حفظ تاريخ الصلاحية. تأكد إنك أضفت عمود expiry_date لجدول items بقاعدة البيانات.', e);
         inp.value = original || '';
         inp.disabled = false;
       }
@@ -4830,6 +4894,7 @@ function renderDashboard(){
   if(typeof renderBusiestCard === 'function') renderBusiestCard();
   if(typeof renderPredictedShortages === 'function') renderPredictedShortages();
   if(typeof renderLowBalanceList === 'function') renderLowBalanceList();
+  if(typeof renderExpiringItemsList === 'function') renderExpiringItemsList();
   if(typeof renderActionCenter === 'function') renderActionCenter();
   if(typeof renderCompareStrip === 'function') renderCompareStrip();
   if(typeof renderMonthlyChart === 'function') renderMonthlyChart();
@@ -7576,6 +7641,94 @@ document.getElementById('exportLowBalanceExcelBtn').addEventListener('click', as
       rowRole:{ column:'الحالة', roles:{ 'نفذ من المخزون':'out', 'رصيد منخفض':'warn' } },
       emphasizeColumns:['الكمية المقترحة للطلب']
     }], 'أصناف-تحتاج-طلب-' + todayStr() + '.xlsx');
+  }catch(e){
+    showErr('تعذر إنشاء ملف Excel.', e);
+  }
+});
+
+/* ============ أصناف قربت تنتهي صلاحيتها — حسب حقل expiry_date المسجّل يدويًا لكل صنف من تبويب
+   "الأصناف". الأصناف بدون تاريخ صلاحية مسجّل لا تظهر بهذه القائمة. حد الأيام مستقل تقدر تغيّره
+   من اللوحة نفسها ويُحفظ لك تلقائيًا لهذا الجهاز (نفس أسلوب بطاقة "أصناف تحتاج طلب"). ============ */
+function expiringThresholdKey(){
+  const email = (typeof currentUserEmail !== 'undefined' && currentUserEmail) ? currentUserEmail : 'guest';
+  return 'expiringThreshold_' + email;
+}
+function reloadExpiringThreshold(){
+  const inputEl = document.getElementById('expiringThreshold');
+  if(!inputEl) return;
+  let saved = null;
+  try{ saved = localStorage.getItem(expiringThresholdKey()); }catch(e){}
+  if(saved !== null && saved !== '') inputEl.value = saved;
+}
+function daysUntilExpiry(dateStr){
+  const today = localDateStr(new Date());
+  return Math.round((new Date(dateStr) - new Date(today)) / 86400000);
+}
+function computeExpiringItems(days){
+  if(typeof DB === 'undefined' || !DB.items) return [];
+  return DB.items
+    .filter(function(i){ return i.expiryDate; })
+    .map(function(i){ return { id:i.id, name:i.name, store:i.store, unit:i.unit, balance:i.balance, expiryDate:i.expiryDate, daysLeft: daysUntilExpiry(i.expiryDate) }; })
+    .filter(function(i){ return i.daysLeft <= days; })
+    .sort(function(a,b){ return a.daysLeft - b.daysLeft; });
+}
+function renderExpiringItemsList(){
+  const listEl = document.getElementById('expiringItemsList');
+  const inputEl = document.getElementById('expiringThreshold');
+  if(!listEl || !inputEl) return;
+  const threshold = parseInt(inputEl.value, 10);
+  const validThreshold = Number.isNaN(threshold) ? 7 : threshold;
+  const items = computeExpiringItems(validThreshold);
+  if(items.length===0){
+    listEl.innerHTML = '<div class="empty-state" style="padding:20px;"><div class="icon"><i class="fa-solid fa-circle-check"></i></div>ما فيه أصناف قربت تنتهي صلاحيتها خلال '+validThreshold+' يوم حاليًا.</div>';
+    return;
+  }
+  listEl.innerHTML = items.map(function(i){
+    const expired = i.daysLeft < 0;
+    const statusText = expired ? ('منتهية منذ '+Math.abs(i.daysLeft)+' يوم') : (i.daysLeft===0 ? 'تنتهي اليوم' : ('باقي '+i.daysLeft+' يوم'));
+    return '<div class="predicted-row"><span class="pr-name">'+escapeHtml(i.name)+' <span style="font-size:11px;color:var(--ink-soft);">('+(STORE_LABELS[i.store]||i.store)+' — '+fmtDate(i.expiryDate)+')</span></span>'
+      + '<span class="pr-days" style="color:'+(expired?'var(--danger)':'var(--warn)')+';">'+statusText+'</span></div>';
+  }).join('');
+}
+(function(){
+  const inputEl = document.getElementById('expiringThreshold');
+  if(!inputEl) return;
+  inputEl.addEventListener('input', function(){
+    try{ localStorage.setItem(expiringThresholdKey(), inputEl.value); }catch(e){}
+    renderExpiringItemsList();
+  });
+})();
+
+document.getElementById('exportExpiringExcelBtn').addEventListener('click', async function(){
+  const inputEl = document.getElementById('expiringThreshold');
+  const threshold = parseInt(inputEl.value, 10);
+  const validThreshold = Number.isNaN(threshold) ? 7 : threshold;
+  const items = computeExpiringItems(validThreshold);
+  if(items.length===0){ showAppAlert('ما فيه أصناف قربت تنتهي صلاحيتها خلال '+validThreshold+' يوم حاليًا لتصديرها.'); return; }
+
+  const rows = items.map(function(i, idx){
+    const expired = i.daysLeft < 0;
+    return {
+      '#': idx+1,
+      'الصنف': i.name,
+      'المخزن': STORE_LABELS[i.store] || i.store,
+      'تاريخ الصلاحية': i.expiryDate,
+      'الأيام المتبقية': i.daysLeft,
+      'الرصيد الحالي': i.balance,
+      'الوحدة': i.unit || '',
+      'الحالة': expired ? 'منتهية الصلاحية' : 'قريبة الانتهاء'
+    };
+  });
+
+  try{
+    await downloadStyledExcel([{
+      name:'أصناف قربت تنتهي',
+      rows,
+      subtitle:'أصناف قربت تنتهي صلاحيتها — خلال '+validThreshold+' يوم — إجمالي الأصناف: '+items.length,
+      headerRoles:{ 'الحالة':'warn', 'الأيام المتبقية':'warn' },
+      rowRole:{ column:'الحالة', roles:{ 'منتهية الصلاحية':'out', 'قريبة الانتهاء':'warn' } },
+      emphasizeColumns:['الأيام المتبقية']
+    }], 'أصناف-قربت-تنتهي-' + todayStr() + '.xlsx');
   }catch(e){
     showErr('تعذر إنشاء ملف Excel.', e);
   }
