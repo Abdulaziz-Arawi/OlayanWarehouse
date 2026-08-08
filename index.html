@@ -3612,6 +3612,10 @@ function renderItemsTable(){
   });
 }
 
+function isImageFile(file){
+  return !!file && !!file.type && file.type.indexOf('image/') === 0;
+}
+
 let itemPhotoTargetId = null;
 document.getElementById('itemPhotoInput').addEventListener('change', async ()=>{
   const input = document.getElementById('itemPhotoInput');
@@ -3619,6 +3623,7 @@ document.getElementById('itemPhotoInput').addEventListener('change', async ()=>{
   const itemId = itemPhotoTargetId;
   input.value = '';
   if(!file || !itemId) return;
+  if(!isImageFile(file)){ showAppAlert('الملف المختار ليس صورة. الرجاء اختيار صورة فقط (JPG, PNG...).'); return; }
   try{
     const url = await uploadVoucherPhoto(file, 'items', itemId);
     const { error } = await sb.from('items').update({ photo_path: url }).eq('id', itemId);
@@ -3740,6 +3745,9 @@ function compressImage(file, maxDim, quality){
 
 async function uploadVoucherPhoto(file, type, number){
   if(!file) return null;
+  if(!file.type || file.type.indexOf('image/') !== 0){
+    throw new Error('الملف المختار ليس صورة. الرجاء اختيار صورة فقط.');
+  }
   const { blob, mime, ext } = await compressImage(file);
   const safeName = (number||'sanad').replace(/[^a-zA-Z0-9-_]/g,'_');
   const path = type + '/' + safeName + '-' + Date.now() + '.' + ext;
@@ -3755,6 +3763,12 @@ function wirePhotoPreview(inputId, previewId){
   input.addEventListener('change', ()=>{
     const file = input.files[0];
     if(!file){ preview.style.display='none'; preview.innerHTML=''; return; }
+    if(!isImageFile(file)){
+      showAppAlert('الملف المختار ليس صورة. الرجاء اختيار صورة فقط (JPG, PNG...).');
+      input.value = '';
+      preview.style.display='none'; preview.innerHTML='';
+      return;
+    }
     const url = URL.createObjectURL(file);
     preview.innerHTML = `<img src="${url}" class="photo-thumb">`;
     preview.style.display = 'block';
