@@ -170,17 +170,19 @@
   .btn-danger-outline .fa-solid, .btn-search-trigger .fa-solid{margin-left:5px;}
 
   .tabs{
-    display:flex;gap:3px;flex-wrap:wrap;justify-content:center;
+    display:flex;gap:3px;flex-wrap:nowrap;justify-content:center;
     background:var(--paper-card);
     border:1px solid var(--line);
     border-radius:10px;
     padding:4px;
     margin-bottom:16px;
     position:relative;z-index:1;
+    overflow-x:auto;
+    scrollbar-width:thin;
   }
   .tab{
-    flex:0 0 auto;min-width:88px;white-space:nowrap;text-align:center;
-    padding:8px 13px;border-radius:7px;
+    flex:0 0 auto;min-width:0;white-space:nowrap;text-align:center;
+    padding:8px 11px;border-radius:7px;
     font-family:var(--font-display);font-weight:700;font-size:12.5px;
     color:var(--ink-soft);cursor:pointer;user-select:none;
     border:1px solid transparent;
@@ -1321,6 +1323,15 @@
   /* "مدير الحسابات" يشوف الإعدادات (المظهر / سجل التدقيق / الموقع) بس بدون
      الإجراءات الخطيرة اللي ما ترجع فيها (إقفال الشهر، تصفير الأرصدة، دمج الأصناف، وضع المطور) */
   .role-manager-readonly .settings-danger-card{ display:none !important; }
+
+  /* ====== سنابات: شبكة صور سريعة تختفي تلقائيًا بعد 24 ساعة ====== */
+  .snaps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;}
+  .snap-card{background:var(--paper-card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(27,36,48,0.04);}
+  .snap-card img{width:100%;height:170px;object-fit:cover;display:block;cursor:pointer;}
+  .snap-card .snap-body{padding:10px 12px;}
+  .snap-card .snap-note{font-size:13px;color:var(--ink);line-height:1.5;margin-bottom:8px;}
+  .snap-card .snap-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:var(--ink-soft);}
+  .snap-card .snap-del{background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -1429,6 +1440,8 @@
       <div class="tab" data-view="quality" data-admin-only="1" data-tooltip="توثيق صور فحص الجودة — لا يغيّر أي رصيد">الجودة</div>
       <div class="tab" data-view="newsection" data-admin-only="1" data-tooltip="قسم منفصل لإدارة طلبات الشراء">المشتريات</div>
       <div class="tab" data-view="workforce" data-admin-only="1" data-tooltip="حضور وانصراف العمال — غير مرتبط بالمخزون">تحضير العمال</div>
+      <div class="tab" data-view="snaps" data-shared-view="1" data-tooltip="صور سريعة من الفريق — تختفي تلقائيًا بعد 24 ساعة">سنابات</div>
+
     </div>
     <div class="tab settings-pin-btn" id="settingsPinBtn" data-view="settings" data-admin-only="1" title="الإعدادات" role="button" aria-label="الإعدادات"><i class="fa-solid fa-gear"></i></div>
   </div>
@@ -1573,6 +1586,29 @@
         </table>
       </div>
     </div>
+  </div>
+
+  <!-- SNAPS -->
+  <div class="view" id="view-snaps">
+    <h2 class="section-title">سنابات</h2>
+    <p class="section-sub">صور سريعة من أي أحد بالفريق (المطبخ، المستودع، أي مكان) — تختفي تلقائيًا بعد 24 ساعة، مو أرشيف دائم.</p>
+
+    <div class="card">
+      <div class="row">
+        <div class="field" style="flex:2;min-width:220px;">
+          <label>الصورة</label>
+          <input type="file" id="snapPhoto" accept="image/*" capture="environment">
+          <div id="snapPhotoPreview" style="display:none;margin-top:8px;"></div>
+        </div>
+        <div class="field" style="flex:3;min-width:220px;">
+          <label>ملاحظة قصيرة (اختياري)</label>
+          <input id="snapNote" placeholder="مثال: وصل التوريد، فيه ملاحظة على المطبخ..." maxlength="140">
+        </div>
+      </div>
+      <button class="btn-primary" id="snapSubmit"><i class="fa-solid fa-camera"></i> نشر السناب</button>
+    </div>
+
+    <div id="snapsGrid" class="snaps-grid"></div>
   </div>
 
   <!-- ITEMS -->
@@ -2953,7 +2989,7 @@ async function applyRole(){
   const badge = document.getElementById('roleBadge');
   const adminTabs = document.querySelectorAll('.tab[data-admin-only]');
   const newVoucherBtn = document.getElementById('newVoucherBtn');
-  const requesterTab = document.querySelector('.tab[data-requester-only]');
+  const requesterTabs = document.querySelectorAll('.tab[data-requester-only]');
   const searchBtn = document.getElementById('globalSearchBtn');
   const ledgerTab = document.querySelector('.tab[data-view="ledger"]');
   const pmLedgerEl = document.getElementById('pmLedger');
@@ -2982,12 +3018,14 @@ async function applyRole(){
   if(currentRole === 'requester'){
     badge.style.display = 'inline-block';
     badge.textContent = 'طلب أصناف';
-    document.querySelectorAll('.tab').forEach(t=>{ if(!t.hasAttribute('data-requester-only')) t.style.display = 'none'; });
-    if(requesterTab) requesterTab.style.display = '';
+    // data-shared-view = تبويبات يشوفها الكل بلا استثناء (زي "سنابات") — تفلت من التقييد
+    // حتى لدور "طلب أصناف" اللي أصلاً كل تبويب يختفي عنه إلا المصرّح له فيه صراحة.
+    document.querySelectorAll('.tab').forEach(t=>{ if(!t.hasAttribute('data-requester-only') && !t.hasAttribute('data-shared-view')) t.style.display = 'none'; });
+    requesterTabs.forEach(t=> t.style.display = '');
     if(searchBtn) searchBtn.style.display = 'none';
     switchToTab('myrequests');
   } else {
-    if(requesterTab) requesterTab.style.display = 'none';
+    requesterTabs.forEach(t=> t.style.display = 'none');
     if(currentRole === 'admin'){
       badge.style.display = 'none';
     } else if(currentRole === 'manager'){
@@ -3305,6 +3343,7 @@ function switchToTab(view){
   if(view==='ledger') renderLedgerSelect();
   if(view==='reports' && typeof renderMonthlyReport==='function') renderMonthlyReport();
   if(view==='settings' && typeof loadAuditLog==='function') loadAuditLog();
+  if(view==='snaps' && typeof loadSnaps==='function') loadSnaps();
   return true;
 }
 
@@ -4027,7 +4066,7 @@ function fillLogSection(tableId, list, type, period){
   const partyLabel = type==='in' ? 'المورد' : 'الجهة المستلمة';
   tbody.innerHTML = list.map(v=>`
     <tr>
-      <td class="mono" data-label="رقم السند">${v.number}</td>
+      <td class="mono" data-label="رقم السند">${escapeHtml(v.number)}</td>
       <td data-label="الحالة">${v.closed ? '<span class="pill" style="background:var(--freezer-soft);color:var(--freezer);"><i class="fa-solid fa-lock"></i> مقفل</span>' : '<span class="pill pill-in">مفتوح</span>'}</td>
       <td data-label="المخزن">${storePillsHtml(voucherStoreList(v))}</td>
       <td data-label="التاريخ">${fmtDate(v.date)}</td>
@@ -4051,7 +4090,7 @@ function openVoucherDetail(id){
   body.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <span class="pill ${v.type==='in'?'pill-in':'pill-out'}" style="font-size:13px;">${v.type==='in'?'سند توريد':'سند صرف'}</span>
-      <span class="mono" style="font-weight:700;">${v.number}</span>
+      <span class="mono" style="font-weight:700;">${escapeHtml(v.number)}</span>
     </div>
     ${v.closed ? `<div style="background:var(--freezer-soft);color:var(--freezer);border-radius:9px;padding:8px 12px;font-size:12.5px;font-weight:700;margin-bottom:10px;"><i class="fa-solid fa-lock"></i> سند مقفل (مؤرشف) — لا يمكن تعديله أو حذفه.</div>` : `
     <div style="display:flex;gap:8px;margin-bottom:10px;">
@@ -4328,7 +4367,7 @@ function printVoucher(v){
 
   const letterhead = printLetterhead(
     v.type==='in' ? printBadge('سند توريد (وارد)', typeColor, typeSoft) : printBadge('سند صرف (صادر)', typeColor, typeSoft),
-    `<div style="font-family:monospace;font-weight:700;font-size:20px;">${v.number}</div><div style="font-size:11.5px;color:#8A8375;margin-top:2px;">${fmtDate(v.date)}</div>`,
+    `<div style="font-family:monospace;font-weight:700;font-size:20px;">${escapeHtml(v.number)}</div><div style="font-size:11.5px;color:#8A8375;margin-top:2px;">${fmtDate(v.date)}</div>`,
     typeColor
   );
 
@@ -4527,11 +4566,11 @@ function renderMyRequestsTable(){
     const statusText = r.status==='fulfilled' ? 'تم الصرف' : (r.status==='rejected' ? 'مرفوض' : 'قيد الانتظار');
     const itemsSummary = r.lines.map(l=> escapeHtml(l.name)+' ('+fmtNum(l.qty)+')').join('، ');
     return `<tr>
-      <td class="mono mono-cell">${r.number}</td>
+      <td class="mono mono-cell">${escapeHtml(r.number)}</td>
       <td class="wrap-cell" title="${itemsSummary}">${itemsSummary}</td>
       <td><span class="pill ${statusClass}">${statusText}</span></td>
       <td>${fmtDate(r.date)}</td>
-      <td class="mono mono-cell">${r.fulfilledVoucherNumber || '-'}</td>
+      <td class="mono mono-cell">${r.fulfilledVoucherNumber ? escapeHtml(r.fulfilledVoucherNumber) : '-'}</td>
     </tr>`;
   }).join('');
 }
@@ -4554,7 +4593,7 @@ function renderIncomingRequestsTable(){
       ? `<button class="btn-in btn-sm" data-fulfill="${r.id}">تحويل لسند صرف</button> <button class="btn-danger-outline btn-sm" data-reject="${r.id}">رفض</button>`
       : `<button class="btn-ghost btn-sm" data-view-req="${r.id}">عرض</button>`;
     return `<tr>
-      <td class="mono mono-cell">${r.number}</td>
+      <td class="mono mono-cell">${escapeHtml(r.number)}</td>
       <td class="wrap-cell">${escapeHtml(r.requestedBy||'-')}</td>
       <td class="wrap-cell" title="${itemsSummary}">${itemsSummary}</td>
       <td><span class="pill ${statusClass}">${statusText}</span></td>
@@ -4642,12 +4681,12 @@ function openRequestDetail(id){
   document.getElementById('requestDetailBody').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <span class="pill ${statusClass}" style="font-size:13px;">${statusText}</span>
-      <span class="mono" style="font-weight:700;">${r.number}</span>
+      <span class="mono" style="font-weight:700;">${escapeHtml(r.number)}</span>
     </div>
     <p style="margin:4px 0;font-size:13px;"><b>الطالب:</b> ${escapeHtml(r.requestedBy||'-')}</p>
     <p style="margin:4px 0;font-size:13px;"><b>التاريخ:</b> ${fmtDate(r.date)}</p>
     ${r.notes ? `<p style="margin:4px 0;font-size:13px;"><b>ملاحظات:</b> ${escapeHtml(r.notes)}</p>` : ''}
-    ${r.fulfilledVoucherNumber ? `<p style="margin:4px 0;font-size:13px;"><b>سند الصرف:</b> <span class="mono">${r.fulfilledVoucherNumber}</span></p>` : ''}
+    ${r.fulfilledVoucherNumber ? `<p style="margin:4px 0;font-size:13px;"><b>سند الصرف:</b> <span class="mono">${escapeHtml(r.fulfilledVoucherNumber)}</span></p>` : ''}
     <table class="lines-table" style="margin-top:10px;">
       <thead><tr><th>المخزن</th><th>الصنف</th><th>الكمية</th><th>الوحدة</th></tr></thead>
       <tbody>
@@ -4714,7 +4753,7 @@ function invoiceRowHtml(v){
   const typeClass = INVOICE_TYPE_PILL_CLASS[v.docType] || 'pill-inv-supplier';
   return `<tr>
     <td><span class="pill ${typeClass}">${typeText}</span></td>
-    <td class="mono mono-cell">${v.number}</td>
+    <td class="mono mono-cell">${escapeHtml(v.number)}</td>
     <td><input type="date" class="mono inv-date-input" data-inv-date="${v.id}" value="${v.docDate}" style="padding:6px 8px;font-size:12.5px;"></td>
     <td>${v.photoUrl ? `<img src="${v.photoUrl}" alt="" data-view-inv-photo="${v.photoUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid var(--line-strong);cursor:pointer;">` : '-'}</td>
     <td class="wrap-cell">${v.party ? `<b>${escapeHtml(v.party)}</b>` : ''}${(v.party && v.note) ? '<br>' : ''}${v.note ? `<span style="color:var(--ink-soft);font-size:12px;">${escapeHtml(v.note)}</span>` : ''}${(!v.party && !v.note) ? '-' : ''}</td>
@@ -4743,7 +4782,7 @@ function invoicePrintBlockHtml(v){
           <div style="margin-top:8px;">${printBadge(typeText, tone.c, tone.bg)}${v.note ? ' <span style="font-size:13px;color:#555;">— ' + escapeHtml(v.note) + '</span>' : ''}</div>
         </div>
         <div style="text-align:left;">
-          <div style="font-family:monospace;font-weight:700;font-size:19px;">${v.number}</div>
+          <div style="font-family:monospace;font-weight:700;font-size:19px;">${escapeHtml(v.number)}</div>
           <div style="font-size:12px;color:#8A8375;">${fmtDate(v.docDate)}</div>
         </div>
       </div>
@@ -4885,6 +4924,100 @@ document.getElementById('exportInvoicesExcelBtn').addEventListener('click', asyn
   }catch(e){
     showErr('تعذر إنشاء ملف Excel.', e);
   }
+});
+
+/* ====== سنابات: صور سريعة من أي أحد بالفريق — تختفي تلقائيًا بعد 24 ساعة ====== */
+let SNAPS_CACHE = [];
+
+function snapTimeAgo(iso){
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if(mins < 1) return 'الآن';
+  if(mins < 60) return 'قبل ' + mins + ' دقيقة';
+  const hours = Math.floor(mins/60);
+  return 'قبل ' + hours + (hours===1?' ساعة':' ساعات');
+}
+
+async function loadSnaps(){
+  const grid = document.getElementById('snapsGrid');
+  if(!grid) return;
+  grid.innerHTML = '<div class="empty-state"><div class="icon"><i class="fa-solid fa-spinner"></i></div>جارٍ التحميل...</div>';
+  try{
+    // تنظيف انتهازي: نحذف أي سناب أقدم من 24 ساعة كل ما حد يفتح التبويب — بديل بسيط عن مهمة مجدولة بالسيرفر
+    const cutoff = new Date(Date.now() - 24*60*60*1000).toISOString();
+    await sb.from('snaps').delete().lt('created_at', cutoff);
+    const { data, error } = await sb.from('snaps').select('*').order('created_at', { ascending:false });
+    if(error) throw error;
+    SNAPS_CACHE = data || [];
+    renderSnapsGrid();
+  }catch(e){
+    grid.innerHTML = '<div class="empty-state"><div class="icon"><i class="fa-solid fa-camera"></i></div>تعذر تحميل السنابات. تأكد إنك أنشأت جدول snaps بقاعدة البيانات.</div>';
+    console.error(e);
+  }
+}
+
+function renderSnapsGrid(){
+  const grid = document.getElementById('snapsGrid');
+  if(!grid) return;
+  if(SNAPS_CACHE.length===0){
+    grid.innerHTML = '<div class="empty-state"><div class="icon"><i class="fa-solid fa-camera"></i></div>ما فيه سنابات حاليًا — كن أول من ينشر.</div>';
+    return;
+  }
+  grid.innerHTML = SNAPS_CACHE.map(s=>{
+    const canDelete = (s.author_email === currentUserEmail) || (typeof currentRole !== 'undefined' && currentRole === 'admin');
+    return `<div class="snap-card">
+      <img src="${s.photo_path}" alt="" data-view-snap="${s.photo_path}">
+      <div class="snap-body">
+        ${s.note ? `<div class="snap-note">${escapeHtml(s.note)}</div>` : ''}
+        <div class="snap-meta">
+          <span>${escapeHtml((s.author_email||'').split('@')[0])} · ${snapTimeAgo(s.created_at)}</span>
+          ${canDelete ? `<button class="snap-del" data-del-snap="${s.id}" title="حذف"><i class="fa-solid fa-trash"></i></button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('[data-view-snap]').forEach(img=>{
+    img.addEventListener('click', ()=> window.open(img.dataset.viewSnap, '_blank', 'noopener'));
+  });
+  grid.querySelectorAll('[data-del-snap]').forEach(btn=>{
+    btn.addEventListener('click', ()=> deleteSnap(btn.dataset.delSnap));
+  });
+}
+
+async function deleteSnap(id){
+  if(busy) return;
+  if(!confirm('حذف هذا السناب؟')) return;
+  busy = true;
+  try{
+    const { error } = await sb.from('snaps').delete().eq('id', id);
+    if(error) throw error;
+    await loadSnaps();
+  }catch(e){ showErr('تعذر حذف السناب.', e); }
+  busy = false;
+}
+
+wirePhotoPreview('snapPhoto','snapPhotoPreview');
+
+document.getElementById('snapSubmit').addEventListener('click', async ()=>{
+  if(busy) return;
+  const file = document.getElementById('snapPhoto').files[0];
+  const note = document.getElementById('snapNote').value.trim();
+  if(!file){ showAppAlert('اختر صورة أولاً.'); return; }
+  const btn = document.getElementById('snapSubmit');
+  busy = true; btn.disabled = true;
+  try{
+    const photoUrl = await uploadVoucherPhoto(file, 'snaps', 'snap');
+    const { error } = await sb.from('snaps').insert({ author_email: currentUserEmail, note: note||null, photo_path: photoUrl });
+    if(error) throw error;
+    document.getElementById('snapPhoto').value = '';
+    document.getElementById('snapPhotoPreview').style.display = 'none';
+    document.getElementById('snapPhotoPreview').innerHTML = '';
+    document.getElementById('snapNote').value = '';
+    await loadSnaps();
+  }catch(e){
+    showErr('تعذر نشر السناب.', e);
+  }
+  busy = false; btn.disabled = false;
 });
 
 wirePhotoPreview('qcPhoto','qcPhotoPreview');
@@ -5046,7 +5179,7 @@ function renderDashboard(){
   } else {
     tbody.innerHTML = recent.map(v=>`
       <tr>
-        <td class="mono" data-label="رقم السند">${v.number}</td>
+        <td class="mono" data-label="رقم السند">${escapeHtml(v.number)}</td>
         <td data-label="النوع"><span class="pill ${v.type==='in'?'pill-in':'pill-out'}">${v.type==='in'?'وارد':'صادر'}</span></td>
         <td data-label="المخزن">${storePillsHtml(voucherStoreList(v))}</td>
         <td data-label="التاريخ">${fmtDate(v.date)}</td>
@@ -5390,7 +5523,7 @@ function renderAllItemsLedgerTable(){
         : '<i class="fa-solid fa-arrow-trend-down"></i> لا يوجد استهلاك حديث لهذا الصنف (آخر 30 يوم)';
       const rowsHtml = periodRows.map(m=>`<tr>
         <td data-label="التاريخ">${fmtDate(m.date)}</td>
-        <td class="mono" data-label="رقم السند">${m.number}</td>
+        <td class="mono" data-label="رقم السند">${escapeHtml(m.number)}</td>
         <td data-label="النوع"><span class="pill ${m.type==='in'?'pill-in':'pill-out'}">${m.type==='in'?'وارد':'صادر'}</span></td>
         <td class="mono mono-cell" data-label="الكمية">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
         <td class="ledger-balance" data-label="الرصيد بعد الحركة">${fmtNum(m.balanceAfter)}</td>
@@ -5478,7 +5611,7 @@ function renderLedgerTable(){
     titleEl.textContent = 'تفاصيل الحركات (' + periodLabel + ')';
     rows = filteredMoves.map(m=>`<tr>
       <td data-label="التاريخ">${fmtDate(m.date)}</td>
-      <td class="mono" data-label="رقم السند">${m.number}</td>
+      <td class="mono" data-label="رقم السند">${escapeHtml(m.number)}</td>
       <td data-label="النوع"><span class="pill ${m.type==='in'?'pill-in':'pill-out'}">${m.type==='in'?'وارد':'صادر'}</span></td>
       <td class="mono mono-cell" data-label="الكمية">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
       <td class="ledger-balance" data-label="الرصيد بعد الحركة">${fmtNum(m.balanceAfter)}</td>
@@ -5565,7 +5698,7 @@ function printAllItemsLedger(){
             <tbody>
               ${periodRows.map(m=>`<tr style="background:${m.type==='in'?'#F3F8F5':'#FBF3F2'};">
                 <td style="padding:7px 8px;border-bottom:1px solid #EEE;">${fmtDate(m.date)}</td>
-                <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;">${m.number}</td>
+                <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;">${escapeHtml(m.number)}</td>
                 <td style="padding:7px 8px;border-bottom:1px solid #EEE;">${printTypeBadge(m.type)}</td>
                 <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;font-weight:700;color:${m.type==='in'?'#2E7D5B':'#B23A2E'};">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
                 <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;font-weight:700;">${fmtNum(m.balanceAfter)}</td>
@@ -5616,7 +5749,7 @@ document.getElementById('ledgerPrintBtn').addEventListener('click', ()=>{
         <tbody>
           ${printMoves.map(m=>`<tr style="background:${m.type==='in'?'#F3F8F5':'#FBF3F2'};">
             <td style="padding:7px 8px;border-bottom:1px solid #EEE;">${fmtDate(m.date)}</td>
-            <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;">${m.number}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;">${escapeHtml(m.number)}</td>
             <td style="padding:7px 8px;border-bottom:1px solid #EEE;">${printTypeBadge(m.type)}</td>
             <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;font-weight:700;color:${m.type==='in'?'#2E7D5B':'#B23A2E'};">${m.type==='in'?'+':'−'}${fmtNum(m.qty)}</td>
             <td style="padding:7px 8px;border-bottom:1px solid #EEE;font-family:monospace;font-weight:700;">${fmtNum(m.balanceAfter)}</td>
@@ -6686,7 +6819,7 @@ function renderGlobalSearchResults(q){
       <div class="profile-item" data-goto-voucher="${v.id}">
         <span class="ico">${v.type==='in'?'<i class="fa-solid fa-inbox"></i>':'<i class="fa-solid fa-paper-plane"></i>'}</span>
         <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-          <div class="mono">${v.number}</div>
+          <div class="mono">${escapeHtml(v.number)}</div>
           <div style="font-size:11px;color:var(--ink-soft);">${v.type==='in'?'سند توريد':'سند صرف'} · ${fmtDate(v.date)}${v.party ? ' · '+escapeHtml(v.party) : ''}</div>
         </div>
       </div>`).join('');
