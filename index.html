@@ -1302,6 +1302,25 @@
     #logTableIn td.empty-cell, #logTableOut td.empty-cell{justify-content:center;}
     #logTableIn td.empty-cell::before, #logTableOut td.empty-cell::before{content:none;}
   }
+
+  /* ====== دور "مدير عام" و"مدير الحسابات": الأصناف بعرض فقط بدون تعديل — تنطبق فقط لما يكون
+     أحد الدورين فعّال (كلاس role-manager-readonly تتحط على body من applyRole)، فما تأثر
+     على صلاحية الأدمن الكاملة بنفس هذا الملف. ====== */
+  .role-manager-readonly #addItemCard{ display:none !important; }
+  .role-manager-readonly #itemsTable input[data-item-barcode],
+  .role-manager-readonly #itemsTable input[data-item-expiry]{
+    pointer-events:none; background:var(--paper); opacity:.75; cursor:default;
+  }
+  .role-manager-readonly #itemsTable [data-photo-item],
+  .role-manager-readonly #itemsTable [data-photo-remove]{
+    display:none !important;
+  }
+  /* منع تعديل أي سند حتى لو انفتحت نافذة تفاصيله من لوحة التحكم أو سجل السندات أو البحث */
+  .role-manager-readonly #editVoucherBtn{ display:none !important; }
+  .role-manager-readonly #newVoucherOverlay{ display:none !important; }
+  /* "مدير الحسابات" يشوف الإعدادات (المظهر / سجل التدقيق / الموقع) بس بدون
+     الإجراءات الخطيرة اللي ما ترجع فيها (إقفال الشهر، تصفير الأرصدة، دمج الأصناف، وضع المطور) */
+  .role-manager-readonly .settings-danger-card{ display:none !important; }
 </style>
 </head>
 <body>
@@ -1562,7 +1581,7 @@
     <p class="section-sub">أضف الأصناف الخاصة بكل مخزن وحدد الوحدة والحد الأدنى للتنبيه عند نقص المخزون.</p>
     <div class="kpi-strip" id="itemsStatsStrip"></div>
 
-    <div class="card">
+    <div class="card" id="addItemCard">
       <div class="row">
         <div class="field">
           <label>المخزن</label>
@@ -2352,26 +2371,26 @@
       </div>
     </div>
 
-    <div class="card" style="border:1.5px solid var(--freezer);">
+    <div class="card settings-danger-card" style="border:1.5px solid var(--freezer);">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;color:var(--freezer);"><i class="fa-solid fa-lock"></i> إقفال الشهر الحالي</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يقفل كل السندات المفتوحة الآن (توريد وصرف) ويحوّلها لأرشيف دائم لا يمكن تعديله أو حذفه. بعد الإقفال، "سجل السندات" يرجع فاضي تلقائيًا ويبدأ من جديد، بينما تقدر أي وقت تشوف السندات المقفلة من فلتر "الحالة" باختيار "الكل". أرصدة الأصناف ما تتأثر إطلاقًا.</p>
       <div id="closePeriodSummary" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;"></div>
       <button class="btn-primary" id="closePeriodBtn" style="background:var(--freezer);">إقفال السندات المفتوحة الآن</button>
     </div>
 
-    <div class="card">
+    <div class="card settings-danger-card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">دمج الأصناف المكررة</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">لو صار عندك نفس الصنف مسجل أكثر من مرة في نفس المخزن (بسبب إدخاله مرتين)، هذا الزر يجمع أرصدتها في صنف واحد ويحذف التكرار، مع الحفاظ على سجل السندات القديم كامل.</p>
       <button class="btn-ghost" id="mergeDuplicatesBtn" disabled>دمج الأصناف المكررة الآن</button>
     </div>
 
-    <div class="card">
+    <div class="card settings-danger-card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">تصفير الأرصدة فقط</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">يرجع رصيد كل الأصناف إلى صفر، مع الإبقاء على أسماء الأصناف وسجل السندات كما هو.</p>
       <button class="btn-ghost" id="resetBalancesBtn" disabled>تصفير كل الأرصدة</button>
     </div>
 
-    <div class="card">
+    <div class="card settings-danger-card">
       <h3 style="font-family:var(--font-display);font-size:15px;margin:0 0 6px;">وضع المطور (حماية الصفحة)</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">عند التفعيل يمنع أدوات المطور (F12)، النقر بالزر الأيمن، وعرض المصدر والنسخ من الصفحة. تقدر تفعّله أو تلغيه في أي وقت، والحالة تُحفظ تلقائيًا. <b>ملاحظة:</b> هذي حماية سطحية يسهل تجاوزها وليست أمانًا حقيقيًا.</p>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -2923,6 +2942,9 @@ async function applyRole(){
       const { data: profile } = await sb.from('profiles').select('role').eq('id', uid).single();
       if(profile && profile.role === 'admin') currentRole = 'admin';
       else if(profile && profile.role === 'requester') currentRole = 'requester';
+      else if(profile && profile.role === 'manager') currentRole = 'manager';
+      else if(profile && profile.role === 'accounts_manager') currentRole = 'accounts_manager';
+      else if(profile && profile.role === 'accountant') currentRole = 'accountant';
     }
   }catch(e){
     console.error('تعذر تحديد صلاحية المستخدم، سيتم افتراض "مشاهد فقط" للأمان.', e);
@@ -2933,9 +2955,29 @@ async function applyRole(){
   const newVoucherBtn = document.getElementById('newVoucherBtn');
   const requesterTab = document.querySelector('.tab[data-requester-only]');
   const searchBtn = document.getElementById('globalSearchBtn');
+  const ledgerTab = document.querySelector('.tab[data-view="ledger"]');
+  const pmLedgerEl = document.getElementById('pmLedger');
 
-  adminTabs.forEach(t=> t.style.display = (currentRole === 'admin') ? '' : 'none');
+  // "مدير عام": نفس تبويبات غير-الإدارة (المخفية أصلًا عن غير الأدمن)، فيما عدا "الأصناف"
+  // اللي نستثنيها هنا عشان يشوفها بصلاحية عرض فقط (بدون تعديل — يُتكفّل فيه بـ CSS تحت).
+  // "مدير الحسابات": يشوف "الأصناف" و"الأرشيف" و"المشتريات" و"الإعدادات" (كلها عرض فقط،
+  // والإعدادات بدون الأزرار الخطيرة — مخفية بـ CSS عبر settings-danger-card).
+  // "المحاسب": يشوف "الأرشيف" فقط إضافة لتبويبات العرض الافتراضية (سجل السندات / تقارير شهرية / الحركة اليومية).
+  const accountsManagerViews = ['items', 'invoices', 'newsection', 'settings'];
+  adminTabs.forEach(t=>{
+    const allow = (currentRole === 'admin')
+      || (currentRole === 'manager' && t.dataset.view === 'items')
+      || (currentRole === 'accounts_manager' && accountsManagerViews.includes(t.dataset.view))
+      || (currentRole === 'accountant' && t.dataset.view === 'invoices');
+    t.style.display = allow ? '' : 'none';
+  });
   if(newVoucherBtn) newVoucherBtn.style.display = (currentRole === 'admin') ? 'flex' : 'none';
+  // "الحركة اليومية" (تفصيل حركة كل صنف) غير مطلوبة لدور "مدير عام" فقط (يكتفي بالملخصات)،
+  // بس "مدير الحسابات" و"المحاسب" يحتاجونها فتبقى ظاهرة لهم بالوضع الافتراضي.
+  if(ledgerTab) ledgerTab.style.display = (currentRole === 'manager') ? 'none' : '';
+  if(pmLedgerEl) pmLedgerEl.style.display = (currentRole === 'manager') ? 'none' : '';
+  // نفس قيود العرض فقط على "الأصناف" (بدون إضافة/تعديل) تنطبق على "مدير الحسابات" كمان.
+  document.body.classList.toggle('role-manager-readonly', currentRole === 'manager' || currentRole === 'accounts_manager');
 
   if(currentRole === 'requester'){
     badge.style.display = 'inline-block';
@@ -2948,6 +2990,27 @@ async function applyRole(){
     if(requesterTab) requesterTab.style.display = 'none';
     if(currentRole === 'admin'){
       badge.style.display = 'none';
+    } else if(currentRole === 'manager'){
+      badge.style.display = 'inline-block';
+      badge.textContent = 'مدير عام — عرض فقط';
+      const activeTab = document.querySelector('.tab.active');
+      if(activeTab && activeTab.style.display === 'none'){
+        switchToTab('dashboard');
+      }
+    } else if(currentRole === 'accounts_manager'){
+      badge.style.display = 'inline-block';
+      badge.textContent = 'مدير الحسابات — عرض فقط';
+      const activeTab = document.querySelector('.tab.active');
+      if(activeTab && activeTab.style.display === 'none'){
+        switchToTab('dashboard');
+      }
+    } else if(currentRole === 'accountant'){
+      badge.style.display = 'inline-block';
+      badge.textContent = 'محاسب — عرض فقط';
+      const activeTab = document.querySelector('.tab.active');
+      if(activeTab && activeTab.style.display === 'none'){
+        switchToTab('dashboard');
+      }
     } else {
       badge.style.display = 'inline-block';
       badge.textContent = 'مشاهدة فقط';
@@ -3008,6 +3071,15 @@ async function populateProfile(){
       } else if(currentRole === 'requester'){
         roleEl.classList.add('viewer');
         roleText.textContent = 'طلب أصناف';
+      } else if(currentRole === 'manager'){
+        roleEl.classList.add('viewer');
+        roleText.textContent = 'مدير عام';
+      } else if(currentRole === 'accounts_manager'){
+        roleEl.classList.add('viewer');
+        roleText.textContent = 'مدير الحسابات';
+      } else if(currentRole === 'accountant'){
+        roleEl.classList.add('viewer');
+        roleText.textContent = 'محاسب';
       } else {
         roleEl.classList.add('viewer');
         roleText.textContent = 'مشاهد فقط';
@@ -7143,6 +7215,9 @@ if(devModeBtn){
   function roleLabel(role){
     if(role === 'admin') return 'حساب مسؤول';
     if(role === 'requester') return 'حساب طلب أصناف';
+    if(role === 'manager') return 'حساب مدير عام';
+    if(role === 'accounts_manager') return 'حساب مدير الحسابات';
+    if(role === 'accountant') return 'حساب محاسب';
     return 'حساب مشاهدة فقط';
   }
 
